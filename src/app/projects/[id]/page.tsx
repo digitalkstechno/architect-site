@@ -19,7 +19,9 @@ import {
   History,
   TrendingUp,
   DollarSign,
-  AlertCircle
+  AlertCircle,
+  ArrowUpRight,
+  Plus
 } from "lucide-react";
 import Link from "next/link";
 import { useState, use } from "react";
