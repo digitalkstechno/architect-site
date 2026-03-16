@@ -18,10 +18,24 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
+import { Toggle } from "@/components/ui/Toggle";
+
 type SettingTab = "profile" | "company" | "notifications" | "security" | "billing";
 
+const initialNotificationSettings = {
+  siteProgress: true,
+  paymentReminders: true,
+  workerUpdates: false,
+  clientMessaging: true,
+};
+
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingTab>("profile");
+  const [activeTab, setActiveTab] = useState<SettingTab>("notifications");
+  const [notificationSettings, setNotificationSettings] = useState(initialNotificationSettings);
+
+  const handleNotificationChange = (key: keyof typeof initialNotificationSettings) => {
+    setNotificationSettings(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const tabs = [
     { id: "profile", label: "My Profile", icon: UserCircle2 },
@@ -138,12 +152,12 @@ export default function SettingsPage() {
             {activeTab === "notifications" && (
               <div className="space-y-8">
                 {[
-                  { title: "Site Progress Alerts", desc: "Get notified when a construction stage is marked as complete.", icon: Briefcase },
-                  { title: "Payment Reminders", desc: "Receive alerts for overdue and pending client payments.", icon: CreditCard },
-                  { title: "Worker Updates", desc: "Stay informed about worker check-ins and task assignments.", icon: UserCircle2 },
-                  { title: "Client Messaging", desc: "Real-time notifications for new client messages and feedback.", icon: Bell },
+                  { id: "siteProgress", title: "Site Progress Alerts", desc: "Get notified when a construction stage is marked as complete.", icon: Briefcase },
+                  { id: "paymentReminders", title: "Payment Reminders", desc: "Receive alerts for overdue and pending client payments.", icon: CreditCard },
+                  { id: "workerUpdates", title: "Worker Updates", desc: "Stay informed about worker check-ins and task assignments.", icon: UserCircle2 },
+                  { id: "clientMessaging", title: "Client Messaging", desc: "Real-time notifications for new client messages and feedback.", icon: Bell },
                 ].map((item) => (
-                  <div key={item.title} className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-indigo-100 transition-all duration-300">
+                  <div key={item.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-indigo-100 transition-all duration-300">
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-white rounded-xl shadow-sm group-hover:bg-indigo-50 transition-colors">
                         <item.icon className="w-5 h-5 text-indigo-600" />
@@ -153,10 +167,10 @@ export default function SettingsPage() {
                         <p className="text-xs font-medium text-slate-500 leading-relaxed">{item.desc}</p>
                       </div>
                     </div>
-                    <div className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
-                      <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 shadow-inner"></div>
-                    </div>
+                    <Toggle 
+                      checked={notificationSettings[item.id as keyof typeof notificationSettings]}
+                      onChange={() => handleNotificationChange(item.id as keyof typeof notificationSettings)}
+                    />
                   </div>
                 ))}
               </div>
