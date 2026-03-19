@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading  } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isLoginPage = pathname === "/login";
+  const isSuperAdminPage = pathname.startsWith("/super-admin");
 
   if (isLoading) {
     return (
@@ -21,7 +22,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     );
   }
 
-  if (isLoginPage) {
+  if (isLoginPage || isSuperAdminPage) {
     return <main className="min-h-screen bg-slate-50">{children}</main>;
   }
 

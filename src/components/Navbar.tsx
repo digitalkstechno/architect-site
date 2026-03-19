@@ -25,11 +25,13 @@ const getPageTitle = (pathname: string) => {
 
 export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, getEffectiveRole } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   if (pathname === "/login") return null;
+
+  const role = getEffectiveRole(user);
 
   const notifications = [
     { id: 1, text: "Foundation complete at Modern Villa", time: "2m ago", icon: CheckCircle2, color: "text-green-500" },
@@ -158,7 +160,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
             </div>
             <div className="text-left hidden lg:block">
               <p className="text-xs font-bold text-slate-900 leading-none truncate max-w-[100px]">{user?.name}</p>
-              <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest mt-1">{user?.role}</p>
+              <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest mt-1">{role}</p>
             </div>
           </button>
         </div>

@@ -1,87 +1,96 @@
+
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Lock, Mail, ChevronRight, AlertCircle } from "lucide-react";
-import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
+import { ShieldCheck, Lock, User, ChevronRight, Activity } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Card } from "@/components/ui/Card";
 import { useSuperAdminAuth } from "@/lib/superadmin-auth";
 
-export default function SuperAdminLoginPage() {
+export default function SuperAdminLogin() {
+  const [userName, setUserName] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { login } = useSuperAdminAuth();
-  const [userName, setUserName] = useState("superadmin");
-  const [password, setPassword] = useState("admin@123");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await login(userName, password);
+      router.push("/super-admin");
+    } catch (err: any) {
+      setError(err.message || "Invalid credentials");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 relative overflow-hidden">
-      <div className="absolute top-0 -left-20 w-96 h-96 bg-indigo-200/30 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-0 -right-20 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl animate-pulse delay-700" />
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Dark theme background effects */}
+      <div className="absolute top-0 -left-20 w-[30rem] h-[30rem] bg-indigo-500/10 rounded-full blur-[100px] animate-pulse" />
+      <div className="absolute bottom-0 -right-20 w-[30rem] h-[30rem] bg-blue-500/10 rounded-full blur-[100px] animate-pulse delay-700" />
 
-      <div className="w-full max-w-lg space-y-8 relative z-10">
+      <div className="w-full max-w-md space-y-8 relative z-10">
         <div className="text-center space-y-4">
-          <div className="inline-flex bg-indigo-600 p-4 rounded-3xl shadow-2xl shadow-indigo-200">
-            <Building2 className="w-10 h-10 text-white" />
+          <div className="inline-flex bg-indigo-600 p-4 rounded-[2rem] shadow-2xl shadow-indigo-500/20 ring-8 ring-slate-800">
+            <Activity className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Super Admin</h1>
-          <p className="text-slate-500 font-medium">Architecture SaaS control panel</p>
+          <h1 className="text-3xl font-black text-white tracking-tight uppercase">SaaS Control Plane</h1>
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Super Admin Access Only</p>
         </div>
 
-        <Card className="p-10 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6">
-          {error && (
-            <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-700 flex gap-3">
-              <AlertCircle className="w-5 h-5 mt-0.5" />
-              <div>
-                <p className="text-sm font-extrabold">Login failed</p>
-                <p className="text-sm font-medium">{error}</p>
-              </div>
-            </div>
-          )}
+        <Card className="p-10 rounded-[3rem] shadow-2xl border-slate-800 bg-slate-800/50 backdrop-blur-xl space-y-8">
+          <div className="flex items-center gap-3 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
+            <ShieldCheck className="w-6 h-6 text-indigo-400" />
+            <p className="text-xs font-bold text-indigo-200 leading-relaxed">
+              You are accessing the privileged infrastructure management console.
+            </p>
+          </div>
 
-          <form
-            className="space-y-5"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              setError(null);
-              setLoading(true);
-              try {
-                await login(userName, password);
-                router.push("/super-admin");
-              } catch (err: any) {
-                setError(err?.message ?? "Unable to login");
-              } finally {
-                setLoading(false);
-              }
-            }}
-          >
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
+                <p className="text-xs font-bold text-red-400">{error}</p>
+              </div>
+            )}
+
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Username</label>
-              <Input
-                placeholder="superadmin"
-                icon={Mail}
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Username</label>
+              <Input 
+                type="text" 
+                placeholder="superadmin" 
+                icon={User} 
+                required 
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                required
+                className="rounded-2xl h-12 bg-slate-900 border-slate-700 text-white placeholder:text-slate-600 focus:border-indigo-500 focus:ring-indigo-500/20" 
               />
             </div>
-
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Password</label>
-              <Input
-                type="password"
-                placeholder="••••••••"
-                icon={Lock}
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
+              <Input 
+                type="password" 
+                placeholder="••••••••" 
+                icon={Lock} 
+                required 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
+                className="rounded-2xl h-12 bg-slate-900 border-slate-700 text-white placeholder:text-slate-600 focus:border-indigo-500 focus:ring-indigo-500/20" 
               />
             </div>
-
-            <Button type="submit" className="w-full py-4 text-base gap-2 group" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="w-full py-4 text-sm font-black uppercase tracking-widest gap-2 group rounded-2xl shadow-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-all duration-300 border-none"
+            >
+              {loading ? "Authenticating..." : "Authorize Access"}
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </form>
@@ -90,4 +99,3 @@ export default function SuperAdminLoginPage() {
     </div>
   );
 }
-

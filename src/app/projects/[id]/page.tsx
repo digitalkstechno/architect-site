@@ -28,20 +28,25 @@ import { useState, use } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/Button";
+import { useProjects } from "@/lib/projects-store";
 
 type Tab = "overview" | "tasks" | "workers" | "updates" | "photos" | "payments" | "timeline";
 
 export default function ProjectDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { user } = useAuth();
-  const project = projects.find(p => p.id === id) || projects[0];
+  const { getProjectById, updateStageStatus } = useProjects();
+  const project = getProjectById(id);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
-  const [stages, setStages] = useState(project.stages);
+
+  if (!project) return <div>Project not found</div>;
+
+  const stages = project.stages;
 
   const canEdit = user?.role === "architect" || user?.role === "supervisor";
 
-  const updateStageStatus = (stageName: string, newStatus: string) => {
-    setStages(prev => prev.map(s => s.name === stageName ? { ...s, status: newStatus } : s));
+  const handleUpdateStageStatus = (stageName: string, newStatus: string) => {
+    updateStageStatus(id, stageName, newStatus);
   };
 
   const projectTasks = tasks.filter(t => t.project === project.name);
@@ -162,7 +167,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
                           {canEdit ? (
                             <select
                               value={stage.status}
-                              onChange={(e) => updateStageStatus(stage.name, e.target.value)}
+                              onChange={(e) => handleUpdateStageStatus(stage.name, e.target.value)}
                               className={cn(
                                 "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg shadow-sm border cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500",
                                 stage.status === "Completed" ? "bg-white text-green-600 border-green-100" :

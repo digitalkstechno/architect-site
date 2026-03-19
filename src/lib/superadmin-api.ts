@@ -96,6 +96,15 @@ export async function saLogin(userName: string, password: string) {
   return payload;
 }
 
+export type CrudField = {
+  name: string;
+  label: string;
+  type: "text" | "number" | "email" | "password" | "boolean" | "select";
+  options?: { label: string; value: any }[];
+  placeholder?: string;
+  required?: boolean;
+};
+
 export type CrudResource = {
   key: string;
   label: string;
@@ -103,15 +112,120 @@ export type CrudResource = {
   canCreate?: boolean;
   canUpdate?: boolean;
   canDelete?: boolean;
+  fields: CrudField[];
 };
 
 export const SA_RESOURCES: CrudResource[] = [
-  { key: "tenant", label: "Tenant", basePath: "/tenant", canCreate: true },
-  { key: "paymentledger", label: "Payment Ledger", basePath: "/paymentledger", canCreate: true, canUpdate: true, canDelete: true },
-  { key: "bankbrief", label: "Bank Brief", basePath: "/bankbrief", canCreate: true, canUpdate: true, canDelete: true },
-  { key: "subscriptionplan", label: "Subscription Plan", basePath: "/subscriptionplan", canCreate: true, canUpdate: true, canDelete: true },
-  { key: "user", label: "User", basePath: "/user", canCreate: true, canUpdate: true, canDelete: true },
-  { key: "role", label: "Role", basePath: "/role", canCreate: true, canUpdate: true, canDelete: true },
-  { key: "permission", label: "Permission", basePath: "/permission", canCreate: true, canUpdate: true, canDelete: true },
+  {
+    key: "tenant",
+    label: "Tenants",
+    basePath: "/tenant",
+    canCreate: true,
+    fields: [
+      { name: "tenantName", label: "Tenant Name", type: "text", required: true, placeholder: "e.g. Dream Builders" },
+      { name: "tenantPhoneNo", label: "Phone Number", type: "text", placeholder: "e.g. 9876543210" },
+      { name: "email", label: "Email Address", type: "email", required: true, placeholder: "client@example.com" },
+      { name: "isActive", label: "Is Active", type: "boolean" },
+    ],
+  },
+  {
+    key: "subscriptionplan",
+    label: "Subscription Plans",
+    basePath: "/subscription-plans",
+    canCreate: true,
+    canUpdate: true,
+    canDelete: true,
+    fields: [
+      { name: "name", label: "Plan Name", type: "text", required: true, placeholder: "e.g. Premium Plan" },
+      { name: "price", label: "Price", type: "number", required: true, placeholder: "999" },
+      { name: "billingCycle", label: "Billing Cycle", type: "select", options: [
+        { label: "Monthly", value: "Monthly" },
+        { label: "Yearly", value: "Yearly" }
+      ]},
+      { name: "isActive", label: "Is Active", type: "boolean" },
+    ],
+  },
+  {
+    key: "user",
+    label: "System Users",
+    basePath: "/user",
+    canCreate: true,
+    canUpdate: true,
+    canDelete: true,
+    fields: [
+      { name: "userName", label: "Username", type: "text", required: true },
+      { name: "email", label: "Email", type: "email", required: true },
+      { name: "password", label: "Password", type: "password", required: true },
+      { name: "isSuperAdmin", label: "Is Super Admin", type: "boolean" },
+    ],
+  },
+  {
+    key: "role",
+    label: "Global Roles",
+    basePath: "/role",
+    canCreate: true,
+    canUpdate: true,
+    canDelete: true,
+    fields: [
+      { name: "roleName", label: "Role Name", type: "text", required: true },
+    ],
+  },
+  {
+    key: "permission",
+    label: "Global Permissions",
+    basePath: "/permission",
+    canCreate: true,
+    canUpdate: true,
+    canDelete: true,
+    fields: [
+      { name: "module", label: "Module Name", type: "text", required: true },
+    ],
+  },
+  {
+    key: "client",
+    label: "Global Clients",
+    basePath: "/client",
+    canCreate: true,
+    canUpdate: true,
+    canDelete: true,
+    fields: [
+      { name: "tenantId", label: "Tenant ID", type: "text", required: true },
+      { name: "clientName", label: "Client Name", type: "text", required: true },
+      { name: "email", label: "Email", type: "email" },
+      { name: "phone", label: "Phone", type: "text" },
+      { name: "address", label: "Address", type: "text" },
+    ],
+  },
+  {
+    key: "paymentledger",
+    label: "Global Ledger",
+    basePath: "/paymentledger",
+    canCreate: true,
+    canUpdate: true,
+    canDelete: true,
+    fields: [
+      { name: "tenantId", label: "Tenant ID", type: "text", required: true },
+      { name: "amount", label: "Amount", type: "number", required: true },
+      { name: "transactionType", label: "Type", type: "select", options: [
+        { label: "CREDIT", value: "CREDIT" },
+        { label: "DEBIT", value: "DEBIT" }
+      ]},
+      { name: "description", label: "Description", type: "text" },
+    ],
+  },
+  {
+    key: "bankbrief",
+    label: "Global Banks",
+    basePath: "/bankbrief",
+    canCreate: true,
+    canUpdate: true,
+    canDelete: true,
+    fields: [
+      { name: "tenantId", label: "Tenant ID", type: "text", required: true },
+      { name: "bankName", label: "Bank Name", type: "text", required: true },
+      { name: "accountNumber", label: "A/C Number", type: "text", required: true },
+      { name: "currentBalance", label: "Current Balance", type: "number" },
+    ],
+  },
 ];
 

@@ -1,42 +1,102 @@
 "use client";
 
-import { clients as initialClients } from "@/lib/dummy-data";
-import { useState } from "react";
-import { Plus, Search, Phone, Mail, MoreVertical, ArrowUpRight } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Search, Phone, Mail, MoreVertical, ArrowUpRight, MapPin, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/lib/auth-context";
 
-type Client = typeof initialClients[0];
+interface Client {
+  _id: string;
+  clientName: string;
+  email: string;
+  phone: string;
+  address?: string;
+  notes?: string;
+  paymentStatus?: string;
+}
 
-const emptyForm = { name: "", email: "", phone: "", projects: [] as string[], paymentStatus: "Pending" };
+const emptyForm = { clientName: "", email: "", phone: "", address: "", notes: "" };
 
 export default function ClientsPage() {
   const { user } = useAuth();
-  const [clients, setClients] = useState<Client[]>(initialClients);
+  const [clients, setClients] = useState<Client[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState(emptyForm);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const canAdd = user?.role === "architect";
+  const fetchClients = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch("http://localhost:9000/architecture/client", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const payload = await res.json();
+      
+      // Handle different payload structures (e.g., { data: [] } or just [])
+      const data = Array.isArray(payload) ? payload : (payload.data || payload.clients || []);
+      setClients(data);
+    } catch (err) {
+      console.error("Fetch clients error:", err);
+      setError("Failed to load clients");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    fetchClients();
+  }, [fetchClients]);
+
+  const canAdd = user?.role && (
+    typeof user.role === "string" 
+      ? user.role === "architect" || user.role === "TENANT_ADMIN"
+      : user.role.roleName === "TENANT_ADMIN" || user.role.permissions?.some(p => p.module === "CLIENT" && p.actions.includes("CREATE"))
   );
 
-  const handleAdd = (e: React.FormEvent) => {
+  const filteredClients = (clients || []).filter(client =>
+    client.clientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) return;
-    setClients(prev => [...prev, {
-      id: String(Date.now()),
-      ...form,
-      projects: form.projects,
-    }]);
-    setForm(emptyForm);
-    setIsAddModalOpen(false);
+    if (!form.clientName.trim()) return;
+    
+    setSubmitting(true);
+    setError("");
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch("http://localhost:9000/architecture/client", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(form)
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || errData.error || "Failed to add client");
+      }
+
+      await fetchClients();
+      setForm(emptyForm);
+      setIsAddModalOpen(false);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -61,96 +121,122 @@ export default function ClientsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredClients.map((client) => (
-            <div key={client.id}
-              className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-8 space-y-8 transition-all duration-500 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-2 group">
-              <div className="flex items-start justify-between">
-                <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-inner">
-                  {client.name.split(' ').map(n => n[0]).join('')}
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-medium">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Loading clients...</p>
+          </div>
+        ) : filteredClients.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No clients found</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredClients.map((client) => (
+              <div key={client._id}
+                className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-8 space-y-8 transition-all duration-500 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-2 group">
+                <div className="flex items-start justify-between">
+                  <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-inner">
+                    {client.clientName?.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </div>
+                  <button className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-colors">
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
                 </div>
-                <button className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-colors">
-                  <MoreVertical className="w-5 h-5" />
+
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-slate-900 tracking-tight group-hover:text-indigo-600 transition-colors">{client.clientName}</h3>
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium truncate">{client.address || "No address provided"}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-slate-50">
+                  <div className="flex items-center gap-3 text-slate-500 group-hover:text-indigo-600 transition-colors">
+                    <Phone className="w-4 h-4" />
+                    <span className="text-sm font-medium">{client.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-500 group-hover:text-indigo-600 transition-colors">
+                    <Mail className="w-4 h-4" />
+                    <span className="text-sm font-medium">{client.email}</span>
+                  </div>
+                  {client.notes && (
+                    <div className="flex items-start gap-3 text-slate-400 group-hover:text-indigo-400 transition-colors">
+                      <FileText className="w-4 h-4 mt-0.5" />
+                      <p className="text-xs italic leading-relaxed line-clamp-2">{client.notes}</p>
+                    </div>
+                  )}
+                </div>
+
+                <button className="w-full py-3 bg-slate-50 text-slate-600 rounded-2xl text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100 flex items-center justify-center gap-2 group/btn">
+                  View Project Portfolio
+                  <ArrowUpRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
                 </button>
               </div>
-
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold text-slate-900 tracking-tight group-hover:text-indigo-600 transition-colors">{client.name}</h3>
-                <div className="flex flex-wrap gap-2">
-                  {client.projects.map((p) => (
-                    <span key={p} className="px-2.5 py-1 bg-slate-50 text-[10px] font-bold text-slate-500 rounded-lg uppercase tracking-wider border border-slate-100">
-                      {p}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t border-slate-50">
-                <div className="flex items-center gap-3 text-slate-500 group-hover:text-indigo-600 transition-colors">
-                  <Phone className="w-4 h-4" />
-                  <span className="text-sm font-medium">{client.phone}</span>
-                </div>
-                <div className="flex items-center gap-3 text-slate-500 group-hover:text-indigo-600 transition-colors">
-                  <Mail className="w-4 h-4" />
-                  <span className="text-sm font-medium">{client.email}</span>
-                </div>
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Payment Status</span>
-                  <span className={cn(
-                    "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                    client.paymentStatus === "Paid" ? "bg-green-50 text-green-700 border-green-100" :
-                    client.paymentStatus === "Pending" ? "bg-indigo-50 text-indigo-700 border-indigo-100" :
-                    "bg-red-50 text-red-700 border-red-100"
-                  )}>
-                    {client.paymentStatus}
-                  </span>
-                </div>
-              </div>
-
-              <button className="w-full py-3 bg-slate-50 text-slate-600 rounded-2xl text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100 flex items-center justify-center gap-2 group/btn">
-                View Project Portfolio
-                <ArrowUpRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
-              </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <Modal isOpen={isAddModalOpen} onClose={() => { setIsAddModalOpen(false); setForm(emptyForm); }} title="Add New Client">
+      <Modal isOpen={isAddModalOpen} onClose={() => { setIsAddModalOpen(false); setForm(emptyForm); setError(""); }} title="Add New Client">
         <form className="space-y-6" onSubmit={handleAdd}>
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-bold text-center">
+              {error}
+            </div>
+          )}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Full Name *</label>
-            <Input placeholder="e.g., Alice Johnson" value={form.name}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+            <label className="text-sm font-bold text-slate-700 ml-1">Client Name *</label>
+            <Input placeholder="e.g., XYZ Forum" value={form.clientName}
+              onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} required />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
-              <Input type="email" placeholder="e.g., alice@example.com" value={form.email}
+              <Input type="email" placeholder="e.g., divyraj@example.com" value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">Phone Number</label>
-              <Input placeholder="e.g., +1 234 567 890" value={form.phone}
+              <Input placeholder="e.g., 7016228814" value={form.phone}
                 onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Payment Status</label>
-            <select value={form.paymentStatus}
-              onChange={e => setForm(f => ({ ...f, paymentStatus: e.target.value }))}
-              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
-              <option>Pending</option>
-              <option>Paid</option>
-              <option>Overdue</option>
-            </select>
+            <label className="text-sm font-bold text-slate-700 ml-1">Office Address</label>
+            <Input placeholder="e.g., 123, LA" value={form.address}
+              onChange={e => setForm(f => ({ ...f, address: e.target.value }))} icon={MapPin} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 ml-1">Notes</label>
+            <textarea 
+              placeholder="Any specific requirements..." 
+              value={form.notes}
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all min-h-[100px] resize-none"
+            />
           </div>
           <div className="flex justify-end gap-4 pt-4 border-t border-slate-100">
-            <Button variant="secondary" onClick={() => { setIsAddModalOpen(false); setForm(emptyForm); }} type="button">Cancel</Button>
-            <Button type="submit">Save Client</Button>
+            <Button variant="secondary" onClick={() => { setIsAddModalOpen(false); setForm(emptyForm); setError(""); }} type="button" disabled={submitting}>Cancel</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Saving...
+                </>
+              ) : "Save Client"}
+            </Button>
           </div>
         </form>
       </Modal>
     </>
   );
 }
+        

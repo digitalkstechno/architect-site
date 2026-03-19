@@ -1,3 +1,4 @@
+
 "use client";
 
 import { use } from "react";
@@ -19,4 +20,3 @@ export default function ResourcePage({ params }: { params: Promise<{ resource: s
 
   return <CrudResourcePage resource={r} />;
 }
-

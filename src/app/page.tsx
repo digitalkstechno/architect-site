@@ -27,16 +27,22 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import DashboardCards from "@/components/DashboardCards";
+import { useFinance } from "@/lib/finance-store";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, getEffectiveRole } = useAuth();
+  const { ledger, bankBriefs } = useFinance();
 
   if (!user) return null;
 
-  switch (user.role) {
+  const role = getEffectiveRole(user);
+
+  switch (role) {
     case "architect":
+    case "TENANT_ADMIN":
       return <ArchitectDashboard />;
     case "client":
+    case "TENANT_CLIENT":
       return <ClientDashboard projectId={user.projectId} />;
     case "supervisor":
       return <SupervisorDashboard projectId={user.projectId} />;
@@ -53,8 +59,20 @@ export default function Dashboard() {
 
 // --- Architect Dashboard ---
 function ArchitectDashboard() {
+  const { ledger, bankBriefs } = useFinance();
   const todayTasks = tasks.slice(0, 3);
   
+  const totalRevenue = ledger.filter(e => e.type === "CREDIT").reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = ledger.filter(e => e.type === "DEBIT").reduce((sum, e) => sum + e.amount, 0);
+  const bankBalance = bankBriefs[0]?.currentBalance || 0;
+
+  const financeStats = [
+    { label: "Total Revenue", value: `$${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
+    { label: "Active Sites", value: "8", icon: Construction, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
+    { label: "Total Expenses", value: `$${totalExpenses.toLocaleString()}`, icon: CreditCard, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
+    { label: "Bank Balance", value: `$${bankBalance.toLocaleString()}`, icon: Briefcase, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-100" },
+  ];
+
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
       <section className="space-y-6">
@@ -65,7 +83,20 @@ function ArchitectDashboard() {
             <span className="text-sm font-bold text-slate-700">Mar 14, 2026</span>
           </div>
         </div>
-        <DashboardCards />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {financeStats.map((stat) => (
+            <div key={stat.label} className={cn("p-6 bg-white rounded-2xl border shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1 flex items-center gap-5", stat.border)}>
+              <div className={cn("p-3 rounded-xl", stat.bg)}>
+                <stat.icon className={cn("w-6 h-6", stat.color)} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500 mb-0.5">{stat.label}</p>
+                <p className="text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">

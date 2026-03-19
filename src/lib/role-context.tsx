@@ -14,15 +14,21 @@ export type RoleConfig = {
 
 export const ALL_PAGES = [
   { key: "dashboard",    label: "Dashboard" },
+  { key: "clients",      label: "Clients" },
   { key: "projects",     label: "Projects" },
   { key: "tasks",        label: "Tasks" },
   { key: "workers",      label: "Workers" },
   { key: "supervisors",  label: "Supervisors" },
-  { key: "clients",      label: "Clients" },
+  { key: "attendance",   label: "Attendance" },
   { key: "site-updates", label: "Site Updates" },
   { key: "site-photos",  label: "Site Photos" },
-  { key: "attendance",   label: "Attendance" },
-  { key: "payments",     label: "Payments" },
+  { key: "payment-ledger", label: "Payment Ledger" },
+  { key: "bank-brief",    label: "Bank Brief" },
+  { key: "project-estimation", label: "Project Estimation" },
+  { key: "tenants",      label: "Tenants Management" },
+  { key: "plans",        label: "Subscription Plans" },
+  { key: "system-users", label: "System Users" },
+  { key: "permissions",  label: "Global Permissions" },
   { key: "calendar",     label: "Calendar" },
   { key: "reports",      label: "Reports" },
   { key: "messages",     label: "Messages" },
@@ -31,12 +37,24 @@ export const ALL_PAGES = [
 
 export const DEFAULT_ROLES: RoleConfig[] = [
   {
+    id: "super-admin", name: "Super Admin", color: "slate", canDelete: false,
+    pages: ["dashboard", "tenants", "plans", "system-users", "permissions"],
+  },
+  {
+    id: "TENANT_ADMIN", name: "Tenant Admin", color: "indigo", canDelete: false,
+    pages: ALL_PAGES.filter(p => !["tenants", "plans", "system-users", "permissions"].includes(p.key)).map(p => p.key),
+  },
+  {
+    id: "TENANT_CLIENT", name: "Tenant Client", color: "blue", canDelete: false,
+    pages: ["dashboard", "site-photos", "payment-ledger", "messages"],
+  },
+  {
     id: "architect", name: "Architect", color: "indigo", canDelete: false,
-    pages: ALL_PAGES.map(p => p.key),
+    pages: ALL_PAGES.filter(p => !["tenants", "plans", "system-users", "permissions"].includes(p.key)).map(p => p.key),
   },
   {
     id: "client", name: "Client", color: "blue", canDelete: false,
-    pages: ["dashboard", "site-photos", "payments", "messages"],
+    pages: ["dashboard", "site-photos", "payment-ledger", "messages"],
   },
   {
     id: "supervisor", name: "Supervisor", color: "orange", canDelete: false,
@@ -48,7 +66,7 @@ export const DEFAULT_ROLES: RoleConfig[] = [
   },
   {
     id: "accountant", name: "Accountant", color: "purple", canDelete: false,
-    pages: ["dashboard", "payments", "projects", "reports", "clients"],
+    pages: ["dashboard", "payment-ledger", "bank-brief", "projects", "reports", "clients"],
   },
   {
     id: "site-engineer", name: "Site Engineer", color: "rose", canDelete: false,

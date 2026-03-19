@@ -5,7 +5,12 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Briefcase, CheckSquare, Users, ClipboardList,
   CreditCard, Building2, UserCircle2, Calendar, BarChart3,
-  Settings, LogOut, MessageSquare, Camera, X, HardHat, BookOpen
+  Settings, LogOut, MessageSquare, Camera, X, HardHat, BookOpen,
+  Wallet,
+  Landmark,
+  Calculator,
+  ShieldCheck,
+  Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -21,9 +26,15 @@ const PAGE_ICONS: Record<string, React.ElementType> = {
   clients:      UserCircle2,
   "site-updates": ClipboardList,
   "site-photos":  Camera,
-  attendance:   BookOpen,
-  payments:     CreditCard,
-  calendar:     Calendar,
+  attendance:     BookOpen,
+  "payment-ledger": Wallet,
+  "bank-brief":    Landmark,
+  "project-estimation": Calculator,
+  tenants:         Building2,
+  plans:           CreditCard,
+  "system-users":  Users,
+  permissions:     ShieldCheck,
+  calendar:        Calendar,
   reports:      BarChart3,
   messages:     MessageSquare,
   settings:     Settings,
@@ -39,11 +50,37 @@ const PAGE_LABELS: Record<string, string> = {
   "site-updates": "Site Updates",
   "site-photos":  "Site Photos",
   attendance:     "Attendance",
-  payments:       "Payments",
-  calendar:       "Calendar",
+  "payment-ledger": "Payment Ledger",
+  "bank-brief":    "Bank Brief",
+  "project-estimation": "Project Estimation",
+  tenants:            "Tenants",
+  plans:              "Subscription Plans",
+  "system-users":     "System Users",
+  permissions:        "Global Permissions",
+  calendar:           "Calendar",
   reports:        "Reports",
   messages:       "Messages",
   settings:       "Settings",
+};
+
+// Map backend MODULE names to frontend PAGE keys
+const MODULE_TO_PAGE: Record<string, string> = {
+  USER: "system-users",
+  ROLE: "permissions",
+  PERMISSION: "permissions",
+  TENANT: "tenants",
+  SUBSCRIPTION_PLAN: "plans",
+  PROJECT: "projects",
+  PROJECT_ESTIMATION: "project-estimation",
+  PROJECT_UPDATE: "site-updates",
+  PAYMENT_LEDGER: "payment-ledger",
+  PROJET_TASK: "tasks",
+  TASK: "tasks",
+  BANK_BRIEF: "bank-brief",
+  CLIENT: "clients",
+  CLIENT_MODULE: "clients", // Some roles might use this
+  WORKER: "workers",
+  ATTENDENCE: "attendance",
 };
 
 // Worker dashboard shows as "My Tasks", worker projects as "Job Locations"
@@ -65,16 +102,33 @@ const ROLE_PAGE_LABELS: Record<string, Record<string, string>> = {
 
 export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout, getEffectiveRole } = useAuth();
   const { getRoleById } = useRoles();
 
   if (pathname === "/login") return null;
 
-  const roleConfig = getRoleById(user?.role ?? "");
-  const allowedPages = roleConfig?.pages ?? [];
+  const role = getEffectiveRole(user);
+  const roleConfig = getRoleById(role);
+  
+  // Get pages based on dynamic backend permissions or static role config
+  let allowedPages: string[] = [];
+  
+  if (user?.role && typeof user.role !== "string" && user.role.permissions && user.role.permissions.length > 0) {
+    const dynamicPages = new Set<string>();
+    dynamicPages.add("dashboard"); // Always allow dashboard
+    
+    user.role.permissions.forEach(p => {
+      const pageKey = MODULE_TO_PAGE[p.module];
+      if (pageKey) dynamicPages.add(pageKey);
+    });
+    
+    allowedPages = Array.from(dynamicPages);
+  } else {
+    allowedPages = roleConfig?.pages ?? [];
+  }
 
   const menuItems = allowedPages.map(pageKey => {
-    const roleLabels = ROLE_PAGE_LABELS[user?.role ?? ""] ?? {};
+    const roleLabels = ROLE_PAGE_LABELS[role] ?? {};
     return {
       key: pageKey,
       name: roleLabels[pageKey] ?? PAGE_LABELS[pageKey] ?? pageKey,
@@ -116,7 +170,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
       <div className="p-4 border-t border-slate-100 space-y-4">
         <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-            {roleConfig?.name ?? user?.role}
+            {roleConfig?.name ?? role}
           </p>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-700 truncate mr-2">{user?.name}</span>
