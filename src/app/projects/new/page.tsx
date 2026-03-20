@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, User, Building2, MapPin, DollarSign, Calendar,
-  CheckCircle2, ChevronRight, ClipboardList, HardHat, Users
+  CheckCircle2, ChevronRight, ClipboardList, HardHat, Users, Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
-import { clients, supervisors, workers } from "@/lib/dummy-data";
+import { supervisors, workers } from "@/lib/dummy-data";
 import { useProjects } from "@/lib/projects-store";
 
 type Step = "client" | "project" | "team" | "review";
@@ -21,6 +21,8 @@ export default function NewProjectPage() {
   const router = useRouter();
   const { createProject } = useProjects();
   const [step, setStep] = useState<Step>("client");
+  const [clients, setClients] = useState<any[]>([]);
+  const [loadingClients, setLoadingClients] = useState(true);
   const [form, setForm] = useState({
     clientId: "", clientName: "", clientEmail: "", clientPhone: "",
     projectName: "", projectType: "Residential", location: "", budget: "",
@@ -28,14 +30,33 @@ export default function NewProjectPage() {
     supervisorId: "", workerIds: [] as string[],
   });
 
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token) return;
+        const res = await fetch("http://localhost:9000/architecture/client", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const payload = await res.json();
+        setClients(payload.clients || payload.data || []);
+      } catch (err) {
+        console.error("Fetch clients error:", err);
+      } finally {
+        setLoadingClients(false);
+      }
+    };
+    fetchClients();
+  }, []);
+
   const stepIndex = STEPS.indexOf(step);
 
   const next = () => setStep(STEPS[stepIndex + 1]);
   const prev = () => setStep(STEPS[stepIndex - 1]);
 
   const handleClientSelect = (id: string) => {
-    const c = clients.find(c => c.id === id);
-    if (c) setForm(f => ({ ...f, clientId: id, clientName: c.name, clientEmail: c.email, clientPhone: c.phone }));
+    const c = clients.find(c => c._id === id);
+    if (c) setForm(f => ({ ...f, clientId: id, clientName: c.clientName, clientEmail: c.email, clientPhone: c.phone }));
   };
 
   const toggleWorker = (id: string) => {
@@ -59,22 +80,27 @@ export default function NewProjectPage() {
     { name: "Construction Administration", status: "Pending" as const },
   ];
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const budgetStr = form.budget?.trim() ? `$${form.budget.replace(/^\$/, "")}` : "$0";
-    const created = createProject({
-      name: form.projectName || "Untitled Project",
-      client: form.clientName || "Unknown Client",
-      clientId: form.clientId || undefined,
-      location: form.location || "—",
-      startDate: form.startDate,
-      expectedCompletion: form.expectedCompletion || "—",
-      budget: budgetStr,
-      supervisorId: form.supervisorId || undefined,
-      workerIds: form.workerIds,
-      lifecycle: defaultLifecycle,
-      stages: defaultStages,
-    });
-    router.push(`/projects/${created.id}`);
+    try {
+      const created = await createProject({
+        name: form.projectName || "Untitled Project",
+        client: form.clientName || "Unknown Client",
+        clientId: form.clientId || undefined,
+        location: form.location || "—",
+        startDate: form.startDate,
+        expectedCompletion: form.expectedCompletion || "—",
+        budget: budgetStr,
+        supervisorId: form.supervisorId || undefined,
+        workerIds: form.workerIds,
+        lifecycle: defaultLifecycle,
+        stages: defaultStages,
+      });
+      router.push(`/projects/${created.id}`);
+    } catch (err) {
+      console.error("Create project error:", err);
+      alert("Failed to create project. Please check if all required fields (Client) are filled.");
+    }
   };
 
   return (
@@ -126,22 +152,31 @@ export default function NewProjectPage() {
 
           <div className="space-y-3">
             <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Existing Clients</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {clients.map(c => (
-                <button key={c.id} type="button" onClick={() => handleClientSelect(c.id)}
-                  className={cn(
-                    "p-4 rounded-2xl border-2 text-left transition-all",
-                    form.clientId === c.id ? "bg-indigo-50 border-indigo-400" : "bg-white border-slate-100 hover:border-slate-300"
-                  )}>
-                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black mb-3",
-                    form.clientId === c.id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600")}>
-                    {c.name.split(" ").map(n => n[0]).join("")}
-                  </div>
-                  <p className="text-sm font-bold text-slate-900">{c.name}</p>
-                  <p className="text-xs text-slate-400 truncate">{c.email}</p>
-                </button>
-              ))}
-            </div>
+            {loadingClients ? (
+              <div className="flex items-center gap-2 text-slate-400">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Loading...</span>
+              </div>
+            ) : clients.length === 0 ? (
+              <p className="text-xs text-slate-400">No clients found. Add one below.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {clients.map(c => (
+                  <button key={c._id} type="button" onClick={() => handleClientSelect(c._id)}
+                    className={cn(
+                      "p-4 rounded-2xl border-2 text-left transition-all",
+                      form.clientId === c._id ? "bg-indigo-50 border-indigo-400" : "bg-white border-slate-100 hover:border-slate-300"
+                    )}>
+                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black mb-3",
+                      form.clientId === c._id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600")}>
+                      {(c.clientName || "").split(" ").map((n: string) => n[0]).join("")}
+                    </div>
+                    <p className="text-sm font-bold text-slate-900">{c.clientName}</p>
+                    <p className="text-xs text-slate-400 truncate">{c.email}</p>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

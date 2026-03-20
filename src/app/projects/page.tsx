@@ -1,26 +1,27 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { projects as initialProjects, supervisors, workers, clients, WORKER_SPECIALIZATIONS } from "@/lib/dummy-data";
+import { supervisors, workers, clients, WORKER_SPECIALIZATIONS } from "@/lib/dummy-data";
 import {
   MoreHorizontal, MapPin, Calendar, ChevronRight, Plus, ArrowUpRight,
-  LayoutGrid, List, Search, X, HardHat, Users, CheckCircle2
+  LayoutGrid, List, Search, X, HardHat, Users, CheckCircle2, Trash2, Edit2
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
+import { useProjects } from "@/lib/projects-store";
 
-type Project = typeof initialProjects[0];
+import { ProjectStage, StageStatus } from "@/lib/projects-store";
 
-const defaultStages = [
+const defaultStages: ProjectStage[] = [
   "Layout", "Excavation", "Foundation", "Structure", "Brick Work",
   "Plumbing", "Electrical", "Plaster", "Flooring", "Painting", "Interior", "Final Handover",
-].map(name => ({ name, status: "Pending" }));
+].map(name => ({ name, status: "Pending" as StageStatus }));
 
 const emptyForm = {
   name: "", client: "", clientId: "", location: "",
@@ -30,21 +31,46 @@ const emptyForm = {
 
 export default function ProjectsPage() {
   const { user } = useAuth();
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const { projects, createProject, updateProject, deleteProject, isHydrated } = useProjects();
   const [view, setView] = useState<"grid" | "list">("grid");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [specFilter, setSpecFilter] = useState("");
+  const [clientsList, setClientsList] = useState<any[]>([]);
+
+  useMemo(() => {
+    if (!isAddModalOpen) return;
+    const fetchClients = async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token) return;
+        const res = await fetch("http://localhost:9000/architecture/client", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const payload = await res.json();
+        setClientsList(payload.clients || payload.data || []);
+      } catch (err) {
+        console.error("Fetch clients error:", err);
+      }
+    };
+    fetchClients();
+  }, [isAddModalOpen]);
 
   const filteredProjects = projects.filter(p => {
     const match = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.client.toLowerCase().includes(searchQuery.toLowerCase());
-    if (user?.role === "client") return match && p.id === user.projectId;
+    if (user?.role && typeof user.role !== "string" && (user.role as any).tenantId) {
+       // Filtered by store fetch already, but extra safety
+    }
     return match;
   });
 
-  const canAdd = user?.role === "architect";
+  const canAdd = user?.role && (
+    typeof user.role === "string" 
+      ? user.role === "architect" || user.role === "TENANT_ADMIN"
+      : (user.role as any).roleName === "TENANT_ADMIN" || (user.role as any).permissions?.some((p: any) => p.module === "PROJECT" && p.actions.includes("CREATE"))
+  );
 
   const getSupervisorName = (id?: string) =>
     supervisors.find(s => s.id === id)?.name || "—";
@@ -63,30 +89,29 @@ export default function ProjectsPage() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
     const clientObj = clients.find(c => c.id === form.clientId);
-    const newProject: Project = {
-      id: String(Date.now()),
-      name: form.name,
-      client: clientObj?.name || form.client,
-      clientId: form.clientId,
-      location: form.location,
-      startDate: form.startDate,
-      expectedCompletion: form.expectedCompletion,
-      status: "Planned",
-      progress: 0,
-      budget: form.budget,
-      received: "$0",
-      pending: form.budget,
-      supervisorId: form.supervisorId,
-      workerIds: form.workerIds,
-      stages: defaultStages,
-    };
-    setProjects(prev => [...prev, newProject]);
-    setForm(emptyForm);
-    setIsAddModalOpen(false);
+    try {
+      await createProject({
+        name: form.name,
+        client: clientObj?.name || form.client,
+        clientId: form.clientId,
+        location: form.location,
+        startDate: form.startDate,
+        expectedCompletion: form.expectedCompletion,
+        budget: form.budget,
+        supervisorId: form.supervisorId,
+        workerIds: form.workerIds,
+        stages: defaultStages,
+      });
+      setForm(emptyForm);
+      setIsAddModalOpen(false);
+    } catch (err) {
+      console.error("Create project error:", err);
+      alert("Failed to create project. Make sure a client is selected.");
+    }
   };
 
   return (
@@ -139,6 +164,13 @@ export default function ProjectsPage() {
                       </h3>
                       <p className="text-sm font-medium text-slate-500">Client: {project.client}</p>
                     </div>
+                    {canAdd && (
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => deleteProject(project.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-3">
@@ -270,12 +302,14 @@ export default function ProjectsPage() {
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Client</label>
+              <label className="text-sm font-bold text-slate-700 ml-1">Client *</label>
               <select value={form.clientId}
-                onChange={e => setForm(f => ({ ...f, clientId: e.target.value, client: clients.find(c => c.id === e.target.value)?.name || "" }))}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="">Select client...</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                onChange={e => setForm(f => ({ ...f, clientId: e.target.value }))}
+                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                <option value="">Select a client</option>
+                {clientsList.map(c => (
+                  <option key={c._id} value={c._id}>{c.clientName}</option>
+                ))}
               </select>
             </div>
           </div>

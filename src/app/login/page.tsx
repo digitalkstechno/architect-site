@@ -57,10 +57,10 @@ export default function LoginPage() {
               </div>
             )}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Username</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email or Username</label>
               <Input 
                 type="text" 
-                placeholder="Enter your username" 
+                placeholder="Enter email or username" 
                 icon={User} 
                 required 
                 className="rounded-2xl h-12" 

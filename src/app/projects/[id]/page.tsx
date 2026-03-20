@@ -46,7 +46,9 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
   const canEdit = user?.role === "architect" || user?.role === "supervisor";
 
   const handleUpdateStageStatus = (stageName: string, newStatus: string) => {
-    updateStageStatus(id, stageName, newStatus);
+    if (newStatus === "Pending" || newStatus === "In Progress" || newStatus === "Completed") {
+      updateStageStatus(id, stageName, newStatus);
+    }
   };
 
   const projectTasks = tasks.filter(t => t.project === project.name);

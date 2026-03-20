@@ -52,7 +52,7 @@ type ProjectsContextType = {
   projects: Project[];
   isHydrated: boolean;
   getProjectById: (id: string) => Project | undefined;
-  createProject: (input: CreateProjectInput) => Project;
+  createProject: (input: CreateProjectInput) => Promise<Project>;
   updateProject: (id: string, patch: Partial<Project>) => void;
   deleteProject: (id: string) => void;
   updateStageStatus: (projectId: string, stageName: string, status: StageStatus) => void;
@@ -101,65 +101,144 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Hydrate from localStorage or seed
-  useEffect(() => {
-    const saved = safeParse<Project[]>(localStorage.getItem(STORAGE_KEY));
-    if (saved && Array.isArray(saved) && saved.length > 0) {
-      setProjects(saved);
-    } else {
-      const seeded = normalizeSeed();
-      setProjects(seeded);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
-    }
-    setIsHydrated(true);
-  }, []);
+  const fetchProjects = async () => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      if (!token) return;
 
-  // Persist updates
+      const res = await fetch("http://localhost:9000/architecture/project", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch projects");
+
+      const payload = await res.json();
+      const backendProjects = payload.projects || payload.data || [];
+
+      // Map backend projects to frontend schema
+      const mapped: Project[] = backendProjects.map((p: any) => ({
+        id: p._id,
+        name: p.projectName || "Untitled Project",
+        client: p.clientId?.clientName || "Unknown Client",
+        clientId: p.clientId?._id || p.clientId,
+        location: p.siteAddress || "—",
+        startDate: p.startDate ? new Date(p.startDate).toISOString().split("T")[0] : "",
+        expectedCompletion: p.expectedEndDate ? new Date(p.expectedEndDate).toISOString().split("T")[0] : "",
+        status: p.status === "PLANNING" ? "Planned" : p.status === "ACTIVE" ? "In Progress" : p.status === "ON_HOLD" ? "On Hold" : p.status === "COMPLETED" ? "Completed" : "Planned",
+        progress: 0, // Backend doesn't have progress yet
+        budget: `$${(p.budget || 0).toLocaleString()}`,
+        received: "$0",
+        pending: `$${(p.budget || 0).toLocaleString()}`,
+        stages: [], // Backend doesn't have stages yet
+      }));
+
+      setProjects(mapped);
+    } catch (err) {
+      console.error("Fetch projects error:", err);
+    }
+  };
+
+  // Hydrate from backend
   useEffect(() => {
-    if (!isHydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-  }, [projects, isHydrated]);
+    fetchProjects().finally(() => setIsHydrated(true));
+  }, []);
 
   const api = useMemo<ProjectsContextType>(() => {
     const getProjectById = (id: string) => projects.find((p) => p.id === id);
 
-    const createProject = (input: CreateProjectInput): Project => {
-      const id = input.id ?? String(Date.now());
-      const status = input.status ?? "Planned";
-      const progress = input.progress ?? 0;
-      const received = input.received ?? "$0";
-      const pending = input.pending ?? input.budget ?? "$0";
-      const phase = input.phase ?? "Pre-Design";
+    const createProject = async (input: CreateProjectInput): Promise<Project> => {
+      const token = localStorage.getItem("auth_token");
+      if (!token) throw new Error("No token");
+
+      const budgetValue = Number(input.budget.replace(/[^0-9.-]+/g, ""));
+      const res = await fetch("http://localhost:9000/architecture/project", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          projectName: input.name,
+          clientId: input.clientId,
+          siteAddress: input.location,
+          startDate: input.startDate,
+          expectedEndDate: input.expectedCompletion,
+          budget: budgetValue,
+          status: "PLANNING",
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to create project");
+      const payload = await res.json();
+      const p = payload.data || payload;
 
       const created: Project = {
-        id,
-        name: input.name,
+        id: p._id,
+        name: p.projectName,
         client: input.client,
-        clientId: input.clientId,
-        location: input.location,
-        startDate: input.startDate,
-        expectedCompletion: input.expectedCompletion,
-        status,
-        progress,
+        clientId: p.clientId,
+        location: p.siteAddress,
+        startDate: p.startDate,
+        expectedCompletion: p.expectedEndDate,
+        status: "Planned",
+        progress: 0,
         budget: input.budget,
-        received,
-        pending,
-        supervisorId: input.supervisorId,
-        workerIds: input.workerIds ?? [],
-        phase,
-        lifecycle: input.lifecycle ?? [],
-        stages: input.stages ?? [],
+        received: "$0",
+        pending: input.budget,
+        stages: [],
       };
 
       setProjects((prev) => [...prev, created]);
+      await fetchProjects();
       return created;
     };
 
     const updateProject = (id: string, patch: Partial<Project>) => {
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        const updatePayload: any = {};
+        if (patch.name) updatePayload.projectName = patch.name;
+        if (patch.location) updatePayload.siteAddress = patch.location;
+        if (patch.budget) updatePayload.budget = Number(patch.budget.replace(/[^0-9.-]+/g, ""));
+        if (patch.status) {
+          updatePayload.status =
+            patch.status === "Planned"
+              ? "PLANNING"
+              : patch.status === "In Progress"
+              ? "ACTIVE"
+              : patch.status === "Completed"
+              ? "COMPLETED"
+              : "PLANNING";
+        }
+
+        fetch(`http://localhost:9000/architecture/project/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updatePayload),
+        })
+          .then(() => fetchProjects())
+          .catch((err) => console.error("Update project error:", err));
+      }
       setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
     };
 
     const deleteProject = (id: string) => {
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        fetch(`http://localhost:9000/architecture/project/${id}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+          .then(() => fetchProjects())
+          .catch((err) => console.error("Delete project error:", err));
+      }
       setProjects((prev) => prev.filter((p) => p.id !== id));
     };
 

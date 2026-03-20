@@ -23,6 +23,7 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
+  isLoading: boolean;
   login: (identifier: string, password: string) => Promise<void>;
   logout: () => void;
   getEffectiveRole: (u: User | null) => string;
@@ -97,16 +98,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("auth_user");
+    localStorage.removeItem("auth_token");
+    router.push("/login");
+  };
+
   const getEffectiveRole = (u: User | null): string => {
     if (!u) return "";
     if (typeof u.role === "string") return u.role;
     return u.role.roleName;
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("auth_user");
-    router.push("/login");
   };
 
   useEffect(() => {
@@ -117,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, pathname, router]);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, getEffectiveRole }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, getEffectiveRole }}>
       {children}
     </AuthContext.Provider>
   );

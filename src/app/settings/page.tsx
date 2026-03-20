@@ -118,7 +118,9 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">{user?.name}</h3>
-                    <p className="text-sm text-slate-500 uppercase tracking-widest mt-1">{user?.role}</p>
+                    <p className="text-sm text-slate-500 uppercase tracking-widest mt-1">
+                      {typeof user?.role === "string" ? user.role : user?.role?.roleName}
+                    </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -126,7 +128,7 @@ export default function SettingsPage() {
                     { label: "Full Name",     value: user?.name ?? "" },
                     { label: "Email Address", value: user?.email ?? "" },
                     { label: "Phone Number",  value: "+1 (555) 902-1234" },
-                    { label: "Role",          value: user?.role ?? "" },
+                    { label: "Role",          value: typeof user?.role === "string" ? user.role : user?.role?.roleName ?? "" },
                   ].map(f => (
                     <div key={f.label} className="space-y-2">
                       <label className="text-sm font-bold text-slate-700 ml-1">{f.label}</label>
