@@ -24,11 +24,16 @@ import Modal from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { useProjects } from "@/lib/projects-store";
 import { useFinance } from "@/lib/finance-store";
+import { useAuth } from "@/lib/auth-context";
 import { useEffect } from "react";
+import { toast } from "react-toastify";
 
 export default function ProjectEstimationPage() {
   const { projects } = useProjects();
   const { addTransaction, bankBriefs } = useFinance();
+  const { user } = useAuth();
+  const roleName = typeof user?.role === "object" ? (user.role as any).roleName : (user?.role || "");
+  const isClient = roleName.toLowerCase().includes("client");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdvanceModalOpen, setIsAdvanceModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,7 +59,7 @@ export default function ProjectEstimationPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const payload = await res.json();
-      setEstimations(payload.projects || payload.data || payload || []);
+      setEstimations(payload.Projectestimations || payload.data || []);
     } catch (err) {
       console.error("Fetch estimations error:", err);
     }
@@ -138,12 +143,21 @@ export default function ProjectEstimationPage() {
     }
   };
 
+  const clientProjectIds = isClient
+    ? projects.filter(p => p.clientId === user?.id).map(p => p.id)
+    : null;
+
   const filtered = (estimations || []).filter(e => {
     const projName = e.projectId?.projectName || e.project || "";
     const clientName = e.clientId?.clientName || e.client || "";
-    return projName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchSearch = projName.toLowerCase().includes(searchQuery.toLowerCase()) ||
            clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
            (e._id && e._id.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (clientProjectIds) {
+      const estProjectId = e.projectId?._id || e.projectId;
+      return matchSearch && clientProjectIds.includes(estProjectId);
+    }
+    return matchSearch;
   });
 
   return (
@@ -164,10 +178,12 @@ export default function ProjectEstimationPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          {!isClient && (
           <Button onClick={() => setIsAddModalOpen(true)} className="gap-2 shadow-lg shadow-indigo-200 h-11">
             <Plus className="w-5 h-5" />
             New Estimation
           </Button>
+          )}
         </div>
       </div>
 
@@ -216,6 +232,14 @@ export default function ProjectEstimationPage() {
                     <span className="text-sm font-black text-slate-900">₹{(est.totalAmount || 0).toLocaleString()}</span>
                   </td>
                   <td className="px-8 py-6 text-center">
+                    {isClient ? (
+                      <span className={cn(
+                        "px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-widest",
+                        est.status === "SENT" || est.status === "NEGOTIATION" ? "text-orange-600 border-orange-100 bg-orange-50" :
+                        est.status === "DRAFT" ? "text-slate-600 border-slate-200 bg-slate-50" :
+                        "text-emerald-700 border-emerald-100 bg-emerald-50"
+                      )}>{est.status}</span>
+                    ) : (
                     <select 
                       value={est.status} 
                       onChange={(e) => updateStatus(est._id, e.target.value)}
@@ -231,6 +255,7 @@ export default function ProjectEstimationPage() {
                       <option value="APPROVED">APPROVED</option>
                       <option value="REJECTED">REJECTED</option>
                     </select>
+                    )}
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex justify-end gap-2">

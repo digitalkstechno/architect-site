@@ -5,23 +5,41 @@ import {
   Plus, Search, Filter, CircleCheck, CircleAlert, Clock, MoreVertical, X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 import { useAuth } from "@/lib/auth-context";
-
-type Task = typeof initialTasks[0];
-const statusOptions = ["Pending", "In Progress", "Completed"];
+import { useTasks } from "@/lib/tasks-store";
+import { useProjects } from "@/lib/projects-store";
+import { toast } from "react-toastify";
 
 export default function TasksPage() {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const { tasks, createTask, updateTaskStatus, isHydrated } = useTasks();
+  const { projects } = useProjects();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [newTask, setNewTask] = useState({ name: "", project: "", stage: "", worker: "", deadline: "" });
+  const [newTask, setNewTask] = useState({ name: "", projectId: "", workerId: "", deadline: "" });
+  const [workers, setWorkers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchWorkers = async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        const res = await fetch("http://localhost:9000/architecture/worker", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setWorkers(data.Workers || data.data || []);
+      } catch (err) {
+        console.error("Fetch workers error:", err);
+      }
+    };
+    fetchWorkers();
+  }, []);
 
   const canEdit = user?.role === "architect" || user?.role === "supervisor";
 
@@ -31,16 +49,39 @@ export default function TasksPage() {
     t.worker.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const updateStatus = (id: string, status: string) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+  const handleUpdateStatus = async (id: string, status: any) => {
+    try {
+      await updateTaskStatus(id, status);
+      toast.success("Task updated!");
+    } catch (err) {
+      toast.error("Failed to update task");
+    }
   };
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTask.name.trim()) return;
-    setTasks(prev => [...prev, { ...newTask, id: String(Date.now()), status: "Pending" }]);
-    setNewTask({ name: "", project: "", stage: "", worker: "", deadline: "" });
-    setIsAddModalOpen(false);
+    
+    try {
+      const proj = projects.find(p => p.id === newTask.projectId);
+      const wrk = workers.find(w => w._id === newTask.workerId);
+
+      await createTask({
+        name: newTask.name,
+        projectId: newTask.projectId,
+        project: proj?.name || "",
+        workerId: newTask.workerId,
+        worker: wrk?.userName || "",
+        deadline: newTask.deadline,
+        stage: "General" // Simplified
+      });
+
+      setNewTask({ name: "", projectId: "", workerId: "", deadline: "" });
+      setIsAddModalOpen(false);
+      toast.success("Task created!");
+    } catch (err) {
+      toast.error("Failed to create task");
+    }
   };
 
   return (
@@ -96,7 +137,7 @@ export default function TasksPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="w-7 h-7 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-slate-600 border border-slate-200">
-                        {task.worker.split(" ").map(n => n[0]).join("")}
+                        {task.worker.split(" ").map((n: string) => n[0]).join("")}
                       </div>
                       <span className="text-sm font-medium text-slate-700">{task.worker}</span>
                     </div>
@@ -108,10 +149,10 @@ export default function TasksPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {canEdit ? (
+                    {canEdit || task.workerId === user?.id ? (
                       <select
                         value={task.status}
-                        onChange={(e) => updateStatus(task.id, e.target.value)}
+                        onChange={(e) => handleUpdateStatus(task.id, e.target.value as any)}
                         className={cn(
                           "px-3 py-1.5 rounded-full text-[10px] font-bold border uppercase tracking-wider cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500",
                           task.status === "Completed" ? "bg-green-50 text-green-700 border-green-200" :
@@ -119,7 +160,7 @@ export default function TasksPage() {
                           "bg-slate-100 text-slate-600 border-slate-200"
                         )}
                       >
-                        {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                        {["Pending", "In Progress", "Completed"].map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     ) : (
                       <StatusBadge status={task.status} />
@@ -141,22 +182,32 @@ export default function TasksPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">Project</label>
-              <Input placeholder="e.g., Modern Villa" value={newTask.project} onChange={e => setNewTask(f => ({ ...f, project: e.target.value }))} />
+              <select 
+                required
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={newTask.projectId}
+                onChange={e => setNewTask({ ...newTask, projectId: e.target.value })}
+              >
+                <option value="">Select Project</option>
+                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Stage</label>
-              <Input placeholder="e.g., Foundation" value={newTask.stage} onChange={e => setNewTask(f => ({ ...f, stage: e.target.value }))} />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">Assign Worker</label>
-              <Input placeholder="e.g., John Doe" value={newTask.worker} onChange={e => setNewTask(f => ({ ...f, worker: e.target.value }))} />
+              <select 
+                required
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={newTask.workerId}
+                onChange={e => setNewTask({ ...newTask, workerId: e.target.value })}
+              >
+                <option value="">Select Worker</option>
+                {workers.map(w => <option key={w._id} value={w._id}>{w.userName}</option>)}
+              </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Deadline</label>
-              <Input type="date" value={newTask.deadline} onChange={e => setNewTask(f => ({ ...f, deadline: e.target.value }))} />
-            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 ml-1">Deadline</label>
+            <Input type="date" value={newTask.deadline} onChange={e => setNewTask(f => ({ ...f, deadline: e.target.value }))} />
           </div>
           <div className="flex justify-end gap-4 pt-4 border-t border-slate-100">
             <Button variant="secondary" onClick={() => setIsAddModalOpen(false)} type="button">Cancel</Button>

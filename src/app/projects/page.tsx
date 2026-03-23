@@ -66,10 +66,15 @@ export default function ProjectsPage() {
     return match;
   });
 
+  const roleNameStr = typeof user?.role === "object" ? (user.role as any).roleName : (user?.role || "");
+  const isClientRole = roleNameStr.toLowerCase().includes("client");
+
   const canAdd = user?.role && (
     typeof user.role === "string" 
       ? user.role === "architect" || user.role === "TENANT_ADMIN"
-      : (user.role as any).roleName === "TENANT_ADMIN" || (user.role as any).permissions?.some((p: any) => p.module === "PROJECT" && p.actions.includes("CREATE"))
+      : (user.role as any).roleName?.toLowerCase().includes("architect") ||
+        (user.role as any).roleName === "TENANT_ADMIN" ||
+        (user.role as any).permissions?.some((p: any) => p.module === "PROJECT" && p.actions.includes("CREATE"))
   );
 
   const getSupervisorName = (id?: string) =>
@@ -120,14 +125,14 @@ export default function ProjectsPage() {
         <div className="flex flex-row items-center justify-between gap-6">
           <div className="space-y-1">
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-              {user?.role === "client" ? "My Project" : "Project Portfolio"}
+              {isClientRole ? "My Project" : "Project Portfolio"}
             </h2>
             <p className="text-sm font-medium text-slate-500 hidden sm:block">
-              {user?.role === "client" ? "Track your construction progress" : "Manage and track active construction sites"}
+              {isClientRole ? "Track your construction progress" : "Manage and track active construction sites"}
             </p>
           </div>
           <div className="flex items-center gap-4">
-            {user?.role !== "client" && (
+            {!isClientRole && (
               <div className="hidden md:block">
                 <Input placeholder="Search projects..." icon={Search} className="w-64"
                   value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
@@ -255,7 +260,7 @@ export default function ProjectsPage() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center text-[10px] font-bold text-indigo-600 border border-indigo-100">
-                          {getSupervisorName(project.supervisorId).split(" ").map(n => n[0]).join("")}
+                          {getSupervisorName(project.supervisorId).split(" ").map((n: string) => n[0]).join("")}
                         </div>
                         <span className="text-sm font-medium text-slate-700">{getSupervisorName(project.supervisorId)}</span>
                       </div>
@@ -355,7 +360,7 @@ export default function ProjectsPage() {
                   )}>
                   <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black transition-all",
                     form.supervisorId === sup.id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600")}>
-                    {sup.name.split(" ").map(n => n[0]).join("")}
+                    {sup.name.split(" ").map((n: string) => n[0]).join("")}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-slate-900 truncate">{sup.name}</p>
@@ -393,7 +398,7 @@ export default function ProjectsPage() {
                     )}>
                     <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 transition-all",
                       selected ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600")}>
-                      {w.name.split(" ").map(n => n[0]).join("")}
+                      {w.name.split(" ").map((n: string) => n[0]).join("")}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold text-slate-900 truncate">{w.name}</p>

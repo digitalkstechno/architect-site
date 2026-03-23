@@ -1,56 +1,99 @@
 "use client";
 
-import { useState } from "react";
-import { projects, siteUpdates as initialUpdates } from "@/lib/dummy-data";
-import { ClipboardList, Calendar, Plus, Construction, TrendingUp, Camera, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ClipboardList, Calendar, Plus, Construction, TrendingUp, Camera, X, Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/lib/auth-context";
-
-type Update = {
-  id: string;
-  project: string;
-  update: string;
-  date: string;
-  progress: number;
-  photos: number;
-  stage?: string;
-  addedBy?: string;
-};
+import { useSiteUpdates } from "@/lib/site-updates-store";
+import { useProjects } from "@/lib/projects-store";
+import { toast } from "react-toastify";
 
 const stageOptions = ["Layout", "Excavation", "Foundation", "Structure", "Brick Work", "Plumbing", "Electrical", "Plaster", "Flooring", "Painting", "Interior", "Final Handover"];
 
 export default function SiteUpdatesPage() {
   const { user } = useAuth();
-  const [updates, setUpdates] = useState<Update[]>(initialUpdates.map(u => ({ ...u, id: String(u.id) })));
+  const { updates, isLoading, createUpdate, deleteUpdate } = useSiteUpdates();
+  const { projects } = useProjects();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ project: projects[0].name, update: "", stage: stageOptions[0], progress: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form, setForm] = useState({ 
+    projectId: "", 
+    update: "", 
+    stage: stageOptions[0], 
+    progress: "",
+    images: [] as File[]
+  });
+
+  useEffect(() => {
+    if (projects.length > 0 && !form.projectId) {
+      setForm(f => ({ ...f, projectId: projects[0].id }));
+    }
+  }, [projects]);
 
   const canAdd = user?.role === "supervisor" || user?.role === "architect";
 
   const visibleUpdates = user?.role === "client"
-    ? updates.filter(u => u.project === projects.find(p => p.id === user.projectId)?.name)
+    ? updates.filter(u => u.projectId === user.projectId)
     : updates;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.update.trim()) return;
-    const newUpdate: Update = {
-      id: String(Date.now()),
-      project: form.project,
-      update: form.update,
-      date: new Date().toISOString().split("T")[0],
-      progress: Number(form.progress) || 0,
-      photos: 0,
-      stage: form.stage,
-      addedBy: user?.name,
-    };
-    setUpdates(prev => [newUpdate, ...prev]);
-    setForm({ project: projects[0].name, update: "", stage: stageOptions[0], progress: "" });
-    setShowForm(false);
+    if (!form.update.trim() || !form.projectId) return;
+    
+    setIsSubmitting(true);
+    try {
+      const selectedProject = projects.find(p => p.id === form.projectId);
+      await createUpdate({
+        projectId: form.projectId,
+        project: selectedProject?.name || "Unknown",
+        update: form.update,
+        stage: form.stage,
+        progress: Number(form.progress) || 0,
+        images: form.images
+      });
+      
+      setForm({ 
+        projectId: projects[0]?.id || "", 
+        update: "", 
+        stage: stageOptions[0], 
+        progress: "",
+        images: []
+      });
+      setShowForm(false);
+      toast.success("Site update posted successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Error posting update");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this update?")) return;
+    try {
+      await deleteUpdate(id);
+      toast.success("Update deleted");
+    } catch (err: any) {
+      toast.error(err.message || "Error deleting update");
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setForm(f => ({ ...f, images: [...f.images, ...Array.from(e.target.files!)] }));
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -81,11 +124,11 @@ export default function SiteUpdatesPage() {
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700">Project</label>
                 <select
-                  value={form.project}
-                  onChange={e => setForm(f => ({ ...f, project: e.target.value }))}
+                  value={form.projectId}
+                  onChange={e => setForm(f => ({ ...f, projectId: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  {projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                  {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
@@ -110,21 +153,38 @@ export default function SiteUpdatesPage() {
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Overall Progress (%)</label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                value={form.progress}
-                onChange={e => setForm(f => ({ ...f, progress: e.target.value }))}
-                placeholder="e.g., 55"
-                className="w-40"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">Overall Progress (%)</label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.progress}
+                  onChange={e => setForm(f => ({ ...f, progress: e.target.value }))}
+                  placeholder="e.g., 55"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700">Add Photos</label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="flex-1"
+                  />
+                  <span className="text-xs font-bold text-slate-400">{form.images.length} Selected</span>
+                </div>
+              </div>
             </div>
             <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-              <Button variant="secondary" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button type="submit">Post Update</Button>
+              <Button variant="secondary" type="button" onClick={() => setShowForm(false)} disabled={isSubmitting}>Cancel</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Post Update
+              </Button>
             </div>
           </form>
         </Card>
@@ -153,12 +213,31 @@ export default function SiteUpdatesPage() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-sm font-medium text-slate-400">
-                  <Calendar className="w-4 h-4" />
-                  {update.date}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-400">
+                    <Calendar className="w-4 h-4" />
+                    {update.date}
+                  </div>
+                  {canAdd && (
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(update.id)} className="text-red-400 hover:text-red-600 hover:bg-red-50">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
               <p className="text-slate-600 leading-relaxed text-sm font-medium">{update.update}</p>
+              
+              {/* Image Preview if available */}
+              {update.images && update.images.length > 0 && (
+                <div className="flex flex-wrap gap-3 pt-2">
+                  {update.images.map((img, i) => (
+                    <div key={i} className="w-24 h-24 rounded-xl overflow-hidden border border-slate-100 shadow-sm">
+                      <img src={`http://localhost:9000${img}`} alt="Site" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex items-center gap-6 pt-1">
                 <span className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest">
                   <TrendingUp className="w-4 h-4" />

@@ -20,7 +20,7 @@ import { useFinance } from "@/lib/finance-store";
 import { toast } from "react-toastify";
 
 export default function BankBriefPage() {
-  const { bankBriefs, fetchFinanceData } = useFinance();
+  const { bankBriefs, addBank } = useFinance();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [form, setForm] = useState({
     bankName: "",
@@ -32,27 +32,13 @@ export default function BankBriefPage() {
   const handleAddBank = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("auth_token");
-      if (!token) return;
-
-      const res = await fetch("http://localhost:9000/architecture/bank-brief", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...form,
-          openingBalance: parseFloat(form.openingBalance),
-          currentBalance: parseFloat(form.openingBalance)
-        })
+      await addBank({
+        ...form,
+        openingBalance: parseFloat(form.openingBalance),
       });
-
-      if (!res.ok) throw new Error("Failed to add bank account");
 
       setIsAddModalOpen(false);
       setForm({ bankName: "", accountNumber: "", ifscCode: "", openingBalance: "" });
-      fetchFinanceData();
       toast.success("Bank account added successfully!");
     } catch (err: any) {
       toast.error(err.message || "Error adding bank account");

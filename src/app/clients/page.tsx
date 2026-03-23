@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Phone, Mail, MoreVertical, ArrowUpRight, MapPin, FileText, Loader2 } from "lucide-react";
+import { Plus, Search, Phone, Mail, ArrowUpRight, MapPin, FileText, Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -28,6 +28,7 @@ export default function ClientsPage() {
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   const fetchClients = useCallback(async () => {
@@ -56,16 +57,33 @@ export default function ClientsPage() {
     fetchClients();
   }, [fetchClients]);
 
-  const canAdd = user?.role && (
-    typeof user.role === "string" 
-      ? user.role === "architect" || user.role === "TENANT_ADMIN"
-      : user.role.roleName === "TENANT_ADMIN" || user.role.permissions?.some(p => p.module === "CLIENT" && p.actions.includes("CREATE"))
-  );
+  const roleName = typeof user?.role === "object" ? user.role.roleName : (user?.role || "");
+  const canAdd =
+    roleName.toLowerCase().includes("architect") ||
+    roleName.toLowerCase().includes("admin") ||
+    (typeof user?.role === "object" && user.role.permissions?.some(p => p.module === "CLIENT" && p.actions.includes("CREATE")));
 
   const filteredClients = (clients || []).filter(client =>
     client.clientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     client.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this client?")) return;
+    setDeletingId(id);
+    try {
+      const token = localStorage.getItem("auth_token");
+      await fetch(`http://localhost:9000/architecture/client/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setClients(prev => prev.filter(c => c._id !== id));
+    } catch (err) {
+      console.error("Delete client error:", err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +105,12 @@ export default function ClientsPage() {
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.message || errData.error || "Failed to add client");
+      }
+
+      const result = await res.json();
+      const plain = result.plainPassword || result.client?.plainPassword;
+      if (plain) {
+        alert(`✅ Client created!\n\nLogin Password: ${plain}\n\n(Save this — it won't be shown again)`);
       }
 
       await fetchClients();
@@ -143,11 +167,19 @@ export default function ClientsPage() {
                 className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-8 space-y-8 transition-all duration-500 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-2 group">
                 <div className="flex items-start justify-between">
                   <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-inner">
-                    {client.clientName?.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    {client.clientName?.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                   </div>
-                  <button className="p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-colors">
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
+                  {canAdd && (
+                    <button
+                      onClick={() => handleDelete(client._id)}
+                      disabled={deletingId === client._id}
+                      className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      {deletingId === client._id
+                        ? <Loader2 className="w-5 h-5 animate-spin" />
+                        : <Trash2 className="w-5 h-5" />}
+                    </button>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -179,6 +211,7 @@ export default function ClientsPage() {
                   View Project Portfolio
                   <ArrowUpRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
                 </button>
+
               </div>
             ))}
           </div>

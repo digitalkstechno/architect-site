@@ -24,8 +24,15 @@ import { useProjects } from "@/lib/projects-store";
 export default function PaymentLedgerPage() {
   const { ledger, bankBriefs, addTransaction, isLoading } = useFinance();
   const { projects } = useProjects();
+  const { user } = useAuth();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const roleName = typeof user?.role === "object" ? (user.role as any).roleName : (user?.role || "");
+  const isClient = roleName.toLowerCase().includes("client");
+  const clientProjectIds = isClient
+    ? projects.filter(p => p.clientId === user?.id).map(p => p.id)
+    : null;
   
   const [form, setForm] = useState({
     projectId: "",
@@ -37,42 +44,45 @@ export default function PaymentLedgerPage() {
     description: "",
   });
 
-  const totalRevenue = ledger
+  const visibleLedger = clientProjectIds
+    ? ledger.filter(e => clientProjectIds.includes(e.projectId))
+    : ledger;
+
+  const totalRevenue = visibleLedger
     .filter(e => e.transactionType === "CREDIT")
     .reduce((sum, e) => sum + e.amount, 0);
   
-  const totalExpenses = ledger
+  const totalExpenses = visibleLedger
     .filter(e => e.transactionType === "DEBIT")
     .reduce((sum, e) => sum + e.amount, 0);
 
-  const filteredLedger = ledger.filter(e => 
-    e.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    e.source?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredLedger = visibleLedger.filter(e => 
+    e.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleProjectChange = (projectId: string) => {
+    const proj = projects.find(p => p.id === projectId);
+    setForm(f => ({ ...f, projectId, clientId: proj?.clientId || "" }));
+  };
 
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    const proj = projects.find(p => p.id === form.projectId);
+    const clientId = form.clientId || proj?.clientId || "";
+    if (!clientId) { alert("Client not found for selected project"); return; }
     
     await addTransaction({
       projectId: form.projectId,
-      clientId: form.clientId,
+      clientId,
       bankId: form.bankId,
       transactionType: form.transactionType,
       amount: parseFloat(form.amount),
       source: form.source,
-      description: form.description,
+      description: form.source + (form.description ? " - " + form.description : ""),
     });
     
     setIsAddModalOpen(false);
-    setForm({
-      projectId: "",
-      clientId: "",
-      bankId: "",
-      amount: "",
-      transactionType: "CREDIT",
-      source: "Client Advance",
-      description: "",
-    });
+    setForm({ projectId: "", clientId: "", bankId: "", amount: "", transactionType: "CREDIT", source: "Client Advance", description: "" });
   };
 
   return (
@@ -93,10 +103,12 @@ export default function PaymentLedgerPage() {
               onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
+          {!isClient && (
           <Button onClick={() => setIsAddModalOpen(true)} className="gap-2 shadow-lg shadow-indigo-200 h-11">
             <Plus className="w-5 h-5" />
             Record Payment
           </Button>
+          )}
         </div>
       </div>
 
@@ -135,7 +147,7 @@ export default function PaymentLedgerPage() {
                 <tr key={entry._id} className="group hover:bg-slate-50/30 transition-colors">
                   <td className="px-8 py-6">
                     <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{entry.description || "No description"}</p>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{entry.source}</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{entry.description}</p>
                   </td>
                   <td className="px-8 py-6 text-center">
                     <span className={cn(
@@ -158,10 +170,10 @@ export default function PaymentLedgerPage() {
                       {bankBriefs.find(b => b._id === entry.bankId)?.bankName || "—"}
                     </span>
                   </td>
-                  <td className="px-8 py-6 text-sm font-bold text-slate-500">{new Date(entry.createdAt || entry.date).toLocaleDateString()}</td>
+                  <td className="px-8 py-6 text-sm font-bold text-slate-500">{new Date(entry.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
-              {ledger.length === 0 && (
+              {visibleLedger.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-2">
@@ -185,7 +197,7 @@ export default function PaymentLedgerPage() {
                 required
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 value={form.projectId}
-                onChange={e => setForm({ ...form, projectId: e.target.value })}
+                onChange={e => handleProjectChange(e.target.value)}
               >
                 <option value="">Select project</option>
                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}

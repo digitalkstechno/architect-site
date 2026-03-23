@@ -111,7 +111,7 @@ export default function SettingsPage() {
               <div className="space-y-8">
                 <div className="flex items-center gap-8">
                   <div className="w-24 h-24 bg-indigo-50 rounded-3xl flex items-center justify-center text-3xl font-bold text-indigo-600 border-2 border-dashed border-indigo-200 relative group cursor-pointer hover:bg-indigo-100 transition-colors">
-                    {user?.name?.split(" ").map(n => n[0]).join("") ?? "U"}
+                    {user?.name?.split(" ").map((n: string) => n[0]).join("") ?? "U"}
                     <div className="absolute inset-0 bg-black/40 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Palette className="w-6 h-6 text-white" />
                     </div>

@@ -28,49 +28,49 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import DashboardCards from "@/components/DashboardCards";
 import { useFinance } from "@/lib/finance-store";
+import { useProjects } from "@/lib/projects-store";
+import { useTasks } from "@/lib/tasks-store";
 
 export default function Dashboard() {
   const { user, getEffectiveRole } = useAuth();
+  const { projects, isHydrated: projectsHydrated } = useProjects();
+  const { tasks, isHydrated: tasksHydrated } = useTasks();
   const { ledger, bankBriefs } = useFinance();
 
-  if (!user) return null;
+  if (!user || !projectsHydrated || !tasksHydrated) return null;
 
   const role = getEffectiveRole(user);
+  const roleLower = role.toLowerCase();
 
-  switch (role) {
-    case "architect":
-    case "TENANT_ADMIN":
-      return <ArchitectDashboard />;
-    case "client":
-    case "TENANT_CLIENT":
-      return <ClientDashboard projectId={user.projectId} />;
-    case "supervisor":
-      return <SupervisorDashboard projectId={user.projectId} />;
-    case "worker":
-      return <WorkerDashboard projectId={user.projectId} />;
-    case "accountant":
-      return <AccountantDashboard />;
-    case "site-engineer":
-      return <SiteEngineerDashboard />;
-    default:
-      return null;
-  }
+  if (roleLower.includes("architect") || roleLower === "tenant_admin")
+    return <ArchitectDashboard projects={projects} tasks={tasks} />;
+  if (roleLower.includes("client"))
+    return <ClientDashboard projects={projects} tasks={tasks} projectId={user.projectId} />;
+  if (roleLower.includes("supervisor"))
+    return <SupervisorDashboard projects={projects} tasks={tasks} projectId={user.projectId} />;
+  if (roleLower.includes("worker"))
+    return <WorkerDashboard projects={projects} tasks={tasks} projectId={user.projectId} />;
+  if (roleLower.includes("accountant"))
+    return <AccountantDashboard projects={projects} tasks={tasks} />;
+  if (roleLower.includes("engineer"))
+    return <SiteEngineerDashboard projects={projects} tasks={tasks} />;
+  return null;
 }
 
 // --- Architect Dashboard ---
-function ArchitectDashboard() {
+function ArchitectDashboard({ projects: allProjects, tasks: allTasks }: { projects: any[], tasks: any[] }) {
   const { ledger, bankBriefs } = useFinance();
-  const todayTasks = tasks.slice(0, 3);
+  const todayTasks = allTasks.slice(0, 3);
   
-  const totalRevenue = ledger.filter(e => e.type === "CREDIT").reduce((sum, e) => sum + e.amount, 0);
-  const totalExpenses = ledger.filter(e => e.type === "DEBIT").reduce((sum, e) => sum + e.amount, 0);
+  const totalRevenue = ledger.filter(e => e.transactionType === "CREDIT").reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = ledger.filter(e => e.transactionType === "DEBIT").reduce((sum, e) => sum + e.amount, 0);
   const bankBalance = bankBriefs[0]?.currentBalance || 0;
 
   const financeStats = [
-    { label: "Total Revenue", value: `$${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
-    { label: "Active Sites", value: "8", icon: Construction, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
-    { label: "Total Expenses", value: `$${totalExpenses.toLocaleString()}`, icon: CreditCard, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
-    { label: "Bank Balance", value: `$${bankBalance.toLocaleString()}`, icon: Briefcase, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-100" },
+    { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
+    { label: "Active Sites", value: allProjects.filter(p => p.status === "In Progress").length.toString(), icon: Construction, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
+    { label: "Total Expenses", value: `₹${totalExpenses.toLocaleString()}`, icon: CreditCard, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
+    { label: "Bank Balance", value: `₹${bankBalance.toLocaleString()}`, icon: Briefcase, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-100" },
   ];
 
   return (
@@ -130,7 +130,7 @@ function ArchitectDashboard() {
                 <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center text-[10px] font-bold text-indigo-600">
-                      {task.worker.split(' ').map(n => n[0]).join('')}
+                      {task.worker.split(' ').map((n: string) => n[0]).join('')}
                     </div>
                     <span className="text-xs font-bold text-slate-600">{task.worker}</span>
                   </div>
@@ -156,7 +156,7 @@ function ArchitectDashboard() {
               <div key={msg.id} className={cn("p-5 rounded-3xl border transition-all", msg.unread ? "bg-indigo-50/50 border-indigo-100" : "bg-white border-slate-50 hover:bg-slate-50")}>
                 <div className="flex items-center gap-4 mb-2">
                   <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-xs font-bold text-indigo-600 shadow-sm border border-slate-100">
-                    {msg.from.split(' ').map(n => n[0]).join('')}
+                    {msg.from.split(' ').map((n: string) => n[0]).join('')}
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">{msg.from}</h3>
                 </div>
@@ -172,32 +172,47 @@ function ArchitectDashboard() {
 }
 
 // --- Client Dashboard ---
-function ClientDashboard({ projectId }: { projectId?: string }) {
-  const project = projects.find(p => p.id === projectId) || projects[0];
-  const projectUpdates = siteUpdates.filter(u => u.project === project.name).slice(0, 2);
-  
+function ClientDashboard({ projects: allProjects, tasks: allTasks, projectId }: { projects: any[], tasks: any[], projectId?: string }) {
+  const project = allProjects.find(p => p.id === projectId) || allProjects[0];
+  if (!project) return null;
+
   return (
-    <div className="space-y-10 animate-in fade-in duration-700">
-      <div className="flex items-center justify-between bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm">
+    <div className="space-y-12 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm gap-6">
         <div className="space-y-2">
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{project.name}</h2>
-          <div className="flex items-center gap-4 text-sm font-bold text-slate-500">
-            <span className="flex items-center gap-2"><Construction className="w-4 h-4 text-indigo-500" /> Site Progress</span>
-            <span className="text-indigo-600 bg-indigo-50 px-3 py-1 rounded-xl">{project.progress}% Complete</span>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Active Project</span>
+          </div>
+          <h2 className="text-4xl font-black text-slate-900 tracking-tight">{project.name}</h2>
+          <div className="flex items-center gap-4 text-slate-500">
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-4 h-4" />
+              <span className="text-sm font-bold">{project.location}</span>
+            </div>
           </div>
         </div>
-        <Button className="gap-2">
-          <MessageSquare className="w-5 h-5" />
-          Contact Architect
-        </Button>
+        <div className="flex gap-3">
+          <Button variant="outline" className="rounded-2xl h-12 px-6 gap-2">
+            <MessageSquare className="w-5 h-5" />
+            Message Architect
+          </Button>
+          <Button className="rounded-2xl h-12 px-6 gap-2 bg-indigo-600 shadow-lg shadow-indigo-100">
+            <Camera className="w-5 h-5" />
+            Live Site View
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <Card className="lg:col-span-2 p-10 space-y-10">
-          <h3 className="text-xl font-bold text-slate-900 tracking-tight">Construction Roadmap</h3>
-          <div className="space-y-8 relative pl-10">
-            <div className="absolute left-4 top-2 bottom-2 w-px bg-slate-100" />
-            {project.stages.slice(0, 5).map((stage, idx) => (
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Project Timeline</h3>
+            <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl uppercase tracking-widest">Stage 3 of 6</span>
+          </div>
+          
+          <div className="relative pl-10 space-y-10 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
+            {(project.stages || []).slice(0, 5).map((stage: any, idx: number) => (
               <div key={idx} className="relative flex items-center gap-6">
                 <div className={cn(
                   "absolute -left-10 w-8 h-8 rounded-2xl border-4 border-white flex items-center justify-center z-10 shadow-sm",
@@ -214,6 +229,9 @@ function ClientDashboard({ projectId }: { projectId?: string }) {
                 </div>
               </div>
             ))}
+            {(!project.stages || project.stages.length === 0) && (
+              <div className="text-slate-400 text-sm italic">No stages defined yet.</div>
+            )}
           </div>
         </Card>
 
@@ -227,7 +245,7 @@ function ClientDashboard({ projectId }: { projectId?: string }) {
                 </div>
               ))}
             </div>
-            <Button variant="outline" className="w-full text-xs">View Gallery</Button>
+            <Link href="/site-photos"><Button variant="outline" className="w-full text-xs">View Gallery</Button></Link>
           </Card>
 
           <Card className="p-8 bg-indigo-600 text-white space-y-4">
@@ -242,7 +260,7 @@ function ClientDashboard({ projectId }: { projectId?: string }) {
                 <span className="font-black">{project.received}</span>
               </div>
             </div>
-            <Button variant="white" className="w-full text-indigo-600">Download Statement</Button>
+            <Link href="/payment-ledger"><Button variant="white" className="w-full text-indigo-600">Download Statement</Button></Link>
           </Card>
         </div>
       </div>
@@ -251,9 +269,10 @@ function ClientDashboard({ projectId }: { projectId?: string }) {
 }
 
 // --- Supervisor Dashboard ---
-function SupervisorDashboard({ projectId }: { projectId?: string }) {
-  const project = projects.find(p => p.id === projectId) || projects[0];
-  const siteTasks = tasks.filter(t => t.project === project.name);
+function SupervisorDashboard({ projects: allProjects, tasks: allTasks, projectId }: { projects: any[], tasks: any[], projectId?: string }) {
+  const project = allProjects.find(p => p.id === projectId) || allProjects[0];
+  if (!project) return null;
+  const siteTasks = allTasks.filter(t => t.projectId === project.id);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -267,10 +286,10 @@ function SupervisorDashboard({ projectId }: { projectId?: string }) {
             <Users className="w-5 h-5" />
             Attendance
           </Button></Link>
-          <Button className="gap-2">
+          <Link href="/site-updates"><Button className="gap-2">
             <Plus className="w-5 h-5" />
             Daily Log
-          </Button>
+          </Button></Link>
         </div>
       </div>
 
@@ -278,7 +297,7 @@ function SupervisorDashboard({ projectId }: { projectId?: string }) {
         <Card className="lg:col-span-2 p-10 space-y-8">
           <h3 className="text-xl font-bold text-slate-900 tracking-tight">Today's Site Tasks</h3>
           <div className="space-y-4">
-            {siteTasks.map(task => (
+            {siteTasks.map((task: any) => (
               <div key={task.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:bg-white hover:border-indigo-100 transition-all group">
                 <div className="flex items-center gap-6">
                   <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
@@ -292,6 +311,11 @@ function SupervisorDashboard({ projectId }: { projectId?: string }) {
                 <Link href="/tasks"><Button variant="white" size="sm" className="text-indigo-600">Update Status</Button></Link>
               </div>
             ))}
+            {siteTasks.length === 0 && (
+              <div className="text-center py-10">
+                <p className="text-slate-400 text-sm font-bold italic">No tasks assigned for this site today.</p>
+              </div>
+            )}
           </div>
         </Card>
 
@@ -317,9 +341,11 @@ function SupervisorDashboard({ projectId }: { projectId?: string }) {
 }
 
 // --- Worker Dashboard ---
-function WorkerDashboard({ projectId }: { projectId?: string }) {
-  const project = projects.find(p => p.id === projectId) || projects[0];
-  const myTasks = tasks.filter(t => t.worker === "John Doe");
+function WorkerDashboard({ projects: allProjects, tasks: allTasks, projectId }: { projects: any[], tasks: any[], projectId?: string }) {
+  const { user } = useAuth();
+  const project = allProjects.find(p => p.id === projectId) || allProjects[0];
+  if (!project) return null;
+  const myTasks = allTasks.filter(t => t.workerId === user?.id);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700 max-w-2xl mx-auto pb-20">
@@ -342,14 +368,14 @@ function WorkerDashboard({ projectId }: { projectId?: string }) {
           </span>
         </div>
 
-        {myTasks.map(task => (
+        {myTasks.map((task: any) => (
           <Card key={task.id} className="p-8 border-4 border-slate-100 shadow-xl space-y-8 rounded-[2.5rem] hover:border-indigo-600 transition-all active:scale-[0.98]">
             <div className="flex items-start justify-between">
               <div className="space-y-2">
                 <h4 className="text-3xl font-black text-slate-900 leading-tight">{task.name}</h4>
                 <div className="flex items-center gap-2 text-indigo-600 font-black text-lg">
                   <MapPin className="w-5 h-5" />
-                  Floor 1, West Wing
+                  {project.location}
                 </div>
               </div>
               <div className={cn(
@@ -393,6 +419,12 @@ function WorkerDashboard({ projectId }: { projectId?: string }) {
             </div>
           </Card>
         ))}
+        {myTasks.length === 0 && (
+          <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-4 border-dashed border-slate-100">
+            <HardHat className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+            <p className="text-xl font-black text-slate-400">Aaj koi kaam nahi hai.</p>
+          </div>
+        )}
       </div>
 
       {/* Emergency / Support Section */}
@@ -414,10 +446,10 @@ function WorkerDashboard({ projectId }: { projectId?: string }) {
 }
 
 // --- Accountant Dashboard ---
-function AccountantDashboard() {
-  const totalBudget = payments.reduce((sum, p) => sum + parseFloat(p.amount.replace(/[$,]/g, "")), 0);
-  const paid = payments.filter(p => p.status === "Paid").reduce((sum, p) => sum + parseFloat(p.amount.replace(/[$,]/g, "")), 0);
-  const pending = payments.filter(p => p.status === "Pending").reduce((sum, p) => sum + parseFloat(p.amount.replace(/[$,]/g, "")), 0);
+function AccountantDashboard({ projects: allProjects, tasks: allTasks }: { projects: any[], tasks: any[] }) {
+  const { ledger } = useFinance();
+  const paid = ledger.filter(e => e.transactionType === "CREDIT").reduce((sum, e) => sum + e.amount, 0);
+  const expenses = ledger.filter(e => e.transactionType === "DEBIT").reduce((sum, e) => sum + e.amount, 0);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -428,9 +460,9 @@ function AccountantDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {[
-          { label: "Total Budget",    value: `$${totalBudget.toLocaleString()}`, color: "text-slate-900",   bg: "bg-slate-50",   border: "border-slate-200" },
-          { label: "Received",        value: `$${paid.toLocaleString()}`,         color: "text-green-700",  bg: "bg-green-50",   border: "border-green-200" },
-          { label: "Pending",         value: `$${pending.toLocaleString()}`,      color: "text-orange-700", bg: "bg-orange-50",  border: "border-orange-200" },
+          { label: "Total Received",    value: `₹${paid.toLocaleString()}`, color: "text-green-700",  bg: "bg-green-50",   border: "border-green-200" },
+          { label: "Total Expenses",    value: `₹${expenses.toLocaleString()}`, color: "text-orange-700", bg: "bg-orange-50",  border: "border-orange-200" },
+          { label: "Net Balance",       value: `₹${(paid - expenses).toLocaleString()}`, color: "text-indigo-700", bg: "bg-indigo-50",  border: "border-indigo-200" },
         ].map(s => (
           <Card key={s.label} className={cn("p-8 border", s.bg, s.border)}>
             <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{s.label}</p>
@@ -441,32 +473,30 @@ function AccountantDashboard() {
 
       <Card className="overflow-hidden p-0">
         <div className="px-8 py-5 border-b border-slate-100">
-          <h3 className="text-base font-bold text-slate-900">Recent Payments</h3>
+          <h3 className="text-base font-bold text-slate-900">Recent Transactions</h3>
         </div>
         <table className="w-full text-left">
           <thead>
             <tr className="bg-slate-50/50">
-              {["Project", "Client", "Milestone", "Amount", "Status", "Date"].map(h => (
+              {["Description", "Project", "Amount", "Type", "Date"].map(h => (
                 <th key={h} className="px-8 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {payments.map(p => (
-              <tr key={p.id} className="hover:bg-slate-50/30 transition-colors">
-                <td className="px-8 py-5 text-sm font-bold text-slate-900">{p.project}</td>
-                <td className="px-8 py-5 text-sm text-slate-600">{p.client}</td>
-                <td className="px-8 py-5 text-sm text-slate-600">{p.milestone}</td>
-                <td className="px-8 py-5 text-sm font-bold text-slate-900">{p.amount}</td>
+            {ledger.slice(0, 10).map(entry => (
+              <tr key={entry._id} className="hover:bg-slate-50/30 transition-colors">
+                <td className="px-8 py-5 text-sm font-bold text-slate-900">{entry.description}</td>
+                <td className="px-8 py-5 text-sm text-slate-600">{allProjects.find(p => p.id === entry.projectId)?.name || "—"}</td>
+                <td className="px-8 py-5 text-sm font-bold text-slate-900">₹{entry.amount.toLocaleString()}</td>
                 <td className="px-8 py-5">
                   <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider",
-                    p.status === "Paid" ? "bg-green-50 text-green-700 border-green-100" :
-                    p.status === "Pending" ? "bg-indigo-50 text-indigo-700 border-indigo-100" :
-                    "bg-red-50 text-red-700 border-red-100")}>
-                    {p.status}
+                    entry.transactionType === "CREDIT" ? "bg-green-50 text-green-700 border-green-100" :
+                    "bg-orange-50 text-orange-700 border-orange-100")}>
+                    {entry.transactionType}
                   </span>
                 </td>
-                <td className="px-8 py-5 text-sm text-slate-500">{p.date}</td>
+                <td className="px-8 py-5 text-sm text-slate-500">{new Date(entry.createdAt).toLocaleDateString()}</td>
               </tr>
             ))}
           </tbody>
@@ -477,7 +507,7 @@ function AccountantDashboard() {
 }
 
 // --- Site Engineer Dashboard ---
-function SiteEngineerDashboard() {
+function SiteEngineerDashboard({ projects: allProjects, tasks: allTasks }: { projects: any[], tasks: any[] }) {
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
       <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm">
@@ -487,9 +517,9 @@ function SiteEngineerDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {[
-          { label: "Active Projects", value: projects.filter(p => p.status === "In Progress").length, color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200" },
-          { label: "Open Tasks",      value: tasks.filter(t => t.status !== "Completed").length,       color: "text-orange-700", bg: "bg-orange-50", border: "border-orange-200" },
-          { label: "Site Updates",    value: siteUpdates.length,                                        color: "text-green-700",  bg: "bg-green-50",  border: "border-green-200" },
+          { label: "Active Projects", value: allProjects.filter(p => p.status === "In Progress").length, color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200" },
+          { label: "Open Tasks",      value: allTasks.filter(t => t.status !== "Completed").length,       color: "text-orange-700", bg: "bg-orange-50", border: "border-orange-200" },
+          { label: "Total Sites",     value: allProjects.length,                                        color: "text-green-700",  bg: "bg-green-50",  border: "border-green-200" },
         ].map(s => (
           <Card key={s.label} className={cn("p-8 border", s.bg, s.border)}>
             <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{s.label}</p>

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { siteUpdates as seedUpdates } from "@/lib/dummy-data";
+import { useAuth } from "./auth-context";
 
 export type SiteUpdate = {
   id: string;
@@ -11,90 +12,120 @@ export type SiteUpdate = {
   date: string;
   progress: number;
   photos: number;
+  images?: string[];
   stage?: string;
   addedBy?: string;
   createdAt?: string;
 };
 
-type CreateUpdateInput = Omit<SiteUpdate, "id" | "date" | "photos" | "createdAt"> & {
-  id?: string;
-  date?: string;
-  photos?: number;
+type CreateUpdateInput = {
+  projectId: string;
+  project: string;
+  update: string;
+  stageId?: string;
+  stage?: string;
+  progress?: number;
+  images?: File[];
 };
 
 type SiteUpdatesContextType = {
   updates: SiteUpdate[];
-  isHydrated: boolean;
+  isLoading: boolean;
+  fetchUpdates: () => Promise<void>;
   getUpdatesByProjectId: (projectId: string) => SiteUpdate[];
-  createUpdate: (input: CreateUpdateInput) => SiteUpdate;
-  deleteUpdate: (id: string) => void;
+  createUpdate: (input: CreateUpdateInput) => Promise<void>;
+  deleteUpdate: (id: string) => Promise<void>;
 };
 
-const STORAGE_KEY = "archisite_site_updates";
 const SiteUpdatesContext = createContext<SiteUpdatesContextType | undefined>(undefined);
 
-function safeParse<T>(raw: string | null): T | undefined {
-  if (!raw) return undefined;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return undefined;
-  }
-}
-
-function normalizeSeed(): SiteUpdate[] {
-  return (seedUpdates as unknown as any[]).map((u) => ({
-    ...u,
-    id: String(u.id),
-    createdAt: new Date().toISOString(),
-  }));
-}
-
 export function SiteUpdatesProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [updates, setUpdates] = useState<SiteUpdate[]>([]);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const saved = safeParse<SiteUpdate[]>(localStorage.getItem(STORAGE_KEY));
-    if (saved && Array.isArray(saved)) {
-      setUpdates(saved);
-    } else {
-      const seeded = normalizeSeed();
-      setUpdates(seeded);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
+  const fetchUpdates = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      if (!token) {
+        setUpdates([]);
+        return;
+      }
+
+      const res = await fetch("http://localhost:9000/architecture/projectupdate", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch updates");
+
+      const payload = await res.json();
+      const backendUpdates = payload.data || payload || [];
+
+      const mapped: SiteUpdate[] = backendUpdates.map((u: any) => ({
+        id: u._id,
+        projectId: u.projectId?._id || u.projectId,
+        project: u.projectId?.projectName || "Unknown Project",
+        update: u.description || "No description",
+        date: u.createdAt ? new Date(u.createdAt).toISOString().split("T")[0] : "",
+        progress: 0, // Backend projectupdate doesn't have progress yet
+        photos: u.images?.length || 0,
+        images: u.images || [],
+        stage: u.stageId?.stageName || "—",
+        addedBy: u.createdBy?.userName || "Unknown",
+        createdAt: u.createdAt,
+      }));
+
+      setUpdates(mapped);
+    } catch (err) {
+      console.error("Fetch updates error:", err);
+    } finally {
+      setIsLoading(false);
     }
-    setIsHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (!isHydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updates));
-  }, [updates, isHydrated]);
+    fetchUpdates();
+  }, [user, fetchUpdates]);
 
   const api = useMemo<SiteUpdatesContextType>(() => {
     const getUpdatesByProjectId = (projectId: string) => updates.filter((u) => u.projectId === projectId);
 
-    const createUpdate = (input: CreateUpdateInput): SiteUpdate => {
-      const created: SiteUpdate = {
-        id: input.id ?? String(Date.now()),
-        projectId: input.projectId,
-        project: input.project,
-        update: input.update,
-        date: input.date ?? new Date().toISOString().split("T")[0],
-        progress: input.progress ?? 0,
-        photos: input.photos ?? 0,
-        stage: input.stage,
-        addedBy: input.addedBy,
-        createdAt: new Date().toISOString(),
-      };
-      setUpdates((prev) => [created, ...prev]);
-      return created;
+    const createUpdate = async (input: CreateUpdateInput): Promise<void> => {
+      const token = localStorage.getItem("auth_token");
+      if (!token) throw new Error("No token");
+
+      const formData = new FormData();
+      formData.append("projectId", input.projectId);
+      formData.append("description", input.update);
+      if (input.stageId) formData.append("stageId", input.stageId);
+      if (input.images) {
+        input.images.forEach((img) => formData.append("images", img));
+      }
+
+      const res = await fetch("http://localhost:9000/architecture/projectupdate", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+
+      if (!res.ok) throw new Error("Failed to create update");
+      await fetchUpdates();
     };
 
-    const deleteUpdate = (id: string) => setUpdates((prev) => prev.filter((u) => u.id !== id));
+    const deleteUpdate = async (id: string) => {
+      const token = localStorage.getItem("auth_token");
+      if (!token) return;
 
-    return { updates, isHydrated, getUpdatesByProjectId, createUpdate, deleteUpdate };
-  }, [updates, isHydrated]);
+      await fetch(`http://localhost:9000/architecture/projectupdate/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      await fetchUpdates();
+    };
+
+    return { updates, isLoading, fetchUpdates, getUpdatesByProjectId, createUpdate, deleteUpdate };
+  }, [updates, isLoading, fetchUpdates]);
 
   return <SiteUpdatesContext.Provider value={api}>{children}</SiteUpdatesContext.Provider>;
 }

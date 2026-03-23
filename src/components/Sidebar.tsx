@@ -6,11 +6,7 @@ import {
   LayoutDashboard, Briefcase, CheckSquare, Users, ClipboardList,
   CreditCard, Building2, UserCircle2, Calendar, BarChart3,
   Settings, LogOut, MessageSquare, Camera, X, HardHat, BookOpen,
-  Wallet,
-  Landmark,
-  Calculator,
-  ShieldCheck,
-  Activity
+  Wallet, Landmark, Calculator, ShieldCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -66,11 +62,12 @@ const PAGE_LABELS: Record<string, string> = {
 // Map backend MODULE names to frontend PAGE keys
 const MODULE_TO_PAGE: Record<string, string> = {
   USER: "system-users",
-  ROLE: "permissions",
-  PERMISSION: "permissions",
+  ROLE: "system-users",
+  PERMISSION: "system-users",
   TENANT: "tenants",
   SUBSCRIPTION_PLAN: "plans",
   PROJECT: "projects",
+  PROJECT_STAGE: "projects",
   PROJECT_ESTIMATION: "project-estimation",
   PROJECT_UPDATE: "site-updates",
   PAYMENT_LEDGER: "payment-ledger",
@@ -78,26 +75,34 @@ const MODULE_TO_PAGE: Record<string, string> = {
   TASK: "tasks",
   BANK_BRIEF: "bank-brief",
   CLIENT: "clients",
-  CLIENT_MODULE: "clients", // Some roles might use this
   WORKER: "workers",
+  WORKERTASK: "tasks",
   ATTENDENCE: "attendance",
+  ATTENDENCE_MODULE: "attendance",
 };
+
+// Human-readable role display names
+function getRoleDisplayName(roleName: string): string {
+  const lower = roleName.toLowerCase();
+  if (lower === "tenant_admin" || lower === "architect") return "Architect";
+  if (lower.includes("client")) return "Client";
+  if (lower.includes("supervisor")) return "Supervisor";
+  if (lower.includes("worker")) return "Worker";
+  if (lower.includes("accountant")) return "Accountant";
+  if (lower.includes("engineer")) return "Site Engineer";
+  if (lower === "super-admin" || lower === "superadmin") return "Super Admin";
+  // Capitalize first letter of each word
+  return roleName.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
 
 // Worker dashboard shows as "My Tasks", worker projects as "Job Locations"
 const ROLE_PAGE_LABELS: Record<string, Record<string, string>> = {
-  worker: {
-    dashboard: "My Tasks",
-    projects:  "Job Locations",
-  },
-  client: {
-    dashboard: "My Project",
-  },
-  supervisor: {
-    dashboard: "Dashboard",
-    projects:  "Active Projects",
-    tasks:     "Today's Tasks",
-    "site-updates": "Site Logs",
-  },
+  worker: { dashboard: "My Tasks", projects: "Job Locations" },
+  client: { dashboard: "My Project" },
+  "TENANT_Client": { dashboard: "My Project" },
+  Client: { dashboard: "My Project" },
+  supervisor: { dashboard: "Dashboard", projects: "Active Projects", tasks: "Today's Tasks", "site-updates": "Site Logs" },
+  Supervisor: { dashboard: "Dashboard", projects: "Active Projects", tasks: "Today's Tasks", "site-updates": "Site Logs" },
 };
 
 export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void }) {
@@ -115,16 +120,39 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
   
   if (user?.role && typeof user.role !== "string" && user.role.permissions && user.role.permissions.length > 0) {
     const dynamicPages = new Set<string>();
-    dynamicPages.add("dashboard"); // Always allow dashboard
+    dynamicPages.add("dashboard");
     
     user.role.permissions.forEach(p => {
       const pageKey = MODULE_TO_PAGE[p.module];
       if (pageKey) dynamicPages.add(pageKey);
     });
+
+    // Client always gets site-photos and payment-ledger
+    const roleName = typeof user.role === "object" ? user.role.roleName : "";
+    const rn = roleName.toLowerCase();
+    if (rn.includes("client")) {
+      dynamicPages.add("projects");
+      dynamicPages.add("site-photos");
+      dynamicPages.add("payment-ledger");
+      dynamicPages.add("project-estimation");
+    }
+    // Architect/Admin always gets clients + system-users
+    if (rn.includes("architect") || rn.includes("admin") || rn === "tenant_admin") {
+      dynamicPages.add("clients");
+      dynamicPages.add("system-users");
+      dynamicPages.add("workers");
+      dynamicPages.add("supervisors");
+    }
     
     allowedPages = Array.from(dynamicPages);
   } else {
-    allowedPages = roleConfig?.pages ?? [];
+    // fallback: match by roleName (case-insensitive)
+    const roleLower = role.toLowerCase();
+    const matched = roleConfig ?? 
+      (roleLower.includes("client") ? { pages: ["dashboard", "projects", "site-photos", "payment-ledger", "project-estimation"] } :
+       roleLower.includes("supervisor") ? { pages: ["dashboard", "projects", "tasks", "workers", "attendance", "site-updates", "site-photos"] } :
+       roleLower.includes("worker") ? { pages: ["dashboard", "site-photos"] } : null);
+    allowedPages = matched?.pages ?? [];
   }
 
   const menuItems = allowedPages.map(pageKey => {
@@ -170,7 +198,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
       <div className="p-4 border-t border-slate-100 space-y-4">
         <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
-            {roleConfig?.name ?? role}
+            {getRoleDisplayName(role || "")}
           </p>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-700 truncate mr-2">{user?.name}</span>

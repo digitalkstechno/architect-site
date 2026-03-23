@@ -1,43 +1,59 @@
 "use client";
 
-import { projects } from "@/lib/dummy-data";
-import { Camera, Plus, MapPin, Upload, X, Image as ImageIcon, Video } from "lucide-react";
+import { Camera, Plus, MapPin, Upload, X, Image as ImageIcon, Video, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/lib/auth-context";
-
-type Photo = {
-  id: string;
-  src: string;
-  project: string;
-  date: string;
-  type: "camera" | "gallery";
-};
+import { useSiteUpdates } from "@/lib/site-updates-store";
+import { useProjects } from "@/lib/projects-store";
+import { toast } from "react-toastify";
 
 export default function SitePhotosPage() {
   const { user } = useAuth();
-  const [photos, setPhotos] = useState<Photo[]>([]);
-  const [selectedProject, setSelectedProject] = useState(
-    user?.role === "client" ? (projects.find(p => p.id === user.projectId)?.name || projects[0].name) : projects[0].name
-  );
+  const { updates, isLoading, createUpdate } = useSiteUpdates();
+  const { projects } = useProjects();
+  
+  const [selectedProject, setSelectedProject] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (projects.length > 0 && !selectedProject) {
+      const roleName = typeof user?.role === "object" ? (user.role as any).roleName : (user?.role || "");
+      const isClient = roleName.toLowerCase().includes("client");
+      const initial = isClient
+        ? (projects.find(p => p.clientId === user?.id)?.id || projects[0].id)
+        : projects[0].id;
+      setSelectedProject(initial);
+    }
+  }, [projects, user, selectedProject]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const canUpload = user?.role !== "client";
+  const roleName = typeof user?.role === "object" ? (user.role as any).roleName : (user?.role || "");
+  const isClient = roleName.toLowerCase().includes("client");
+  const canUpload = !isClient;
 
-  const filteredProjects = user?.role === "client"
-    ? projects.filter(p => p.id === user.projectId)
+  const filteredProjects = isClient
+    ? projects.filter(p => p.id === user?.projectId || p.clientId === user?.id)
     : projects;
 
-  const projectPhotos = photos.filter(p => p.project === selectedProject);
+  const projectUpdates = updates.filter(u => u.projectId === selectedProject);
+  const projectPhotos = projectUpdates.flatMap(u => 
+    (u.images || []).map(img => ({
+      id: u.id,
+      src: img.startsWith('http') ? img : `http://localhost:9000${img}`,
+      date: u.date,
+      description: u.update
+    }))
+  );
 
   // Start live camera
   const startCamera = async () => {
@@ -73,40 +89,70 @@ export default function SitePhotosPage() {
     setPreviewPhoto(dataUrl);
   };
 
-  const saveCapture = () => {
+  const dataURLtoFile = (dataurl: string, filename: string) => {
+    let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)![1],
+        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, {type:mime});
+  };
+
+  const saveCapture = async () => {
     if (!previewPhoto) return;
-    const newPhoto: Photo = {
-      id: String(Date.now()),
-      src: previewPhoto,
-      project: selectedProject,
-      date: new Date().toLocaleDateString(),
-      type: "camera",
-    };
-    setPhotos(prev => [newPhoto, ...prev]);
-    stopCamera();
-    setShowUploadModal(false);
+    setIsSubmitting(true);
+    try {
+      const file = dataURLtoFile(previewPhoto, `site-photo-${Date.now()}.jpg`);
+      const selectedProjObj = projects.find(p => p.id === selectedProject);
+      
+      await createUpdate({
+        projectId: selectedProject,
+        project: selectedProjObj?.name || "Unknown",
+        update: "Photo update from site",
+        images: [file]
+      });
+      
+      toast.success("Photo uploaded successfully!");
+      stopCamera();
+      setShowUploadModal(false);
+    } catch (err: any) {
+      toast.error(err.message || "Error uploading photo");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Gallery upload
-  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const newPhoto: Photo = {
-          id: String(Date.now() + Math.random()),
-          src: ev.target?.result as string,
-          project: selectedProject,
-          date: new Date().toLocaleDateString(),
-          type: "gallery",
-        };
-        setPhotos(prev => [newPhoto, ...prev]);
-      };
-      reader.readAsDataURL(file);
-    });
-    setShowUploadModal(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (files.length === 0) return;
+    
+    setIsSubmitting(true);
+    try {
+      const selectedProjObj = projects.find(p => p.id === selectedProject);
+      await createUpdate({
+        projectId: selectedProject,
+        project: selectedProjObj?.name || "Unknown",
+        update: "Gallery photos uploaded",
+        images: files
+      });
+      toast.success(`${files.length} photos uploaded!`);
+      setShowUploadModal(false);
+    } catch (err: any) {
+      toast.error(err.message || "Error uploading photos");
+    } finally {
+      setIsSubmitting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -128,10 +174,10 @@ export default function SitePhotosPage() {
         {filteredProjects.map(p => (
           <button
             key={p.id}
-            onClick={() => setSelectedProject(p.name)}
+            onClick={() => setSelectedProject(p.id)}
             className={cn(
               "px-5 py-2.5 rounded-2xl text-sm font-bold border transition-all",
-              selectedProject === p.name
+              selectedProject === p.id
                 ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100"
                 : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300"
             )}
@@ -148,7 +194,7 @@ export default function SitePhotosPage() {
             <img src={photo.src} alt="Site photo" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
               <p className="text-white text-[10px] font-bold uppercase tracking-widest">{photo.date}</p>
-              <p className="text-white/70 text-[9px] font-bold uppercase">{photo.type === "camera" ? "📷 Live" : "🖼 Gallery"}</p>
+
             </div>
           </div>
         ))}
@@ -194,7 +240,7 @@ export default function SitePhotosPage() {
                   onChange={e => setSelectedProject(e.target.value)}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  {filteredProjects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                  {filteredProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
 

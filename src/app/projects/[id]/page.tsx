@@ -1,12 +1,11 @@
 "use client";
 
-import { projects, tasks, siteUpdates, workers, payments } from "@/lib/dummy-data";
+import { tasks, siteUpdates, workers, payments } from "@/lib/dummy-data";
 import { 
   ArrowLeft, 
   MapPin, 
   Calendar, 
   CheckCircle2, 
-  Clock, 
   ClipboardList, 
   Camera, 
   ChevronRight,
@@ -21,27 +20,105 @@ import {
   DollarSign,
   AlertCircle,
   ArrowUpRight,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
-import { useState, use } from "react";
+import { useState, use, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/Button";
 import { useProjects } from "@/lib/projects-store";
 import { useFinance } from "@/lib/finance-store";
+import Modal from "@/components/ui/Modal";
+import { Input } from "@/components/ui/Input";
 
 type Tab = "overview" | "tasks" | "workers" | "updates" | "photos" | "payments" | "timeline";
 
 export default function ProjectDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { user } = useAuth();
-  const { getProjectById, updateStageStatus } = useProjects();
+  const { getProjectById, isHydrated } = useProjects();
   const { ledger } = useFinance();
   const project = getProjectById(id);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
-  if (!project) return <div>Project not found</div>;
+  // ── Project Stages (backend) ──────────────────────────────────────────────
+  const [stages, setStages] = useState<any[]>([]);
+  const [stagesLoading, setStagesLoading] = useState(false);
+  const [isStageModalOpen, setIsStageModalOpen] = useState(false);
+  const [stageForm, setStageForm] = useState({ stageName: "", order: "", status: "PENDING" as "PENDING" | "IN_PROGRESS" | "COMPLETED" });
+  const [stageSaving, setStageSaving] = useState(false);
+
+  const fetchStages = useCallback(async () => {
+    if (!id) return;
+    setStagesLoading(true);
+    try {
+      const t = localStorage.getItem("auth_token");
+      const res = await fetch(`http://localhost:9000/architecture/projectstage?projectId=${id}`, {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      const d = await res.json();
+      setStages(d.projectstage || []);
+    } catch (e) { console.error(e); }
+    finally { setStagesLoading(false); }
+  }, [id]);
+
+  useEffect(() => { fetchStages(); }, [fetchStages]);
+
+  const handleAddStage = async (e: React.FormEvent) => {
+    e.preventDefault(); setStageSaving(true);
+    try {
+      const t = localStorage.getItem("auth_token");
+      const res = await fetch("http://localhost:9000/architecture/projectstage", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: id,
+          stageName: stageForm.stageName,
+          order: Number(stageForm.order) || stages.length + 1,
+          status: stageForm.status,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to add stage");
+      setIsStageModalOpen(false);
+      setStageForm({ stageName: "", order: "", status: "PENDING" });
+      fetchStages();
+    } catch (e) { console.error(e); }
+    finally { setStageSaving(false); }
+  };
+
+  const handleUpdateStageStatus = async (stageId: string, newStatus: string) => {
+    const t = localStorage.getItem("auth_token");
+    setStages(prev => prev.map(s => s._id === stageId ? { ...s, status: newStatus } : s));
+    await fetch(`http://localhost:9000/architecture/projectstage/${stageId}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+  };
+
+  const handleDeleteStage = async (stageId: string) => {
+    if (!confirm("Delete this stage?")) return;
+    const t = localStorage.getItem("auth_token");
+    setStages(prev => prev.filter(s => s._id !== stageId));
+    await fetch(`http://localhost:9000/architecture/projectstage/${stageId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${t}` },
+    });
+  };
+
+  if (!isHydrated) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  if (!project) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <p className="text-slate-500 font-bold">Project not found</p>
+    </div>
+  );
 
   // Calculate project financials from ledger
   const projectLedger = ledger.filter(l => l.projectId === id);
@@ -56,15 +133,9 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
   const budgetValue = Number(project.budget.replace(/[^0-9.-]+/g, ""));
   const pendingCollection = budgetValue - totalReceived;
 
-  const stages = project.stages;
+  const progress = stages.length === 0 ? 0 : Math.round((stages.filter((s: any) => s.status === "COMPLETED").length / stages.length) * 100);
 
-  const canEdit = user?.role === "architect" || user?.role === "supervisor";
-
-  const handleUpdateStageStatus = (stageName: string, newStatus: string) => {
-    if (newStatus === "Pending" || newStatus === "In Progress" || newStatus === "Completed") {
-      updateStageStatus(id, stageName, newStatus);
-    }
-  };
+  const canEdit = user?.role === "architect" || (typeof user?.role === "object" && (user.role as any)?.roleName?.toLowerCase().includes("architect"));
 
   const projectTasks = tasks.filter(t => t.project === project.name);
   const projectUpdates = siteUpdates.filter(u => u.project === project.name);
@@ -72,6 +143,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
   const projectPayments = payments.filter(p => p.project === project.name);
 
   return (
+<>
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm">
         <div className="space-y-6">
@@ -143,74 +215,91 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
             <div className="lg:col-span-2 space-y-10">
               <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-10">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Construction roadmap</h3>
+                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Construction Roadmap</h3>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm font-black text-indigo-600 uppercase tracking-widest">{project.progress}% Complete</span>
+                    <span className="text-sm font-black text-indigo-600 uppercase tracking-widest">{progress}% Complete</span>
                     <div className="w-40 h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                      <div className="h-full bg-indigo-600 rounded-full transition-all duration-1000 shadow-lg shadow-indigo-200" style={{ width: `${project.progress}%` }} />
+                      <div className="h-full bg-indigo-600 rounded-full transition-all duration-1000 shadow-lg shadow-indigo-200" style={{ width: `${progress}%` }} />
                     </div>
+                    {canEdit && (
+                      <Button className="gap-1.5 text-xs" onClick={() => setIsStageModalOpen(true)}>
+                        <Plus className="w-3.5 h-3.5" />Add Stage
+                      </Button>
+                    )}
                   </div>
                 </div>
 
+                {stagesLoading ? (
+                  <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 text-indigo-600 animate-spin" /></div>
+                ) : stages.length === 0 ? (
+                  <div className="text-center py-10 border border-dashed border-slate-200 rounded-3xl">
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">No stages yet</p>
+                    {canEdit && <Button className="mt-4 gap-1.5 text-xs" onClick={() => setIsStageModalOpen(true)}><Plus className="w-3.5 h-3.5" />Add First Stage</Button>}
+                  </div>
+                ) : (
                 <div className="relative pl-10 space-y-10">
                   <div className="absolute left-4 top-2 bottom-2 w-px bg-slate-100" />
-                  {stages.map((stage, idx) => (
-                    <div key={idx} className="relative flex items-center gap-8 group">
+                  {stages.map((stage: any) => (
+                    <div key={stage._id} className="relative flex items-center gap-8 group">
                       <div className={cn(
                         "absolute -left-10 w-8 h-8 rounded-2xl border-4 border-white flex items-center justify-center z-10 transition-all duration-500 shadow-sm",
-                        stage.status === "Completed" ? "bg-green-500 scale-110" :
-                        stage.status === "In Progress" ? "bg-indigo-600 animate-pulse scale-110 shadow-lg shadow-indigo-100" :
+                        stage.status === "COMPLETED" ? "bg-green-500 scale-110" :
+                        stage.status === "IN_PROGRESS" ? "bg-indigo-600 animate-pulse scale-110 shadow-lg shadow-indigo-100" :
                         "bg-slate-100"
                       )}>
-                        {stage.status === "Completed" ? <CircleCheck className="w-4 h-4 text-white" /> :
-                         stage.status === "In Progress" ? <CircleDot className="w-4 h-4 text-white" /> :
+                        {stage.status === "COMPLETED" ? <CircleCheck className="w-4 h-4 text-white" /> :
+                         stage.status === "IN_PROGRESS" ? <CircleDot className="w-4 h-4 text-white" /> :
                          <CircleDashed className="w-4 h-4 text-slate-400" />}
                       </div>
                       <div className={cn(
                         "flex-1 p-6 rounded-[2rem] border transition-all duration-300",
-                        stage.status === "Completed" ? "bg-green-50/20 border-green-100/30" :
-                        stage.status === "In Progress" ? "bg-indigo-50/50 border-indigo-200 shadow-md" :
-                        "bg-slate-50/30 border-slate-100 opacity-50 group-hover:opacity-100"
+                        stage.status === "COMPLETED" ? "bg-green-50/20 border-green-100/30" :
+                        stage.status === "IN_PROGRESS" ? "bg-indigo-50/50 border-indigo-200 shadow-md" :
+                        "bg-slate-50/30 border-slate-100 opacity-60 group-hover:opacity-100"
                       )}>
                         <div className="flex items-center justify-between">
-                          <p className={cn(
-                            "font-bold text-base tracking-tight",
-                            stage.status === "Completed" ? "text-green-800" :
-                            stage.status === "In Progress" ? "text-indigo-900" :
-                            "text-slate-500"
-                          )}>
-                            {stage.name}
-                          </p>
-                          {canEdit ? (
-                            <select
-                              value={stage.status}
-                              onChange={(e) => handleUpdateStageStatus(stage.name, e.target.value)}
-                              className={cn(
-                                "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg shadow-sm border cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500",
-                                stage.status === "Completed" ? "bg-white text-green-600 border-green-100" :
-                                stage.status === "In Progress" ? "bg-white text-indigo-600 border-indigo-100" :
+                          <div>
+                            <p className={cn(
+                              "font-bold text-base tracking-tight",
+                              stage.status === "COMPLETED" ? "text-green-800" :
+                              stage.status === "IN_PROGRESS" ? "text-indigo-900" : "text-slate-500"
+                            )}>{stage.stageName}</p>
+                            {stage.order && <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Stage {stage.order}</p>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {canEdit ? (
+                              <select value={stage.status} onChange={(e) => handleUpdateStageStatus(stage._id, e.target.value)}
+                                className={cn(
+                                  "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg shadow-sm border cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500",
+                                  stage.status === "COMPLETED" ? "bg-white text-green-600 border-green-100" :
+                                  stage.status === "IN_PROGRESS" ? "bg-white text-indigo-600 border-indigo-100" :
+                                  "bg-white text-slate-400 border-slate-100"
+                                )}>
+                                <option value="PENDING">Pending</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="COMPLETED">Completed</option>
+                              </select>
+                            ) : (
+                              <span className={cn(
+                                "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg shadow-sm border",
+                                stage.status === "COMPLETED" ? "bg-white text-green-600 border-green-100" :
+                                stage.status === "IN_PROGRESS" ? "bg-white text-indigo-600 border-indigo-100" :
                                 "bg-white text-slate-400 border-slate-100"
-                              )}
-                            >
-                              <option value="Pending">Pending</option>
-                              <option value="In Progress">In Progress</option>
-                              <option value="Completed">Completed</option>
-                            </select>
-                          ) : (
-                            <span className={cn(
-                              "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg shadow-sm",
-                              stage.status === "Completed" ? "bg-white text-green-600 border border-green-100" :
-                              stage.status === "In Progress" ? "bg-white text-indigo-600 border border-indigo-100" :
-                              "bg-white text-slate-400 border border-slate-100"
-                            )}>
-                              {stage.status}
-                            </span>
-                          )}
+                              )}>{stage.status}</span>
+                            )}
+                            {canEdit && (
+                              <button onClick={() => handleDeleteStage(stage._id)}
+                                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
+                )}
               </div>
             </div>
 
@@ -277,7 +366,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
                     <td className="px-10 py-8">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 bg-slate-50 rounded-xl flex items-center justify-center text-xs font-bold text-slate-600 border border-slate-100 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 transition-all duration-500 shadow-inner">
-                          {task.worker.split(' ').map(n => n[0]).join('')}
+                          {task.worker.split(' ').map((n: string) => n[0]).join('')}
                         </div>
                         <span className="text-sm font-bold text-slate-700">{task.worker}</span>
                       </div>
@@ -313,7 +402,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
               <div key={worker.id} className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6 hover:shadow-xl transition-all duration-500 group">
                 <div className="flex justify-center">
                   <div className="w-20 h-20 bg-indigo-50 rounded-[2rem] flex items-center justify-center text-2xl font-black text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-700 shadow-inner">
-                    {worker.name.split(' ').map(n => n[0]).join('')}
+                    {worker.name.split(' ').map((n: string) => n[0]).join('')}
                   </div>
                 </div>
                 <div className="text-center space-y-1">
@@ -514,5 +603,39 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
         )}
       </div>
     </div>
+
+      {/* Add Stage Modal */}
+      <Modal isOpen={isStageModalOpen} onClose={() => setIsStageModalOpen(false)} title="Add Project Stage">
+        <form onSubmit={handleAddStage} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700">Stage Name *</label>
+            <Input placeholder="e.g. Foundation, Framing, Roofing" value={stageForm.stageName}
+              onChange={e => setStageForm(f => ({ ...f, stageName: e.target.value }))} required />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Order</label>
+              <Input type="number" placeholder={String(stages.length + 1)} value={stageForm.order}
+                onChange={e => setStageForm(f => ({ ...f, order: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Status</label>
+              <select className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={stageForm.status} onChange={e => setStageForm(f => ({ ...f, status: e.target.value as any }))}>
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+            <Button variant="secondary" type="button" onClick={() => setIsStageModalOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={stageSaving}>
+              {stageSaving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Adding...</> : "Add Stage"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+</>
   );
 }

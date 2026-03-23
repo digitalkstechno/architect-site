@@ -54,8 +54,8 @@ export default function AttendancePage() {
       const workersData = await workersRes.json();
       const attendanceData = await attendanceRes.json();
 
-      setWorkers(workersData.data || workersData || []);
-      setAttendance(attendanceData.data || attendanceData || []);
+      setWorkers(workersData.Workers || workersData.data || []);
+      setAttendance(attendanceData.Attendences || attendanceData.data || []);
     } catch (err) {
       console.error("Fetch attendance error:", err);
     } finally {
@@ -72,9 +72,9 @@ export default function AttendancePage() {
       const token = localStorage.getItem("auth_token");
       if (!token) return;
 
-      const existing = attendance.find(a => a.workerId === workerId);
+      const existing = attendance.find((a: any) => a.workerId === workerId || a.workerId?._id === workerId);
       if (existing) {
-        await fetch(`http://localhost:9000/architecture/attendence/${existing.id || (existing as any)._id}`, {
+        await fetch(`http://localhost:9000/architecture/attendence/${(existing as any)._id || existing.id}`, {
           method: "PUT",
           headers: { 
             "Content-Type": "application/json",
@@ -174,13 +174,13 @@ export default function AttendancePage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredWorkers.map((worker) => {
-                const att = attendance.find(a => a.workerId === worker.id);
+                const att = attendance.find((a: any) => a.workerId === worker._id || a.workerId?._id === worker._id);
                 return (
-                  <tr key={worker.id} className="group hover:bg-slate-50/30 transition-colors">
+                  <tr key={worker._id} className="group hover:bg-slate-50/30 transition-colors">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-sm font-bold text-slate-600 border border-slate-200">
-                          {worker.name.split(" ").map(n => n[0]).join("")}
+                          {worker.name.split(" ").map((n: string) => n[0]).join("")}
                         </div>
                         <div>
                           <p className="text-sm font-bold text-slate-900">{worker.name}</p>
@@ -190,7 +190,7 @@ export default function AttendancePage() {
                     </td>
                     <td className="px-8 py-6">
                       {canEdit && !att?.checkIn && att?.status !== "Absent" ? (
-                        <Button variant="outline" size="sm" onClick={() => markCheckIn(worker.id)} className="text-green-600 border-green-200 hover:bg-green-50 text-xs">
+                        <Button variant="outline" size="sm" onClick={() => markCheckIn(worker._id)} className="text-green-600 border-green-200 hover:bg-green-50 text-xs">
                           Mark In
                         </Button>
                       ) : (
@@ -199,7 +199,7 @@ export default function AttendancePage() {
                     </td>
                     <td className="px-8 py-6">
                       {canEdit && att?.checkIn && !att?.checkOut ? (
-                        <Button variant="outline" size="sm" onClick={() => markCheckOut(worker.id)} className="text-orange-600 border-orange-200 hover:bg-orange-50 text-xs">
+                        <Button variant="outline" size="sm" onClick={() => markCheckOut(worker._id)} className="text-orange-600 border-orange-200 hover:bg-orange-50 text-xs">
                           Mark Out
                         </Button>
                       ) : (
@@ -210,7 +210,7 @@ export default function AttendancePage() {
                       {canEdit ? (
                         <select
                           value={att?.status || "Absent"}
-                          onChange={(e) => updateStatus(worker.id, e.target.value)}
+                          onChange={(e) => updateStatus(worker._id, e.target.value)}
                           className={cn(
                             "px-3 py-1.5 rounded-full text-[10px] font-bold border uppercase tracking-wider cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500",
                             att?.status === "Present" ? "bg-green-50 text-green-700 border-green-200" :

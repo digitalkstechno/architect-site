@@ -43,7 +43,7 @@ export default function MessagesPage() {
               )}
             >
               <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 shadow-inner">
-                {msg.from.split(' ').map(n => n[0]).join('')}
+                {msg.from.split(' ').map((n: string) => n[0]).join('')}
               </div>
               <div className="flex-1 min-w-0 space-y-1">
                 <div className="flex items-center justify-between">
@@ -79,7 +79,7 @@ export default function MessagesPage() {
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600">
-                  {messages.find(m => m.id === activeChat)?.from.split(' ').map(n => n[0]).join('')}
+                  {messages.find(m => m.id === activeChat)?.from.split(' ').map((n: string) => n[0]).join('')}
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">
@@ -108,7 +108,7 @@ export default function MessagesPage() {
               {/* Sample Received Message */}
               <div className="flex gap-4 max-w-[80%] animate-in slide-in-from-left-4 duration-500">
                 <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 flex-shrink-0">
-                  {messages.find(m => m.id === activeChat)?.from.split(' ').map(n => n[0]).join('')}
+                  {messages.find(m => m.id === activeChat)?.from.split(' ').map((n: string) => n[0]).join('')}
                 </div>
                 <div className="space-y-1">
                   <div className="p-4 bg-white border border-slate-100 rounded-[1.5rem] rounded-tl-none shadow-sm">

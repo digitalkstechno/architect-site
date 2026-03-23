@@ -305,7 +305,7 @@ export default function NewProjectPage() {
                   )}>
                   <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0",
                     form.supervisorId === s.id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600")}>
-                    {s.name.split(" ").map(n => n[0]).join("")}
+                    {s.name.split(" ").map((n: string) => n[0]).join("")}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-slate-900 truncate">{s.name}</p>
@@ -337,7 +337,7 @@ export default function NewProjectPage() {
                     )}>
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0",
                       selected ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600")}>
-                      {w.name.split(" ").map(n => n[0]).join("")}
+                      {w.name.split(" ").map((n: string) => n[0]).join("")}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold text-slate-900 truncate">{w.name}</p>

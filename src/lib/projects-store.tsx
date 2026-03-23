@@ -90,7 +90,7 @@ function computeProgressFromStages(stages: ProjectStage[]): number {
   return Math.round((completed / stages.length) * 100);
 }
 
-function computeStatusFromProgress(progress: number): string {
+function computeStatusFromProgress(progress: number): Project["status"] {
   if (progress <= 0) return "Planned";
   if (progress >= 100) return "Completed";
   return "In Progress";
@@ -116,9 +116,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       }
 
       const res = await fetch("http://localhost:9000/architecture/project", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!res.ok) throw new Error("Failed to fetch projects");
@@ -126,25 +124,34 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       const payload = await res.json();
       const backendProjects = payload.projects || payload.data || [];
 
-      // Map backend projects to frontend schema
-      const mapped: Project[] = backendProjects.map((p: any) => ({
-        id: p._id,
-        name: p.projectName || "Untitled Project",
-        client: p.clientId?.clientName || "Unknown Client",
-        clientId: p.clientId?._id || p.clientId,
-        location: p.siteAddress || "—",
-        startDate: p.startDate ? new Date(p.startDate).toISOString().split("T")[0] : "",
-        expectedCompletion: p.expectedEndDate ? new Date(p.expectedEndDate).toISOString().split("T")[0] : "",
-        status: p.status === "PLANNING" ? "Planned" : p.status === "ACTIVE" ? "In Progress" : p.status === "ON_HOLD" ? "On Hold" : p.status === "COMPLETED" ? "Completed" : "Planned",
-        progress: 0,
-        budget: `₹${(p.budget || 0).toLocaleString()}`,
-        received: `₹${(p.totalReceived || 0).toLocaleString()}`,
-        pending: `₹${((p.budget || 0) - (p.totalReceived || 0)).toLocaleString()}`,
-        totalReceived: p.totalReceived || 0,
-        totalExpense: p.totalExpense || 0,
-        balance: p.balance || 0,
-        stages: [], 
-      }));
+      // Filter projects for client role
+      const roleName = typeof user?.role === "object" ? (user.role as any).roleName : "";
+      const isClient = roleName === "TENANT_Client" || roleName === "Client";
+
+      const mapped: Project[] = backendProjects
+        .filter((p: any) => {
+          if (!isClient) return true;
+          const pClientId = p.clientId?._id || p.clientId;
+          return pClientId === user?.id;
+        })
+        .map((p: any) => ({
+          id: p._id,
+          name: p.projectName || "Untitled Project",
+          client: p.clientId?.clientName || "Unknown Client",
+          clientId: p.clientId?._id || p.clientId,
+          location: p.siteAddress || "—",
+          startDate: p.startDate ? new Date(p.startDate).toISOString().split("T")[0] : "",
+          expectedCompletion: p.expectedEndDate ? new Date(p.expectedEndDate).toISOString().split("T")[0] : "",
+          status: p.status === "PLANNING" ? "Planned" : p.status === "ACTIVE" ? "In Progress" : p.status === "ON_HOLD" ? "On Hold" : p.status === "COMPLETED" ? "Completed" : "Planned",
+          progress: 0,
+          budget: `₹${(p.budget || 0).toLocaleString()}`,
+          received: `₹${(p.totalReceived || 0).toLocaleString()}`,
+          pending: `₹${((p.budget || 0) - (p.totalReceived || 0)).toLocaleString()}`,
+          totalReceived: p.totalReceived || 0,
+          totalExpense: p.totalExpense || 0,
+          balance: p.balance || 0,
+          stages: [],
+        }));
 
       setProjects(mapped);
     } catch (err) {
@@ -152,7 +159,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsHydrated(true);
     }
-  }, []);
+  }, [user]);
 
   // Hydrate from backend when user changes
   useEffect(() => {
@@ -280,7 +287,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       updateStageStatus,
       updateLifecycleStatus,
     };
-  }, [projects, isHydrated]);
+  }, [projects, isHydrated, fetchProjects]);
 
   return <ProjectsContext.Provider value={api}>{children}</ProjectsContext.Provider>;
 }

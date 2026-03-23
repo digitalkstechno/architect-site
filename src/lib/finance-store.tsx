@@ -10,12 +10,11 @@ export interface LedgerEntry {
   _id: string;
   projectId: string;
   clientId: string;
-  bankId: string;
+  bankId?: string;
   transactionType: TransactionType;
   amount: number;
-  source: string;
   description?: string;
-  date: string;
+  createdAt: string;
 }
 
 export interface BankBrief {
@@ -30,41 +29,43 @@ interface FinanceContextType {
   ledger: LedgerEntry[];
   bankBriefs: BankBrief[];
   isLoading: boolean;
-  addTransaction: (data: Omit<LedgerEntry, "_id" | "date">) => Promise<void>;
+  addBank: (data: Omit<BankBrief, "_id" | "isActive" | "currentBalance"> & { openingBalance: number }) => Promise<void>;
+  addTransaction: (data: Omit<LedgerEntry, "_id" | "createdAt"> & { source?: string }) => Promise<void>;
   fetchFinanceData: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export function FinanceProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [bankBriefs, setBankBriefs] = useState<BankBrief[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchFinanceData = useCallback(async () => {
     try {
-      const token = localStorage.getItem("auth_token");
-      if (!token) {
+      const t = localStorage.getItem("auth_token");
+      if (!t) {
         setLedger([]);
         setBankBriefs([]);
         return;
       }
 
       const [ledgerRes, banksRes] = await Promise.all([
-        fetch("http://localhost:9000/architecture/payment-ledger", {
-          headers: { Authorization: `Bearer ${token}` }
+        fetch("http://localhost:9000/architecture/paymentledger", {
+          headers: { Authorization: `Bearer ${t}` }
         }),
-        fetch("http://localhost:9000/architecture/bank-brief", {
-          headers: { Authorization: `Bearer ${token}` }
+        fetch("http://localhost:9000/architecture/bankbrief", {
+          headers: { Authorization: `Bearer ${t}` }
         })
       ]);
 
       const ledgerData = await ledgerRes.json();
       const banksData = await banksRes.json();
 
-      setLedger(ledgerData.data || ledgerData || []);
-      setBankBriefs(banksData.data || banksData || []);
+      setLedger(ledgerData.PaymentLedgers || ledgerData.data || []);
+      // backend returns direct array
+      setBankBriefs(Array.isArray(banksData) ? banksData : (banksData.bankBriefs || banksData.data || []));
     } catch (err) {
       console.error("Fetch finance error:", err);
     } finally {
@@ -73,42 +74,88 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    fetchFinanceData();
+    const t = localStorage.getItem("auth_token");
+    if (t) fetchFinanceData();
   }, [user, fetchFinanceData]);
 
-  const addTransaction = async (data: Omit<LedgerEntry, "_id" | "date">) => {
+  const addBank = async (data: Omit<BankBrief, "_id" | "isActive" | "currentBalance"> & { openingBalance: number }) => {
+    if (!token) throw new Error("Authentication required");
     try {
-      const token = localStorage.getItem("auth_token");
-      if (!token) return;
-
-      // 1. Add entry to ledger
-      const res = await fetch("http://localhost:9000/architecture/payment-ledger", {
+      const res = await fetch("http://localhost:9000/architecture/bankbrief", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+          ...data,
+          currentBalance: data.openingBalance
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to add bank account");
+      }
+      await fetchFinanceData(); // Refresh the list
+    } catch (err) {
+      console.error("Add bank error:", err);
+      throw err;
+    }
+  };
+
+  const addTransaction = async (data: Omit<LedgerEntry, "_id" | "createdAt"> & { source?: string }) => {
+    try {
+      if (!token) return;
+
+      // 1. Add entry to ledger
+      const res = await fetch("http://localhost:9000/architecture/paymentledger", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          clientId: data.clientId,
+          projectId: data.projectId,
+          transactionType: data.transactionType,
+          amount: data.amount,
+          description: data.description || data.source,
+        })
       });
 
       if (!res.ok) throw new Error("Failed to add transaction");
 
-      // 2. Sync Bank Balance (Single Source of Truth logic)
-      if (data.bankId) {
-        const bank = bankBriefs.find(b => b._id === data.bankId);
-        if (bank) {
-          const newBalance = data.transactionType === "CREDIT" 
-            ? bank.currentBalance + data.amount 
-            : bank.currentBalance - data.amount;
-
-          await fetch(`http://localhost:9000/architecture/bank-brief/${data.bankId}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({ currentBalance: newBalance })
+      // 3. Update Project Financials (SOP Step 6 & 16)
+      if (data.projectId) {
+        try {
+          const resProj = await fetch(`http://localhost:9000/architecture/project/${data.projectId}`, {
+            headers: { Authorization: `Bearer ${token}` }
           });
+          if (resProj.ok) {
+            const projData = await resProj.json();
+            const p = projData;
+
+            if (p && p._id) {
+              const updateBody: any = {};
+              if (data.transactionType === "CREDIT") {
+                updateBody.totalReceived = (p.totalReceived || 0) + data.amount;
+              } else {
+                updateBody.totalExpense = (p.totalExpense || 0) + data.amount;
+              }
+              updateBody.balance = (updateBody.totalReceived ?? (p.totalReceived || 0)) - (updateBody.totalExpense ?? (p.totalExpense || 0));
+
+              await fetch(`http://localhost:9000/architecture/project/${data.projectId}`, {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(updateBody)
+              });
+            }
+          }
+        } catch (projErr) {
+          console.error("Error updating project financials:", projErr);
         }
       }
       
@@ -120,7 +167,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <FinanceContext.Provider value={{ ledger, bankBriefs, isLoading, addTransaction, fetchFinanceData }}>
+    <FinanceContext.Provider value={{ ledger, bankBriefs, isLoading, addBank, addTransaction, fetchFinanceData }}>
       {children}
     </FinanceContext.Provider>
   );
