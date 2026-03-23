@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/Button";
 import { useProjects } from "@/lib/projects-store";
+import { useFinance } from "@/lib/finance-store";
 
 type Tab = "overview" | "tasks" | "workers" | "updates" | "photos" | "payments" | "timeline";
 
@@ -36,10 +37,24 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const { user } = useAuth();
   const { getProjectById, updateStageStatus } = useProjects();
+  const { ledger } = useFinance();
   const project = getProjectById(id);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
   if (!project) return <div>Project not found</div>;
+
+  // Calculate project financials from ledger
+  const projectLedger = ledger.filter(l => l.projectId === id);
+  const totalReceived = projectLedger
+    .filter(l => l.transactionType === "CREDIT")
+    .reduce((sum, l) => sum + l.amount, 0);
+  const totalSpent = projectLedger
+    .filter(l => l.transactionType === "DEBIT")
+    .reduce((sum, l) => sum + l.amount, 0);
+  const remainingAdvance = totalReceived - totalSpent;
+
+  const budgetValue = Number(project.budget.replace(/[^0-9.-]+/g, ""));
+  const pendingCollection = budgetValue - totalReceived;
 
   const stages = project.stages;
 
@@ -205,16 +220,24 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
                 <div className="space-y-6">
                   <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-2">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Budget</p>
-                    <p className="text-2xl font-black text-slate-900">{project.budget}</p>
+                    <p className="text-2xl font-black text-slate-900">₹{budgetValue.toLocaleString()}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 bg-green-50/50 rounded-2xl border border-green-100">
-                      <p className="text-[9px] font-bold text-green-600 uppercase tracking-widest mb-1">Received</p>
-                      <p className="text-lg font-black text-green-700">{project.received}</p>
+                      <p className="text-[9px] font-bold text-green-600 uppercase tracking-widest mb-1">Total Received</p>
+                      <p className="text-lg font-black text-green-700">₹{totalReceived.toLocaleString()}</p>
+                    </div>
+                    <div className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
+                      <p className="text-[9px] font-bold text-orange-600 uppercase tracking-widest mb-1">Total Spent</p>
+                      <p className="text-lg font-black text-orange-700">₹{totalSpent.toLocaleString()}</p>
+                    </div>
+                    <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+                      <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest mb-1">Remaining from Advance</p>
+                      <p className="text-lg font-black text-blue-700">₹{remainingAdvance.toLocaleString()}</p>
                     </div>
                     <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
-                      <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-widest mb-1">Pending</p>
-                      <p className="text-lg font-black text-indigo-700">{project.pending}</p>
+                      <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-widest mb-1">Pending from Client</p>
+                      <p className="text-lg font-black text-indigo-700">₹{pendingCollection.toLocaleString()}</p>
                     </div>
                   </div>
                 </div>

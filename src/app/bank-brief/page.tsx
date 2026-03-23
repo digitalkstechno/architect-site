@@ -19,8 +19,44 @@ import { Input } from "@/components/ui/Input";
 import { useFinance } from "@/lib/finance-store";
 
 export default function BankBriefPage() {
-  const { bankBriefs } = useFinance();
+  const { bankBriefs, fetchFinanceData } = useFinance();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [form, setForm] = useState({
+    bankName: "",
+    accountNumber: "",
+    ifscCode: "",
+    openingBalance: "",
+  });
+
+  const handleAddBank = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("auth_token");
+      if (!token) return;
+
+      const res = await fetch("http://localhost:9000/architecture/bank-brief", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...form,
+          openingBalance: parseFloat(form.openingBalance),
+          currentBalance: parseFloat(form.openingBalance)
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to add bank account");
+
+      setIsAddModalOpen(false);
+      setForm({ bankName: "", accountNumber: "", ifscCode: "", openingBalance: "" });
+      fetchFinanceData();
+      toast.success("Bank account added successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Error adding bank account");
+    }
+  };
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -38,7 +74,7 @@ export default function BankBriefPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {bankBriefs.map((bank) => (
-          <Card key={bank.id} className="p-10 space-y-8 relative overflow-hidden group hover:shadow-xl transition-all duration-300 rounded-[2.5rem] border-slate-200">
+          <Card key={bank._id} className="p-10 space-y-8 relative overflow-hidden group hover:shadow-xl transition-all duration-300 rounded-[2.5rem] border-slate-200">
             <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
               <Landmark className="w-24 h-24 text-slate-900" />
             </div>
@@ -63,7 +99,7 @@ export default function BankBriefPage() {
 
             <div className="pt-6 border-t border-slate-50">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Balance</p>
-              <p className="text-4xl font-black text-slate-900 tracking-tighter">${bank.currentBalance.toLocaleString()}</p>
+              <p className="text-4xl font-black text-slate-900 tracking-tighter">₹{(bank.currentBalance || 0).toLocaleString()}</p>
             </div>
 
             <Button variant="outline" className="w-full gap-2 font-bold group h-11 rounded-2xl">
@@ -81,23 +117,44 @@ export default function BankBriefPage() {
       </div>
 
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Connect Bank Account">
-        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setIsAddModalOpen(false); }}>
+        <form className="space-y-6" onSubmit={handleAddBank}>
           <div className="space-y-2">
             <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Bank Name</label>
-            <Input placeholder="e.g. State Bank of India" required />
+            <Input 
+              placeholder="e.g. State Bank of India" 
+              required 
+              value={form.bankName}
+              onChange={e => setForm({ ...form, bankName: e.target.value })}
+            />
           </div>
           <div className="space-y-2">
             <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Account Number</label>
-            <Input placeholder="Enter 12-digit A/C number" required />
+            <Input 
+              placeholder="Enter 12-digit A/C number" 
+              required 
+              value={form.accountNumber}
+              onChange={e => setForm({ ...form, accountNumber: e.target.value })}
+            />
           </div>
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">IFSC Code</label>
-              <Input placeholder="SBIN000..." required />
+              <Input 
+                placeholder="SBIN000..." 
+                required 
+                value={form.ifscCode}
+                onChange={e => setForm({ ...form, ifscCode: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Opening Balance</label>
-              <Input type="number" placeholder="0.00" required />
+              <Input 
+                type="number" 
+                placeholder="0.00" 
+                required 
+                value={form.openingBalance}
+                onChange={e => setForm({ ...form, openingBalance: e.target.value })}
+              />
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">

@@ -16,7 +16,7 @@ export type ProjectLifecyclePhase = {
   status: LifecycleStatus;
 };
 
-export type Project = {
+export interface Project {
   id: string;
   name: string;
   client: string;
@@ -24,17 +24,20 @@ export type Project = {
   location: string;
   startDate: string;
   expectedCompletion: string;
-  status: string;
+  status: "Planned" | "In Progress" | "On Hold" | "Completed";
   progress: number;
   budget: string;
   received: string;
   pending: string;
+  totalReceived?: number;
+  totalExpense?: number;
+  balance?: number;
   supervisorId?: string;
   workerIds?: string[];
   phase?: string;
   lifecycle?: ProjectLifecyclePhase[];
-  stages: ProjectStage[];
-};
+  stages?: ProjectStage[];
+}
 
 type CreateProjectInput = Omit<
   Project,
@@ -127,11 +130,14 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         startDate: p.startDate ? new Date(p.startDate).toISOString().split("T")[0] : "",
         expectedCompletion: p.expectedEndDate ? new Date(p.expectedEndDate).toISOString().split("T")[0] : "",
         status: p.status === "PLANNING" ? "Planned" : p.status === "ACTIVE" ? "In Progress" : p.status === "ON_HOLD" ? "On Hold" : p.status === "COMPLETED" ? "Completed" : "Planned",
-        progress: 0, // Backend doesn't have progress yet
-        budget: `$${(p.budget || 0).toLocaleString()}`,
-        received: "$0",
-        pending: `$${(p.budget || 0).toLocaleString()}`,
-        stages: [], // Backend doesn't have stages yet
+        progress: 0,
+        budget: `₹${(p.budget || 0).toLocaleString()}`,
+        received: `₹${(p.totalReceived || 0).toLocaleString()}`,
+        pending: `₹${((p.budget || 0) - (p.totalReceived || 0)).toLocaleString()}`,
+        totalReceived: p.totalReceived || 0,
+        totalExpense: p.totalExpense || 0,
+        balance: p.balance || 0,
+        stages: [], 
       }));
 
       setProjects(mapped);
@@ -195,50 +201,40 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       return created;
     };
 
-    const updateProject = (id: string, patch: Partial<Project>) => {
+    const updateProject = async (id: string, patch: Partial<Project>) => {
       const token = localStorage.getItem("auth_token");
-      if (token) {
-        const updatePayload: any = {};
-        if (patch.name) updatePayload.projectName = patch.name;
-        if (patch.location) updatePayload.siteAddress = patch.location;
-        if (patch.budget) updatePayload.budget = Number(patch.budget.replace(/[^0-9.-]+/g, ""));
-        if (patch.status) {
-          updatePayload.status =
-            patch.status === "Planned"
-              ? "PLANNING"
-              : patch.status === "In Progress"
-              ? "ACTIVE"
-              : patch.status === "Completed"
-              ? "COMPLETED"
-              : "PLANNING";
-        }
+      if (!token) return;
 
-        fetch(`http://localhost:9000/architecture/project/${id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(updatePayload),
-        })
-          .then(() => fetchProjects())
-          .catch((err) => console.error("Update project error:", err));
+      const body: any = {};
+      if (patch.name) body.projectName = patch.name;
+      if (patch.location) body.siteAddress = patch.location;
+      if (patch.status) {
+        body.status = patch.status === "Planned" ? "PLANNING" : patch.status === "In Progress" ? "ACTIVE" : patch.status === "On Hold" ? "ON_HOLD" : "COMPLETED";
       }
+      if (patch.budget) body.budget = Number(patch.budget.replace(/[^0-9.-]+/g, ""));
+
+      await fetch(`http://localhost:9000/architecture/project/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(body)
+      });
+
       setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+      await fetchProjects();
     };
 
-    const deleteProject = (id: string) => {
+    const deleteProject = async (id: string) => {
       const token = localStorage.getItem("auth_token");
-      if (token) {
-        fetch(`http://localhost:9000/architecture/project/${id}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-          .then(() => fetchProjects())
-          .catch((err) => console.error("Delete project error:", err));
-      }
+      if (!token) return;
+
+      await fetch(`http://localhost:9000/architecture/project/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
       setProjects((prev) => prev.filter((p) => p.id !== id));
     };
 

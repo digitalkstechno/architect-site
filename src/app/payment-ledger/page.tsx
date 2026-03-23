@@ -21,45 +21,56 @@ import { useFinance } from "@/lib/finance-store";
 import { useAuth } from "@/lib/auth-context";
 
 export default function PaymentLedgerPage() {
-  const { user } = useAuth();
-  const { ledger, addTransaction } = useFinance();
+  const { ledger, bankBriefs, addTransaction, isLoading } = useFinance();
+  const { projects } = useProjects();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const [form, setForm] = useState({
-    project: "",
-    client: "",
+    projectId: "",
+    clientId: "",
+    bankId: "",
     amount: "",
-    date: new Date().toISOString().split("T")[0],
-    type: "CREDIT" as const,
+    transactionType: "CREDIT" as const,
+    source: "Client Advance",
+    description: "",
   });
 
   const totalRevenue = ledger
-    .filter(e => e.type === "CREDIT")
+    .filter(e => e.transactionType === "CREDIT")
     .reduce((sum, e) => sum + e.amount, 0);
   
   const totalExpenses = ledger
-    .filter(e => e.type === "DEBIT")
+    .filter(e => e.transactionType === "DEBIT")
     .reduce((sum, e) => sum + e.amount, 0);
 
-  const handleRecordPayment = (e: React.FormEvent) => {
+  const filteredLedger = ledger.filter(e => 
+    e.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    e.source?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
     
-    addTransaction({
-      tenantId: user.id,
-      type: form.type,
-      amount: parseFloat(form.amount.replace(/[^0-9.]/g, "")),
-      description: `${form.type === "CREDIT" ? "Payment from" : "Payment to"} ${form.client} for ${form.project}`,
-      date: form.date,
+    await addTransaction({
+      projectId: form.projectId,
+      clientId: form.clientId,
+      bankId: form.bankId,
+      transactionType: form.transactionType,
+      amount: parseFloat(form.amount),
+      source: form.source,
+      description: form.description,
     });
     
     setIsAddModalOpen(false);
     setForm({
-      project: "",
-      client: "",
+      projectId: "",
+      clientId: "",
+      bankId: "",
       amount: "",
-      date: new Date().toISOString().split("T")[0],
-      type: "CREDIT",
+      transactionType: "CREDIT",
+      source: "Client Advance",
+      description: "",
     });
   };
 
@@ -74,7 +85,12 @@ export default function PaymentLedgerPage() {
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input placeholder="Search ledger..." className="pl-10 w-64 h-10" />
+            <Input 
+              placeholder="Search ledger..." 
+              className="pl-10 w-64 h-10" 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
           </div>
           <Button onClick={() => setIsAddModalOpen(true)} className="gap-2 shadow-lg shadow-indigo-200 h-11">
             <Plus className="w-5 h-5" />
@@ -85,9 +101,9 @@ export default function PaymentLedgerPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {[
-          { label: "Total Revenue", value: `$${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
-          { label: "Total Expenses", value: `$${totalExpenses.toLocaleString()}`, icon: TrendingDown, color: "text-orange-600", bg: "bg-orange-50" },
-          { label: "Net Cash Flow", value: `$${(totalRevenue - totalExpenses).toLocaleString()}`, icon: Wallet, color: "text-indigo-600", bg: "bg-indigo-50" },
+          { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Total Expenses", value: `₹${totalExpenses.toLocaleString()}`, icon: TrendingDown, color: "text-orange-600", bg: "bg-orange-50" },
+          { label: "Net Cash Flow", value: `₹${(totalRevenue - totalExpenses).toLocaleString()}`, icon: Wallet, color: "text-indigo-600", bg: "bg-indigo-50" },
         ].map((stat) => (
           <Card key={stat.label} className="p-6 flex items-center gap-5 hover:shadow-md transition-all duration-300">
             <div className={cn("p-4 rounded-2xl", stat.bg)}>
@@ -106,40 +122,42 @@ export default function PaymentLedgerPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Description / Source</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Amount</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Type</th>
-                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Balance After</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Bank Account</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {ledger.map((entry) => (
-                <tr key={entry.id} className="group hover:bg-slate-50/30 transition-colors">
+              {filteredLedger.map((entry) => (
+                <tr key={entry._id} className="group hover:bg-slate-50/30 transition-colors">
                   <td className="px-8 py-6">
-                    <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{entry.description}</p>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">REF: {entry.id.toUpperCase()}</p>
+                    <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{entry.description || "No description"}</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{entry.source}</p>
                   </td>
                   <td className="px-8 py-6 text-center">
                     <span className={cn(
                       "text-sm font-black",
-                      entry.type === "CREDIT" ? "text-emerald-600" : "text-orange-600"
+                      entry.transactionType === "CREDIT" ? "text-emerald-600" : "text-orange-600"
                     )}>
-                      {entry.type === "CREDIT" ? "+" : "-"}${entry.amount.toLocaleString()}
+                      {entry.transactionType === "CREDIT" ? "+" : "-"}₹{entry.amount.toLocaleString()}
                     </span>
                   </td>
                   <td className="px-8 py-6 text-center">
                     <span className={cn(
                       "px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-widest",
-                      entry.type === "CREDIT" ? "bg-green-50 text-green-700 border-green-100" : "bg-orange-50 text-orange-700 border-orange-100"
+                      entry.transactionType === "CREDIT" ? "bg-green-50 text-green-700 border-green-100" : "bg-orange-50 text-orange-700 border-orange-100"
                     )}>
-                      {entry.type}
+                      {entry.transactionType}
                     </span>
                   </td>
                   <td className="px-8 py-6 text-center">
-                    <span className="text-sm font-black text-slate-900">${entry.balanceAfter.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-slate-700">
+                      {bankBriefs.find(b => b._id === entry.bankId)?.bankName || "—"}
+                    </span>
                   </td>
-                  <td className="px-8 py-6 text-sm font-bold text-slate-500">{entry.date}</td>
+                  <td className="px-8 py-6 text-sm font-bold text-slate-500">{new Date(entry.createdAt || entry.date).toLocaleDateString()}</td>
                 </tr>
               ))}
               {ledger.length === 0 && (
@@ -159,28 +177,50 @@ export default function PaymentLedgerPage() {
 
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Record Transaction">
         <form className="space-y-6" onSubmit={handleRecordPayment}>
-          <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Project Name</label>
-            <Input 
-              placeholder="e.g. Modern Villa" 
-              value={form.project}
-              onChange={(e) => setForm({ ...form, project: e.target.value })}
-              required 
-            />
-          </div>
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Entity Name</label>
-              <Input 
-                placeholder="Client/Worker Name" 
-                value={form.client}
-                onChange={(e) => setForm({ ...form, client: e.target.value })}
-                required 
-              />
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Project</label>
+              <select 
+                required
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={form.projectId}
+                onChange={e => setForm({ ...form, projectId: e.target.value })}
+              >
+                <option value="">Select project</option>
+                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Amount</label>
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Bank Account</label>
+              <select 
+                required
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={form.bankId}
+                onChange={e => setForm({ ...form, bankId: e.target.value })}
+              >
+                <option value="">Select bank</option>
+                {bankBriefs.map(b => <option key={b._id} value={b._id}>{b.bankName} - {b.accountNumber}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Transaction Type</label>
+              <select 
+                required
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={form.transactionType}
+                onChange={e => setForm({ ...form, transactionType: e.target.value as any })}
+              >
+                <option value="CREDIT">CREDIT (Income)</option>
+                <option value="DEBIT">DEBIT (Expense)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Amount (₹)</label>
               <Input 
+                type="number"
                 placeholder="0.00" 
                 value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
@@ -188,29 +228,28 @@ export default function PaymentLedgerPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Transaction Date</label>
-              <Input 
-                type="date" 
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                required 
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Type</label>
-              <select 
-                value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value as any })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-              >
-                <option value="CREDIT">Payment Inflow (Credit)</option>
-                <option value="DEBIT">Expense Outflow (Debit)</option>
-              </select>
-            </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Source / Category</label>
+            <Input 
+              placeholder="e.g. Client Advance, Material Purchase, Labor Wage" 
+              value={form.source}
+              onChange={(e) => setForm({ ...form, source: e.target.value })}
+              required 
+            />
           </div>
-          <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
+
+          <div className="space-y-2">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
+            <textarea 
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[80px]"
+              placeholder="Enter transaction details..."
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+          </div>
+
+          <div className="flex justify-end gap-4 pt-4 border-t border-slate-100">
             <Button variant="secondary" onClick={() => setIsAddModalOpen(false)} className="font-bold">Cancel</Button>
             <Button type="submit" className="font-bold">Record Transaction</Button>
           </div>

@@ -8,6 +8,8 @@ import { ProjectsProvider } from "@/lib/projects-store";
 import { TasksProvider } from "@/lib/tasks-store";
 import { SiteUpdatesProvider } from "@/lib/site-updates-store";
 import { FinanceProvider } from "@/lib/finance-store";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,6 +43,7 @@ export default function RootLayout({
                 <SiteUpdatesProvider>
                   <FinanceProvider>
                     <ClientLayout>{children}</ClientLayout>
+                    <ToastContainer position="top-right" autoClose={3000} />
                   </FinanceProvider>
                 </SiteUpdatesProvider>
               </TasksProvider>

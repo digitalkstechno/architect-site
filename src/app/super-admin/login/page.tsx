@@ -3,29 +3,29 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Lock, User, ChevronRight, Activity } from "lucide-react";
+import { ShieldCheck, Lock, User, ChevronRight, Activity, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { useSuperAdminAuth } from "@/lib/superadmin-auth";
+import { toast } from "react-toastify";
 
 export default function SuperAdminLogin() {
   const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { login } = useSuperAdminAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
     try {
       await login(userName, password);
+      toast.success("Super Admin Login successful!");
       router.push("/super-admin");
     } catch (err: any) {
-      setError(err.message || "Invalid credentials");
+      toast.error(err.message || "Invalid credentials");
     } finally {
       setLoading(false);
     }
@@ -55,12 +55,6 @@ export default function SuperAdminLogin() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
-                <p className="text-xs font-bold text-red-400">{error}</p>
-              </div>
-            )}
-
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Username</label>
               <Input 
@@ -88,10 +82,19 @@ export default function SuperAdminLogin() {
             <Button 
               type="submit" 
               disabled={loading}
-              className="w-full py-4 text-sm font-black uppercase tracking-widest gap-2 group rounded-2xl shadow-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-all duration-300 border-none"
+              className="w-full py-4 text-sm font-black uppercase tracking-widest gap-2 group rounded-2xl shadow-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-all duration-300 border-none flex items-center justify-center"
             >
-              {loading ? "Authenticating..." : "Authorize Access"}
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Authenticating...
+                </>
+              ) : (
+                <>
+                  Authorize Access
+                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform ml-1" />
+                </>
+              )}
             </Button>
           </form>
         </Card>

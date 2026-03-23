@@ -1,30 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Building2, User, Lock, ChevronRight, ShieldCheck } from "lucide-react";
+import { Building2, User, Lock, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { useRoles } from "@/lib/role-context";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import { toast } from "react-toastify";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
     try {
       await login(identifier, password);
+      toast.success("Login successful!");
     } catch (err: any) {
-      setError(err.message || "Invalid credentials");
+      toast.error(err.message || "Invalid credentials");
     } finally {
       setLoading(false);
     }
@@ -51,11 +50,6 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
-                <p className="text-xs font-bold text-red-400">{error}</p>
-              </div>
-            )}
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email or Username</label>
               <Input 
@@ -87,11 +81,21 @@ export default function LoginPage() {
               type="submit" 
               disabled={loading}
               className={cn(
-                "w-full py-4 text-sm font-black uppercase tracking-widest gap-2 group rounded-2xl shadow-xl bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100 transition-all duration-300"
+                "w-full py-4 text-sm font-black uppercase tracking-widest gap-2 group rounded-2xl shadow-xl bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100 transition-all duration-300",
+                loading && "opacity-80 cursor-not-allowed"
               )}
             >
-              {loading ? "Authenticating..." : "Sign In to Console"}
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Authenticating...
+                </>
+              ) : (
+                <>
+                  Sign In to Console
+                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </Button>
           </form>
 
@@ -100,16 +104,6 @@ export default function LoginPage() {
               Don't have an account?{" "}
               <button type="button" className="text-indigo-600 hover:underline">Request Access</button>
             </p>
-            
-            <div className="pt-4 border-t border-slate-100">
-              <Link 
-                href="/super-admin/login" 
-                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 hover:text-slate-900 transition-all border border-slate-100"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Super Admin Login
-              </Link>
-            </div>
           </div>
         </Card>
       </div>

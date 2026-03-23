@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("http://localhost:9000/architecture/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userName: identifier, password }), // Using identifier as userName for API consistency
+        body: JSON.stringify({ email: identifier, password }), 
       });
 
       const payload = await res.json();
