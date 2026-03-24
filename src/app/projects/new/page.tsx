@@ -35,7 +35,7 @@ export default function NewProjectPage() {
       try {
         const token = localStorage.getItem("auth_token");
         if (!token) return;
-        const res = await fetch("http://localhost:9000/architecture/client", {
+        const res = await fetch(`${API_BASE_URL}/client`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const payload = await res.json();

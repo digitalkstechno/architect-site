@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
+import { API_BASE_URL } from "@/lib/api-config";
 
 interface Worker {
   _id: string;
@@ -43,7 +44,7 @@ export default function WorkersPage() {
   const fetchWorkers = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:9000/architecture/worker", {
+      const res = await fetch(`${API_BASE_URL}/worker`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await res.json();
@@ -72,8 +73,7 @@ export default function WorkersPage() {
       if (form.wageType === "DAILY" && form.dailyWage) body.dailyWage = Number(form.dailyWage);
       if (form.wageType === "CONTRACT" && form.contractAmount) body.contractAmount = Number(form.contractAmount);
 
-      const res = await fetch("http://localhost:9000/architecture/worker", {
-        method: "POST",
+      const res = await fetch(`${API_BASE_URL}/worker`, {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
@@ -93,7 +93,7 @@ export default function WorkersPage() {
     if (!confirm("Delete this worker?")) return;
     setDeletingId(id);
     try {
-      await fetch(`http://localhost:9000/architecture/worker/${id}`, {
+      await fetch(`${API_BASE_URL}/worker/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -1,6 +1,8 @@
 "use client";
 
-export const SA_BASE_URL = process.env.NEXT_PUBLIC_SA_API_URL || "http://localhost:9000/architecture";
+import { API_BASE_URL } from "./api-config";
+
+export const SA_BASE_URL = API_BASE_URL;
 const TOKEN_KEY = "sa_token";
 
 export function getSuperAdminToken(): string | null {

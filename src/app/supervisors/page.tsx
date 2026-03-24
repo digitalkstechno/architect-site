@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
+import { API_BASE_URL } from "@/lib/api-config";
 
 interface Role {
   _id: string;
@@ -47,8 +48,8 @@ export default function SupervisorsPage() {
     try {
       setLoading(true);
       const [usersRes, rolesRes] = await Promise.all([
-        fetch("http://localhost:9000/architecture/user", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("http://localhost:9000/architecture/role", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/user`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/role`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       const usersPayload = await usersRes.json();
       const rolesPayload = await rolesRes.json();
@@ -80,7 +81,7 @@ export default function SupervisorsPage() {
     setSubmitting(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:9000/architecture/user", {
+      const res = await fetch(`${API_BASE_URL}/user`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -109,7 +110,7 @@ export default function SupervisorsPage() {
     if (!confirm("Delete this supervisor?")) return;
     setDeletingId(id);
     try {
-      await fetch(`http://localhost:9000/architecture/user/${id}`, {
+      await fetch(`${API_BASE_URL}/user/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

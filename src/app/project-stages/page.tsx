@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Trash2, Loader2, Layers } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Plus, Search, Trash2, Loader2, Layers, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -9,6 +10,8 @@ import { Card } from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
 import { useProjects } from "@/lib/projects-store";
 import { useAuth } from "@/lib/auth-context";
+import { API_BASE_URL } from "@/lib/api-config";
+import Link from "next/link";
 
 interface ProjectStage {
   _id: string;
@@ -29,14 +32,17 @@ const STATUS_STYLES: Record<string, string> = {
 export default function ProjectStagesPage() {
   const { user } = useAuth();
   const { projects } = useProjects();
+  const searchParams = useSearchParams();
+  const projectIdFromUrl = searchParams.get("projectId");
+  
   const [stages, setStages] = useState<ProjectStage[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterProject, setFilterProject] = useState("");
-  const [form, setForm] = useState(emptyForm);
+  const [filterProject, setFilterProject] = useState(projectIdFromUrl || "");
+  const [form, setForm] = useState({ ...emptyForm, projectId: projectIdFromUrl || "" });
 
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
 
@@ -50,8 +56,8 @@ export default function ProjectStagesPage() {
     try {
       setLoading(true);
       const url = filterProject
-        ? `http://localhost:9000/architecture/projectstage?projectId=${filterProject}`
-        : "http://localhost:9000/architecture/projectstage";
+        ? `${API_BASE_URL}/projectstage?projectId=${filterProject}`
+        : `${API_BASE_URL}/projectstage`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       setStages(data.projectstage || data.data || []);
@@ -68,7 +74,7 @@ export default function ProjectStagesPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch("http://localhost:9000/architecture/projectstage", {
+      const res = await fetch(`${API_BASE_URL}/projectstage`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -79,11 +85,24 @@ export default function ProjectStagesPage() {
         }),
       });
       if (!res.ok) throw new Error("Failed to create stage");
-      setIsModalOpen(false);
-      setForm(emptyForm);
+      
+      // Reset form but keep projectId if coming from URL
+      setForm({ 
+        stageName: "", 
+        order: "", 
+        status: "PENDING" as const, 
+        projectId: projectIdFromUrl || "" 
+      });
+      
+      // Close modal after a short delay so user sees success
+      setTimeout(() => setIsModalOpen(false), 500);
+      
+      // Refresh stages
+      await new Promise(resolve => setTimeout(resolve, 300));
       fetchStages();
     } catch (err) {
-      console.error(err);
+      console.error("Create stage error:", err);
+      alert("Failed to create stage. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -91,7 +110,7 @@ export default function ProjectStagesPage() {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     setStages((prev) => prev.map((s) => s._id === id ? { ...s, status: status as any } : s));
-    await fetch(`http://localhost:9000/architecture/projectstage/${id}`, {
+    await fetch(`${API_BASE_URL}/projectstage/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ status }),
@@ -102,7 +121,7 @@ export default function ProjectStagesPage() {
     if (!confirm("Delete this stage?")) return;
     setDeletingId(id);
     try {
-      await fetch(`http://localhost:9000/architecture/projectstage/${id}`, {
+      await fetch(`${API_BASE_URL}/projectstage/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -132,8 +151,24 @@ export default function ProjectStagesPage() {
       <div className="space-y-10 animate-in fade-in duration-500">
         <div className="flex flex-row items-center justify-between gap-6">
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Project Stages</h2>
-            <p className="text-sm font-medium text-slate-500 hidden sm:block">Track construction stages across all projects</p>
+            <div className="flex items-center gap-3">
+              {projectIdFromUrl && (
+                <Link href="/projects" className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                  <ArrowLeft className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                </Link>
+              )}
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Project Stages</h2>
+                {projectIdFromUrl && projects.find(p => p.id === projectIdFromUrl) && (
+                  <p className="text-sm font-medium text-indigo-600 mt-1">
+                    📍 {projects.find(p => p.id === projectIdFromUrl)?.name}
+                  </p>
+                )}
+                <p className="text-sm font-medium text-slate-500 hidden sm:block">
+                  {projectIdFromUrl ? "Manage stages for this project" : "Track construction stages across all projects"}
+                </p>
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden md:block">
@@ -237,7 +272,7 @@ export default function ProjectStagesPage() {
         )}
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setForm(emptyForm); }} title="Add Project Stage">
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setForm({ ...emptyForm, projectId: projectIdFromUrl || "" }); }} title="Add Project Stage">
         <form onSubmit={handleCreate} className="space-y-5">
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700 ml-1">Project *</label>

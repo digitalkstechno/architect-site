@@ -27,6 +27,7 @@ import Link from "next/link";
 import { useState, use, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
+import { API_BASE_URL } from "@/lib/api-config";
 import { Button } from "@/components/ui/Button";
 import { useProjects } from "@/lib/projects-store";
 import { useFinance } from "@/lib/finance-store";
@@ -55,7 +56,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
     setStagesLoading(true);
     try {
       const t = localStorage.getItem("auth_token");
-      const res = await fetch(`http://localhost:9000/architecture/projectstage?projectId=${id}`, {
+      const res = await fetch(`${API_BASE_URL}/projectstage?projectId=${id}`, {
         headers: { Authorization: `Bearer ${t}` },
       });
       const d = await res.json();
@@ -70,7 +71,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
     e.preventDefault(); setStageSaving(true);
     try {
       const t = localStorage.getItem("auth_token");
-      const res = await fetch("http://localhost:9000/architecture/projectstage", {
+      const res = await fetch(`${API_BASE_URL}/projectstage`, {
         method: "POST",
         headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -91,7 +92,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
   const handleUpdateStageStatus = async (stageId: string, newStatus: string) => {
     const t = localStorage.getItem("auth_token");
     setStages(prev => prev.map(s => s._id === stageId ? { ...s, status: newStatus } : s));
-    await fetch(`http://localhost:9000/architecture/projectstage/${stageId}`, {
+    await fetch(`${API_BASE_URL}/projectstage/${stageId}`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
       body: JSON.stringify({ status: newStatus }),
@@ -102,7 +103,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
     if (!confirm("Delete this stage?")) return;
     const t = localStorage.getItem("auth_token");
     setStages(prev => prev.filter(s => s._id !== stageId));
-    await fetch(`http://localhost:9000/architecture/projectstage/${stageId}`, {
+    await fetch(`${API_BASE_URL}/projectstage/${stageId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${t}` },
     });

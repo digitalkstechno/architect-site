@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
+import { API_BASE_URL } from "@/lib/api-config";
 import { useProjects } from "@/lib/projects-store";
 
 interface WorkerPayment {
@@ -43,10 +44,10 @@ export default function WorkerPaymentsPage() {
     try {
       setLoading(true);
       const [paymentsRes, workersRes] = await Promise.all([
-        fetch("http://localhost:9000/architecture/workerpayment", {
+        fetch(`${API_BASE_URL}/workerpayment`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("http://localhost:9000/architecture/worker", {
+        fetch(`${API_BASE_URL}/worker`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -68,7 +69,7 @@ export default function WorkerPaymentsPage() {
     setSubmitting(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:9000/architecture/workerpayment", {
+      const res = await fetch(`${API_BASE_URL}/workerpayment`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -95,7 +96,7 @@ export default function WorkerPaymentsPage() {
     if (!confirm("Delete this payment record?")) return;
     setDeletingId(id);
     try {
-      await fetch(`http://localhost:9000/architecture/workerpayment/${id}`, {
+      await fetch(`${API_BASE_URL}/workerpayment/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
+import { API_BASE_URL } from "@/lib/api-config";
 
-const BASE = "http://localhost:9000/architecture";
 const token = () => (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
 const authHeaders = () => ({ Authorization: `Bearer ${token()}`, "Content-Type": "application/json" });
 
@@ -46,7 +46,7 @@ function UsersTab({ roles }: { roles: Role[] }) {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/user`, { headers: authHeaders() });
+      const res = await fetch(`${API_BASE_URL}/user`, { headers: authHeaders() });
       const d = await res.json();
       setUsers(d.users || []);
     } finally { setLoading(false); }
@@ -57,7 +57,7 @@ function UsersTab({ roles }: { roles: Role[] }) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true); setError("");
     try {
-      const res = await fetch(`${BASE}/user`, {
+      const res = await fetch(`${API_BASE_URL}/user`, {
         method: "POST", headers: authHeaders(),
         body: JSON.stringify({ userName: form.userName, email: form.email, password: form.password, contact_no: form.contact_no, role: form.roleId, employmentType: form.employmentType }),
       });
@@ -71,7 +71,7 @@ function UsersTab({ roles }: { roles: Role[] }) {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this user?")) return;
     setDeletingId(id);
-    await fetch(`${BASE}/user/${id}`, { method: "DELETE", headers: authHeaders() });
+    await fetch(`${API_BASE_URL}/user/${id}`, { method: "DELETE", headers: authHeaders() });
     setUsers(p => p.filter(u => u._id !== id));
     setDeletingId(null);
   };
@@ -179,7 +179,7 @@ function RolesTab({ roles, permissions, onRolesChange }: { roles: Role[]; permis
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true); setError("");
     try {
-      const url = editRole ? `${BASE}/role/${editRole._id}` : `${BASE}/role`;
+      const url = editRole ? `${API_BASE_URL}/role/${editRole._id}` : `${API_BASE_URL}/role`;
       const method = editRole ? "PUT" : "POST";
       const res = await fetch(url, {
         method, headers: authHeaders(),
@@ -195,7 +195,7 @@ function RolesTab({ roles, permissions, onRolesChange }: { roles: Role[]; permis
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this role?")) return;
     setDeletingId(id);
-    await fetch(`${BASE}/role/${id}`, { method: "DELETE", headers: authHeaders() });
+    await fetch(`${API_BASE_URL}/role/${id}`, { method: "DELETE", headers: authHeaders() });
     onRolesChange();
     setDeletingId(null);
   };
@@ -278,7 +278,7 @@ function PermissionsTab({ permissions, onPermissionsChange }: { permissions: Per
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true); setError("");
     try {
-      const res = await fetch(`${BASE}/permission`, {
+      const res = await fetch(`${API_BASE_URL}/permission`, {
         method: "POST", headers: authHeaders(),
         body: JSON.stringify({ module: form.module, actions: form.actions, permissionName: form.permissionName || form.module }),
       });
@@ -292,7 +292,7 @@ function PermissionsTab({ permissions, onPermissionsChange }: { permissions: Per
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this permission?")) return;
     setDeletingId(id);
-    await fetch(`${BASE}/permission/${id}`, { method: "DELETE", headers: authHeaders() });
+    await fetch(`${API_BASE_URL}/permission/${id}`, { method: "DELETE", headers: authHeaders() });
     onPermissionsChange();
     setDeletingId(null);
   };
@@ -380,13 +380,13 @@ export default function SystemUsersPage() {
   const [permissions, setPermissions] = useState<Permission[]>([]);
 
   const fetchRoles = useCallback(async () => {
-    const res = await fetch(`${BASE}/role`, { headers: authHeaders() });
+    const res = await fetch(`${API_BASE_URL}/role`, { headers: authHeaders() });
     const d = await res.json();
     setRoles(d.roles || []);
   }, []);
 
   const fetchPermissions = useCallback(async () => {
-    const res = await fetch(`${BASE}/permission`, { headers: authHeaders() });
+    const res = await fetch(`${API_BASE_URL}/permission`, { headers: authHeaders() });
     const d = await res.json();
     setPermissions(d.permissions || []);
   }, []);

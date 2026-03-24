@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { siteUpdates as seedUpdates } from "@/lib/dummy-data";
 import { useAuth } from "./auth-context";
+import { API_BASE_URL } from "./api-config";
 
 export type SiteUpdate = {
   id: string;
@@ -52,7 +53,7 @@ export function SiteUpdatesProvider({ children }: { children: React.ReactNode })
         return;
       }
 
-      const res = await fetch("http://localhost:9000/architecture/projectupdate", {
+      const res = await fetch(`${API_BASE_URL}/projectupdate`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -102,8 +103,7 @@ export function SiteUpdatesProvider({ children }: { children: React.ReactNode })
         input.images.forEach((img) => formData.append("images", img));
       }
 
-      const res = await fetch("http://localhost:9000/architecture/projectupdate", {
-        method: "POST",
+      const res = await fetch(`${API_BASE_URL}/projectupdate`, {
         headers: { Authorization: `Bearer ${token}` },
         body: formData
       });
@@ -116,7 +116,7 @@ export function SiteUpdatesProvider({ children }: { children: React.ReactNode })
       const token = localStorage.getItem("auth_token");
       if (!token) return;
 
-      await fetch(`http://localhost:9000/architecture/projectupdate/${id}`, {
+      await fetch(`${API_BASE_URL}/projectupdate/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });

@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/Input";
 import { useProjects } from "@/lib/projects-store";
 import { useFinance } from "@/lib/finance-store";
 import { useAuth } from "@/lib/auth-context";
+import { API_BASE_URL } from "@/lib/api-config";
 import { useEffect } from "react";
 import { toast } from "react-toastify";
 
@@ -55,7 +56,7 @@ export default function ProjectEstimationPage() {
     try {
       const token = localStorage.getItem("auth_token");
       if (!token) return;
-      const res = await fetch("http://localhost:9000/architecture/projectestimation", {
+      const res = await fetch(`${API_BASE_URL}/projectestimation`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const payload = await res.json();
@@ -76,8 +77,7 @@ export default function ProjectEstimationPage() {
       if (!token) return;
 
       const project = projects.find(p => p.id === newEstimation.projectId);
-      const res = await fetch("http://localhost:9000/architecture/projectestimation", {
-        method: "POST",
+      const res = await fetch(`${API_BASE_URL}/projectestimation`, {
         headers: { 
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}` 
@@ -106,7 +106,7 @@ export default function ProjectEstimationPage() {
     try {
       const token = localStorage.getItem("auth_token");
       if (!token) return;
-      await fetch(`http://localhost:9000/architecture/projectestimation/${id}`, {
+      await fetch(`${API_BASE_URL}/projectestimation/${id}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",

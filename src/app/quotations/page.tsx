@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
 import { useProjects } from "@/lib/projects-store";
 import { useAuth } from "@/lib/auth-context";
+import { API_BASE_URL } from "@/lib/api-config";
 
 interface Quotation {
   _id: string;
@@ -59,10 +60,10 @@ export default function QuotationsPage() {
     try {
       setLoading(true);
       const [quotRes, clientRes] = await Promise.all([
-        fetch("http://localhost:9000/architecture/estimation", {
+        fetch(`${API_BASE_URL}/estimation`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("http://localhost:9000/architecture/client", {
+        fetch(`${API_BASE_URL}/client`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -89,7 +90,7 @@ export default function QuotationsPage() {
     setSubmitting(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:9000/architecture/estimation", {
+      const res = await fetch(`${API_BASE_URL}/estimation`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -114,7 +115,7 @@ export default function QuotationsPage() {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     setQuotations((prev) => prev.map((q) => q._id === id ? { ...q, status: status as any } : q));
-    await fetch(`http://localhost:9000/architecture/estimation/${id}`, {
+    await fetch(`${API_BASE_URL}/estimation/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ status }),
@@ -125,7 +126,7 @@ export default function QuotationsPage() {
     if (!confirm("Delete this quotation?")) return;
     setDeletingId(id);
     try {
-      await fetch(`http://localhost:9000/architecture/estimation/${id}`, {
+      await fetch(`${API_BASE_URL}/estimation/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

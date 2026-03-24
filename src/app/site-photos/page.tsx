@@ -6,6 +6,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/lib/auth-context";
+import { API_BASE_URL } from "@/lib/api-config";
 import { useSiteUpdates } from "@/lib/site-updates-store";
 import { useProjects } from "@/lib/projects-store";
 import { toast } from "react-toastify";
@@ -49,7 +50,7 @@ export default function SitePhotosPage() {
   const projectPhotos = projectUpdates.flatMap(u => 
     (u.images || []).map(img => ({
       id: u.id,
-      src: img.startsWith('http') ? img : `http://localhost:9000${img}`,
+      src: img.startsWith('http') ? img : `${API_BASE_URL}${img}`,
       date: u.date,
       description: u.update
     }))

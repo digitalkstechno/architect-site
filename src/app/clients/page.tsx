@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/lib/auth-context";
+import { API_BASE_URL } from "@/lib/api-config";
 
 interface Client {
   _id: string;
@@ -35,7 +36,7 @@ export default function ClientsPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem("auth_token");
-      const res = await fetch("http://localhost:9000/architecture/client", {
+      const res = await fetch(`${API_BASE_URL}/client`, {
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -73,7 +74,7 @@ export default function ClientsPage() {
     setDeletingId(id);
     try {
       const token = localStorage.getItem("auth_token");
-      await fetch(`http://localhost:9000/architecture/client/${id}`, {
+      await fetch(`${API_BASE_URL}/client/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -93,8 +94,7 @@ export default function ClientsPage() {
     setError("");
     try {
       const token = localStorage.getItem("auth_token");
-      const res = await fetch("http://localhost:9000/architecture/client", {
-        method: "POST",
+      const res = await fetch(`${API_BASE_URL}/client`, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { clearSuperAdminToken, getSuperAdminToken, saLogin, setSuperAdminToken } from "@/lib/superadmin-api";
 
 type SuperAdminAuthContextType = {
@@ -21,30 +21,30 @@ export function SuperAdminAuthProvider({ children }: { children: React.ReactNode
     setIsLoading(false);
   }, []);
 
-  const api = useMemo<SuperAdminAuthContextType>(() => {
-    const login = async (userName: string, password: string) => {
-      const payload = await saLogin(userName, password);
-      const t =
-        payload?.token ??
-        payload?.accessToken ??
-        payload?.jwt ??
-        payload?.data?.token ??
-        payload?.data?.accessToken;
-      if (t) {
-        setSuperAdminToken(String(t));
-        setToken(String(t));
-      }
-    };
+  const login = async (userName: string, password: string) => {
+    const payload = await saLogin(userName, password);
+    const t =
+      payload?.token ??
+      payload?.accessToken ??
+      payload?.jwt ??
+      payload?.data?.token ??
+      payload?.data?.accessToken;
+    if (t) {
+      setSuperAdminToken(String(t));
+      setToken(String(t));
+    }
+  };
 
-    const logout = () => {
-      clearSuperAdminToken();
-      setToken(null);
-    };
+  const logout = () => {
+    clearSuperAdminToken();
+    setToken(null);
+  };
 
-    return { token, isLoading, login, logout };
-  }, [token]);
-
-  return <SuperAdminAuthContext.Provider value={api}>{children}</SuperAdminAuthContext.Provider>;
+  return (
+    <SuperAdminAuthContext.Provider value={{ token, isLoading, login, logout }}>
+      {children}
+    </SuperAdminAuthContext.Provider>
+  );
 }
 
 export function useSuperAdminAuth() {

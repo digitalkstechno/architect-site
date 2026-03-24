@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useAuth } from "./auth-context";
+import { API_BASE_URL } from "./api-config";
 
 export type TransactionType = "CREDIT" | "DEBIT";
 
@@ -52,10 +53,10 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       }
 
       const [ledgerRes, banksRes] = await Promise.all([
-        fetch("http://localhost:9000/architecture/paymentledger", {
+        fetch(`${API_BASE_URL}/paymentledger`, {
           headers: { Authorization: `Bearer ${t}` }
         }),
-        fetch("http://localhost:9000/architecture/bankbrief", {
+        fetch(`${API_BASE_URL}/bankbrief`, {
           headers: { Authorization: `Bearer ${t}` }
         })
       ]);
@@ -81,7 +82,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const addBank = async (data: Omit<BankBrief, "_id" | "isActive" | "currentBalance"> & { openingBalance: number }) => {
     if (!token) throw new Error("Authentication required");
     try {
-      const res = await fetch("http://localhost:9000/architecture/bankbrief", {
+      const res = await fetch(`${API_BASE_URL}/bankbrief`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -108,7 +109,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       if (!token) return;
 
       // 1. Add entry to ledger
-      const res = await fetch("http://localhost:9000/architecture/paymentledger", {
+      const res = await fetch(`${API_BASE_URL}/paymentledger`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -128,7 +129,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       // 3. Update Project Financials (SOP Step 6 & 16)
       if (data.projectId) {
         try {
-          const resProj = await fetch(`http://localhost:9000/architecture/project/${data.projectId}`, {
+          const resProj = await fetch(`${API_BASE_URL}/project/${data.projectId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (resProj.ok) {
@@ -144,7 +145,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
               }
               updateBody.balance = (updateBody.totalReceived ?? (p.totalReceived || 0)) - (updateBody.totalExpense ?? (p.totalExpense || 0));
 
-              await fetch(`http://localhost:9000/architecture/project/${data.projectId}`, {
+              await fetch(`${API_BASE_URL}/project/${data.projectId}`, {
                 method: "PUT",
                 headers: {
                   "Content-Type": "application/json",

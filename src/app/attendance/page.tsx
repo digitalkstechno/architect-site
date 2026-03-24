@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { useAuth } from "@/lib/auth-context";
+import { API_BASE_URL } from "@/lib/api-config";
 
 const today = new Date().toISOString().split("T")[0];
 
@@ -43,10 +44,10 @@ export default function AttendancePage() {
       if (!token) return;
 
       const [workersRes, attendanceRes] = await Promise.all([
-        fetch("http://localhost:9000/architecture/worker", {
+        fetch(`${API_BASE_URL}/worker`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        fetch(`http://localhost:9000/architecture/attendence?date=${selectedDate}`, {
+        fetch(`${API_BASE_URL}/attendence?date=${selectedDate}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -74,7 +75,7 @@ export default function AttendancePage() {
 
       const existing = attendance.find((a: any) => a.workerId === workerId || a.workerId?._id === workerId);
       if (existing) {
-        await fetch(`http://localhost:9000/architecture/attendence/${(existing as any)._id || existing.id}`, {
+        await fetch(`${API_BASE_URL}/attendence/${(existing as any)._id || existing.id}`, {
           method: "PUT",
           headers: { 
             "Content-Type": "application/json",
@@ -83,7 +84,7 @@ export default function AttendancePage() {
           body: JSON.stringify({ status: newStatus })
         });
       } else {
-        await fetch(`http://localhost:9000/architecture/attendence`, {
+        await fetch(`${API_BASE_URL}/attendence`, {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",

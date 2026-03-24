@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { tasks as seedTasks } from "@/lib/dummy-data";
 import { useAuth } from "./auth-context";
+import { API_BASE_URL } from "./api-config";
 
 export type TaskStatus = "Pending" | "In Progress" | "Completed";
 
@@ -50,7 +51,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const res = await fetch("http://localhost:9000/architecture/task", {
+      const res = await fetch(`${API_BASE_URL}/task`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -90,8 +91,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const createTask = async (input: CreateTaskInput): Promise<Task> => {
       if (!token) throw new Error("No token");
 
-      const res = await fetch("http://localhost:9000/architecture/task", {
-        method: "POST",
+      const res = await fetch(`${API_BASE_URL}/task`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
@@ -134,7 +134,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       if (patch.status) body.status = patch.status === "Completed" ? "COMPLETED" : patch.status === "In Progress" ? "IN_PROGRESS" : "PENDING";
       if (patch.deadline) body.dueDate = patch.deadline;
 
-      await fetch(`http://localhost:9000/architecture/task/${id}`, {
+      await fetch(`${API_BASE_URL}/task/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -151,8 +151,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     const deleteTask = async (id: string) => {
       if (!token) return;
 
-      await fetch(`http://localhost:9000/architecture/task/${id}`, {
-        method: "DELETE",
+      await fetch(`${API_BASE_URL}/task/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

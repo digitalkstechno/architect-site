@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 import { useAuth } from "@/lib/auth-context";
+import { API_BASE_URL } from "@/lib/api-config";
 import { useTasks } from "@/lib/tasks-store";
 import { useProjects } from "@/lib/projects-store";
 import { toast } from "react-toastify";
@@ -29,7 +30,7 @@ export default function TasksPage() {
     const fetchWorkers = async () => {
       try {
         const token = localStorage.getItem("auth_token");
-        const res = await fetch("http://localhost:9000/architecture/worker", {
+        const res = await fetch(`${API_BASE_URL}/worker`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();

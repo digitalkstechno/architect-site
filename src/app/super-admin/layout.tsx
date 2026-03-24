@@ -35,6 +35,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   if (isLogin) return <>{children}</>;
 
+  // Show loader only briefly during hydration
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">

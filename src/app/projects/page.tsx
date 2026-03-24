@@ -1,10 +1,11 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
+import { API_BASE_URL } from "@/lib/api-config";
 import { supervisors, workers, clients, WORKER_SPECIALIZATIONS } from "@/lib/dummy-data";
 import {
   MoreHorizontal, MapPin, Calendar, ChevronRight, Plus, ArrowUpRight,
-  LayoutGrid, List, Search, X, HardHat, Users, CheckCircle2, Trash2, Edit2
+  LayoutGrid, List, Search, X, HardHat, Users, CheckCircle2, Trash2, Edit2, Layers
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useMemo } from "react";
@@ -45,7 +46,7 @@ export default function ProjectsPage() {
       try {
         const token = localStorage.getItem("auth_token");
         if (!token) return;
-        const res = await fetch("http://localhost:9000/architecture/client", {
+        const res = await fetch(`${API_BASE_URL}/client`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const payload = await res.json();
@@ -225,11 +226,18 @@ export default function ProjectsPage() {
                       project.status === "In Progress" ? "bg-green-500 animate-pulse" : "bg-blue-500")} />
                     <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">{project.status}</span>
                   </div>
-                  <Link href={`/projects/${project.id}`}
-                    className="flex items-center gap-1.5 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors group/btn">
-                    View Details
-                    <ArrowUpRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <Link href={`/project-stages?projectId=${project.id}`}
+                      className="flex items-center gap-1.5 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors group/btn">
+                      Stages
+                      <Layers className="w-4 h-4" />
+                    </Link>
+                    <Link href={`/projects/${project.id}`}
+                      className="flex items-center gap-1.5 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors group/btn">
+                      Details
+                      <ArrowUpRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+                    </Link>
+                  </div>
                 </div>
               </Card>
             ))}
@@ -281,10 +289,16 @@ export default function ProjectsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/projects/${project.id}`}
-                        className="inline-flex items-center gap-1 text-sm font-bold text-indigo-600 hover:text-indigo-700">
-                        View <ChevronRight className="w-4 h-4" />
-                      </Link>
+                      <div className="flex items-center justify-end gap-3">
+                        <Link href={`/project-stages?projectId=${project.id}`}
+                          className="inline-flex items-center gap-1 text-sm font-bold text-indigo-600 hover:text-indigo-700">
+                          Stages <Layers className="w-4 h-4" />
+                        </Link>
+                        <Link href={`/projects/${project.id}`}
+                          className="inline-flex items-center gap-1 text-sm font-bold text-indigo-600 hover:text-indigo-700">
+                          View <ChevronRight className="w-4 h-4" />
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/lib/auth-context";
+import { API_BASE_URL } from "@/lib/api-config";
 import { useSiteUpdates } from "@/lib/site-updates-store";
 import { useProjects } from "@/lib/projects-store";
 import { toast } from "react-toastify";
@@ -232,7 +233,7 @@ export default function SiteUpdatesPage() {
                 <div className="flex flex-wrap gap-3 pt-2">
                   {update.images.map((img, i) => (
                     <div key={i} className="w-24 h-24 rounded-xl overflow-hidden border border-slate-100 shadow-sm">
-                      <img src={`http://localhost:9000${img}`} alt="Site" className="w-full h-full object-cover" />
+                      <img src={`${API_BASE_URL}${img}`} alt="Site" className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>

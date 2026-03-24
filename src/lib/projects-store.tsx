@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { projects as seedProjects } from "@/lib/dummy-data";
 import { useAuth } from "./auth-context";
+import { API_BASE_URL } from "./api-config";
 
 export type StageStatus = "Pending" | "In Progress" | "Completed";
 export type LifecycleStatus = "Pending" | "In Progress" | "Completed";
@@ -115,7 +116,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const res = await fetch("http://localhost:9000/architecture/project", {
+      const res = await fetch(`${API_BASE_URL}/project`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -174,7 +175,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       if (!token) throw new Error("No token");
 
       const budgetValue = Number(input.budget.replace(/[^0-9.-]+/g, ""));
-      const res = await fetch("http://localhost:9000/architecture/project", {
+      const res = await fetch(`${API_BASE_URL}/project`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -228,7 +229,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       }
       if (patch.budget) body.budget = Number(patch.budget.replace(/[^0-9.-]+/g, ""));
 
-      await fetch(`http://localhost:9000/architecture/project/${id}`, {
+      await fetch(`${API_BASE_URL}/project/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -245,8 +246,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("auth_token");
       if (!token) return;
 
-      await fetch(`http://localhost:9000/architecture/project/${id}`, {
-        method: "DELETE",
+      await fetch(`${API_BASE_URL}/project/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
