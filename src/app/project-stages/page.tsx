@@ -56,7 +56,7 @@ export default function ProjectStagesPage() {
     try {
       setLoading(true);
       const url = filterProject
-        ? `${API_BASE_URL}/projectstage?projectId=${filterProject}`
+        ? `${API_BASE_URL}/projectstage`
         : `${API_BASE_URL}/projectstage`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();

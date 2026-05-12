@@ -5,9 +5,9 @@
 export type PermissionAction = "CREATE" | "READ" | "UPDATE" | "DELETE" | "SOFT_DELETE";
 
 export interface Permission {
-  _id: string;
+  _id?: string;
   module: string;
-  actions: PermissionAction[];
+  actions: string[];
   permissionName?: string;
   tenantId?: string;
 }
@@ -40,7 +40,6 @@ export const hasPermission = (
     
     const permModule = normalizeString(perm.module);
     if (permModule !== normalizedModule) return false;
-
     if (!Array.isArray(perm.actions)) return false;
     
     return perm.actions.some((act) => normalizeString(act) === normalizedAction);
@@ -53,7 +52,7 @@ export const hasPermission = (
 export const getAllowedActions = (
   role: RoleWithPermissions | null | undefined,
   module: string
-): PermissionAction[] => {
+): string[] => {
   if (!role || !role.permissions) return [];
 
   const normalizeString = (s: string) => (s || "").toString().trim().toUpperCase();
@@ -69,6 +68,7 @@ export const getAllowedActions = (
 /**
  * Get all modules user has access to
  */
+
 export const getAllowedModules = (
   role: RoleWithPermissions | null | undefined
 ): string[] => {

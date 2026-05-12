@@ -4,15 +4,28 @@ import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/lib/auth-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, isLoading  } = useAuth();
+  const { user, isLoading } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+
   const isLoginPage = pathname === "/login";
   const isSuperAdminPage = pathname.startsWith("/super-admin");
+
+  // Before mount — render nothing to avoid hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

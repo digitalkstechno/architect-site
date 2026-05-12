@@ -143,9 +143,9 @@ export default function SettingsPage() {
             {activeTab === "company" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[
-                  { label: "Company Name",    value: "ArchiSite Pro Designs" },
+                  { label: "Company Name",    value: (user?.role as any)?.tenantId?.tenantName || "ArchiSite Pro Designs" },
                   { label: "Tax ID / VAT",    value: "US-9283-1234" },
-                  { label: "Office Address",  value: "123 Architecture Lane, CA 90210" },
+                  { label: "Office Address",  value: (user?.role as any)?.tenantId?.siteAddress || "123 Architecture Lane, CA 90210" },
                   { label: "Company Website", value: "www.archisite.pro" },
                 ].map(f => (
                   <div key={f.label} className="space-y-2">

@@ -1,7 +1,6 @@
 "use client";
 
-import { projects } from "@/lib/dummy-data";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   BarChart3, 
   TrendingUp, 
@@ -21,10 +20,38 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { useProjects } from "@/lib/projects-store";
+import { useFinance } from "@/lib/finance-store";
+import { useTasks } from "@/lib/tasks-store";
+import { API_BASE_URL } from "@/lib/api-config";
 
 export default function ReportsPage() {
+  const { projects, fetchProjects } = useProjects();
+  const { ledger, fetchFinanceData } = useFinance();
+  const { tasks, fetchTasks } = useTasks();
+  
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [workersCount, setWorkersCount] = useState(0);
+
+  useEffect(() => {
+    fetchProjects();
+    fetchFinanceData();
+    fetchTasks();
+    
+    // Fetch workers count
+    const fetchWorkers = async () => {
+      try {
+        const t = localStorage.getItem("auth_token");
+        const res = await fetch(`${API_BASE_URL}/worker`, {
+          headers: { Authorization: `Bearer ${t}` }
+        });
+        const d = await res.json();
+        setWorkersCount((d.Workers || d.data || []).length);
+      } catch (e) { console.error(e); }
+    };
+    fetchWorkers();
+  }, [fetchProjects, fetchFinanceData, fetchTasks]);
 
   const handleExport = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +62,10 @@ export default function ReportsPage() {
       alert("Report exported successfully!");
     }, 2000);
   };
+
+  const totalRevenue = ledger.filter(l => l.transactionType === "CREDIT").reduce((sum, l) => sum + l.amount, 0);
+  const totalExpenses = ledger.filter(l => l.transactionType === "DEBIT").reduce((sum, l) => sum + l.amount, 0);
+  const avgProgress = projects.length ? Math.round(projects.reduce((sum, p) => sum + p.progress, 0) / projects.length) : 0;
 
   return (
     <>
@@ -62,10 +93,10 @@ export default function ReportsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {[
-            { label: "Completion Rate", value: "84%", icon: Target, color: "text-blue-600", bg: "bg-blue-50" },
-            { label: "Active Workers", value: "32", icon: Users, color: "text-green-600", bg: "bg-green-50" },
-            { label: "Revenue Growth", value: "+12.5%", icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
-            { label: "Reports Generated", value: "156", icon: BarChart3, color: "text-orange-600", bg: "bg-orange-50" },
+            { label: "Completion Rate", value: `${avgProgress}%`, icon: Target, color: "text-blue-600", bg: "bg-blue-50" },
+            { label: "Total Workers", value: workersCount.toString(), icon: Users, color: "text-green-600", bg: "bg-green-50" },
+            { label: "Revenue", value: `₹${(totalRevenue/100000).toFixed(1)}L`, icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50" },
+            { label: "Active Tasks", value: tasks.filter(t => t.status !== "Completed").length.toString(), icon: BarChart3, color: "text-orange-600", bg: "bg-orange-50" },
           ].map((stat) => (
             <div key={stat.label} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5 hover:shadow-md transition-all duration-300 hover:-translate-y-1">
               <div className={cn("p-4 rounded-2xl", stat.bg)}>

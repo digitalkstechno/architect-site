@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { projects, tasks, siteUpdates, messages, payments } from "@/lib/dummy-data";
+import { messages } from "@/lib/dummy-data";
 import { 
   Briefcase, 
   Construction, 
@@ -19,7 +19,8 @@ import {
   CircleAlert,
   MapPin,
   Users,
-  Phone
+  Phone,
+  CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,12 +31,24 @@ import DashboardCards from "@/components/DashboardCards";
 import { useFinance } from "@/lib/finance-store";
 import { useProjects } from "@/lib/projects-store";
 import { useTasks } from "@/lib/tasks-store";
+import { useSiteUpdates } from "@/lib/site-updates-store";
+import { useEffect } from "react";
 
 export default function Dashboard() {
   const { user, getEffectiveRole } = useAuth();
-  const { projects, isHydrated: projectsHydrated } = useProjects();
-  const { tasks, isHydrated: tasksHydrated } = useTasks();
-  const { ledger, bankBriefs } = useFinance();
+  const { projects, isHydrated: projectsHydrated, fetchProjects } = useProjects();
+  const { tasks, isHydrated: tasksHydrated, fetchTasks } = useTasks();
+  const { ledger, bankBriefs, fetchFinanceData } = useFinance();
+  const { updates, fetchUpdates } = useSiteUpdates();
+
+  useEffect(() => {
+    if (user) {
+      fetchProjects();
+      fetchTasks();
+      fetchFinanceData();
+      fetchUpdates();
+    }
+  }, [user, fetchProjects, fetchTasks, fetchFinanceData, fetchUpdates]);
 
   if (!user || !projectsHydrated || !tasksHydrated) return null;
 
@@ -58,9 +71,9 @@ export default function Dashboard() {
 }
 
 // --- Architect Dashboard ---
-function ArchitectDashboard({ projects: allProjects, tasks: allTasks }: { projects: any[], tasks: any[] }) {
+function ArchitectDashboard({ projects, tasks }: { projects: any[], tasks: any[] }) {
   const { ledger, bankBriefs } = useFinance();
-  const todayTasks = allTasks.slice(0, 3);
+  const todayTasks = tasks.slice(0, 3);
   
   const totalRevenue = ledger.filter(e => e.transactionType === "CREDIT").reduce((sum, e) => sum + e.amount, 0);
   const totalExpenses = ledger.filter(e => e.transactionType === "DEBIT").reduce((sum, e) => sum + e.amount, 0);
@@ -68,7 +81,7 @@ function ArchitectDashboard({ projects: allProjects, tasks: allTasks }: { projec
 
   const financeStats = [
     { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
-    { label: "Active Sites", value: allProjects.filter(p => p.status === "In Progress").length.toString(), icon: Construction, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
+    { label: "Active Sites", value: projects.filter(p => p.status === "In Progress").length.toString(), icon: Construction, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
     { label: "Total Expenses", value: `₹${totalExpenses.toLocaleString()}`, icon: CreditCard, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100" },
     { label: "Bank Balance", value: `₹${bankBalance.toLocaleString()}`, icon: Briefcase, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-100" },
   ];
@@ -507,7 +520,7 @@ function AccountantDashboard({ projects: allProjects, tasks: allTasks }: { proje
 }
 
 // --- Site Engineer Dashboard ---
-function SiteEngineerDashboard({ projects: allProjects, tasks: allTasks }: { projects: any[], tasks: any[] }) {
+function SiteEngineerDashboard({ projects, tasks }: { projects: any[], tasks: any[] }) {
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
       <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm">
@@ -517,9 +530,9 @@ function SiteEngineerDashboard({ projects: allProjects, tasks: allTasks }: { pro
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {[
-          { label: "Active Projects", value: allProjects.filter(p => p.status === "In Progress").length, color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200" },
-          { label: "Open Tasks",      value: allTasks.filter(t => t.status !== "Completed").length,       color: "text-orange-700", bg: "bg-orange-50", border: "border-orange-200" },
-          { label: "Total Sites",     value: allProjects.length,                                        color: "text-green-700",  bg: "bg-green-50",  border: "border-green-200" },
+          { label: "Active Projects", value: projects.filter(p => p.status === "In Progress").length, color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200" },
+          { label: "Open Tasks",      value: tasks.filter(t => t.status !== "Completed").length,       color: "text-orange-700", bg: "bg-orange-50", border: "border-orange-200" },
+          { label: "Total Sites",     value: projects.length,                                        color: "text-green-700",  bg: "bg-green-50",  border: "border-green-200" },
         ].map(s => (
           <Card key={s.label} className={cn("p-8 border", s.bg, s.border)}>
             <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{s.label}</p>

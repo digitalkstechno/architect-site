@@ -112,7 +112,9 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("auth_token");
       if (!token) {
+        console.warn("fetchProjects: No auth_token in localStorage");
         setProjects([]);
+        setIsHydrated(true);
         return;
       }
 
@@ -120,7 +122,17 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!res.ok) throw new Error("Failed to fetch projects");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        console.error(`fetchProjects failed: ${res.status} ${res.statusText}`, errBody);
+        // 401 = token expired/invalid — clear and redirect
+        if (res.status === 401) {
+          localStorage.removeItem("auth_token");
+          localStorage.removeItem("auth_user");
+        }
+        setProjects([]);
+        return;
+      }
 
       const payload = await res.json();
       const backendProjects = payload.projects || payload.data || [];
@@ -247,6 +259,7 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       if (!token) return;
 
       await fetch(`${API_BASE_URL}/project/${id}`, {
+        method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });
 

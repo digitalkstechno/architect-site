@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Phone, Trash2, Loader2, HardHat, Briefcase } from "lucide-react";
+import { Plus, Search, Phone, Trash2, Loader2, HardHat, Briefcase, ShieldCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
@@ -35,9 +36,26 @@ export default function WorkersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editWorker, setEditWorker] = useState<Worker | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
   const [form, setForm] = useState(emptyForm);
+
+  const openAdd = () => { setEditWorker(null); setForm(emptyForm); setError(""); setIsModalOpen(true); };
+  const openEdit = (w: Worker) => {
+    setEditWorker(w);
+    setForm({
+      name: w.name,
+      phone: w.phone || "",
+      skill: w.skill || "",
+      experienceYears: w.experienceYears?.toString() || "",
+      wageType: w.wageType || "DAILY",
+      dailyWage: w.dailyWage?.toString() || "",
+      contractAmount: w.contractAmount?.toString() || "",
+    });
+    setError("");
+    setIsModalOpen(true);
+  };
 
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
 
@@ -58,11 +76,14 @@ export default function WorkersPage() {
 
   useEffect(() => { fetchWorkers(); }, [fetchWorkers]);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError("");
     try {
+      const url = editWorker ? `${API_BASE_URL}/worker/${editWorker._id}` : `${API_BASE_URL}/worker`;
+      const method = editWorker ? "PUT" : "POST";
+      
       const body: any = {
         name: form.name,
         phone: form.phone,
@@ -73,12 +94,13 @@ export default function WorkersPage() {
       if (form.wageType === "DAILY" && form.dailyWage) body.dailyWage = Number(form.dailyWage);
       if (form.wageType === "CONTRACT" && form.contractAmount) body.contractAmount = Number(form.contractAmount);
 
-      const res = await fetch(`${API_BASE_URL}/worker`, {
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
       const payload = await res.json();
-      if (!res.ok) throw new Error(payload.error || payload.message || "Failed to create worker");
+      if (!res.ok) throw new Error(payload.error || payload.message || "Failed to save worker");
       setIsModalOpen(false);
       setForm(emptyForm);
       fetchWorkers();
@@ -124,7 +146,7 @@ export default function WorkersPage() {
               <Input placeholder="Search by name or skill..." icon={Search} className="w-64"
                 value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
-            <Button onClick={() => setIsModalOpen(true)} className="gap-2">
+            <Button onClick={openAdd} className="gap-2">
               <Plus className="w-5 h-5" />
               <span className="hidden sm:inline">Register Worker</span>
             </Button>
@@ -147,10 +169,16 @@ export default function WorkersPage() {
                   <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-xl font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
                     {w.name?.split(" ").map((n) => n[0]).join("").toUpperCase()}
                   </div>
-                  <button onClick={() => handleDelete(w._id)} disabled={deletingId === w._id}
-                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50">
-                    {deletingId === w._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => openEdit(w)}
+                      className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors">
+                      <ShieldCheck className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDelete(w._id)} disabled={deletingId === w._id}
+                      className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50">
+                      {deletingId === w._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
@@ -188,8 +216,8 @@ export default function WorkersPage() {
         )}
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setForm(emptyForm); setError(""); }} title="Register New Worker">
-        <form onSubmit={handleCreate} className="space-y-5">
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setForm(emptyForm); setError(""); }} title={editWorker ? "Edit Worker Details" : "Register New Worker"}>
+        <form onSubmit={handleSave} className="space-y-5">
           {error && (
             <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-bold text-center">{error}</div>
           )}
@@ -198,55 +226,66 @@ export default function WorkersPage() {
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">Full Name *</label>
               <Input placeholder="e.g. Ramesh Kumar" value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+                onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Phone</label>
+              <label className="text-sm font-bold text-slate-700 ml-1">Phone Number</label>
               <Input placeholder="e.g. 9876543210" value={form.phone}
-                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
+                onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Skill</label>
+              <label className="text-sm font-bold text-slate-700 ml-1">Skill / Trade</label>
               <Input placeholder="e.g. Mason, Electrician" value={form.skill}
-                onChange={(e) => setForm((f) => ({ ...f, skill: e.target.value }))} />
+                onChange={(e) => setForm({ ...form, skill: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Experience (years)</label>
+              <label className="text-sm font-bold text-slate-700 ml-1">Years of Experience</label>
               <Input type="number" placeholder="e.g. 5" value={form.experienceYears}
-                onChange={(e) => setForm((f) => ({ ...f, experienceYears: e.target.value }))} />
+                onChange={(e) => setForm({ ...form, experienceYears: e.target.value })} />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Wage Type</label>
-              <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={form.wageType} onChange={(e) => setForm((f) => ({ ...f, wageType: e.target.value as "DAILY" | "CONTRACT" }))}>
-                <option value="DAILY">Daily Wage</option>
-                <option value="CONTRACT">Contract</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">
-                {form.wageType === "DAILY" ? "Daily Wage (₹)" : "Contract Amount (₹)"}
-              </label>
-              {form.wageType === "DAILY" ? (
-                <Input type="number" placeholder="e.g. 500" value={form.dailyWage}
-                  onChange={(e) => setForm((f) => ({ ...f, dailyWage: e.target.value }))} />
-              ) : (
-                <Input type="number" placeholder="e.g. 50000" value={form.contractAmount}
-                  onChange={(e) => setForm((f) => ({ ...f, contractAmount: e.target.value }))} />
-              )}
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 ml-1">Wage Type</label>
+            <div className="flex gap-4">
+              {["DAILY", "CONTRACT"].map((type) => (
+                <label key={type} className={cn(
+                  "flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all font-bold text-xs uppercase tracking-widest",
+                  form.wageType === type ? "bg-indigo-50 border-indigo-600 text-indigo-700 shadow-md shadow-indigo-100" : "bg-white border-slate-100 text-slate-400 hover:border-slate-200"
+                )}>
+                  <input type="radio" className="hidden" name="wageType" value={type} checked={form.wageType === type}
+                    onChange={(e) => setForm({ ...form, wageType: e.target.value as any })} />
+                  {type}
+                </label>
+              ))}
             </div>
           </div>
 
-          <div className="flex justify-end gap-4 pt-4 border-t border-slate-100">
-            <Button variant="secondary" type="button" onClick={() => { setIsModalOpen(false); setForm(emptyForm); setError(""); }}>Cancel</Button>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 ml-1">
+              {form.wageType === "DAILY" ? "Daily Wage (₹)" : "Total Contract Amount (₹)"}
+            </label>
+            <Input type="number" placeholder="e.g. 800" 
+              value={form.wageType === "DAILY" ? form.dailyWage : form.contractAmount}
+              onChange={(e) => setForm({ ...form, [form.wageType === "DAILY" ? "dailyWage" : "contractAmount"]: e.target.value })} />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <Button variant="secondary" type="button" onClick={() => { setIsModalOpen(false); setForm(emptyForm); setError(""); }}>
+              Cancel
+            </Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Registering...</> : "Register Worker"}
+              {submitting ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </div>
+              ) : (
+                editWorker ? "Update Worker" : "Register Worker"
+              )}
             </Button>
           </div>
         </form>

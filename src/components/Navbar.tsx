@@ -142,12 +142,10 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
           {/* User Info */}
           <div className="flex items-center gap-3">
             <UserCircle className="w-7 h-7 text-indigo-600" />
-            <div className="hidden lg:block">
-              <p className="text-xs font-bold">{user?.name}</p>
-              
-              {/* ✅ FINAL ROLE DISPLAY */}
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest">
-                {displayRole}
+            <div className="hidden lg:block" suppressHydrationWarning>
+              <p className="text-xs font-bold" suppressHydrationWarning>{user?.name ?? ""}</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest" suppressHydrationWarning>
+                {displayRole ?? ""}
               </p>
             </div>
           </div>

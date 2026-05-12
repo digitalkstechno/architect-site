@@ -207,12 +207,12 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
       </nav>
 
       <div className="p-4 border-t border-slate-100 space-y-4">
-        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100" suppressHydrationWarning>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2" suppressHydrationWarning>
             {getRoleDisplayName(role || "")}
           </p>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700 truncate mr-2">{user?.name}</span>
+            <span className="text-xs font-bold text-slate-700 truncate mr-2" suppressHydrationWarning>{user?.name ?? ""}</span>
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
           </div>
         </div>

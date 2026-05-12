@@ -80,7 +80,8 @@ export const useCanDelete = (module: string): boolean => {
 };
 
 interface PermissionRequiredProps extends Omit<PermissionCheckProps, "action"> {
-  children?: boolean | React.ReactNode;
+  action?: PermissionAction;
+  children?: React.ReactNode | ((allowed: boolean) => React.ReactNode);
 }
 
 /**

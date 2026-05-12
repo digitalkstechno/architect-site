@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
 import { supervisors, workers } from "@/lib/dummy-data";
 import { useProjects } from "@/lib/projects-store";
+import { API_BASE_URL } from "@/lib/api-config";
 
 type Step = "client" | "project" | "team" | "review";
 const STEPS: Step[] = ["client", "project", "team", "review"];

@@ -50,6 +50,7 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
   const [isStageModalOpen, setIsStageModalOpen] = useState(false);
   const [stageForm, setStageForm] = useState({ stageName: "", order: "", status: "PENDING" as "PENDING" | "IN_PROGRESS" | "COMPLETED" });
   const [stageSaving, setStageSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const fetchStages = useCallback(async () => {
     if (!id) return;
@@ -69,23 +70,30 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
 
   const handleAddStage = async (e: React.FormEvent) => {
     e.preventDefault(); setStageSaving(true);
+    setError("");
     try {
       const t = localStorage.getItem("auth_token");
+      const nextOrder = Number(stageForm.order) || (stages.length > 0 ? Math.max(...stages.map(s => s.order || 0)) + 1 : 1);
+      
       const res = await fetch(`${API_BASE_URL}/projectstage`, {
         method: "POST",
         headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           projectId: id,
           stageName: stageForm.stageName,
-          order: Number(stageForm.order) || stages.length + 1,
+          order: nextOrder,
           status: stageForm.status,
         }),
       });
-      if (!res.ok) throw new Error("Failed to add stage");
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || d.message || "Failed to add stage");
       setIsStageModalOpen(false);
       setStageForm({ stageName: "", order: "", status: "PENDING" });
       fetchStages();
-    } catch (e) { console.error(e); }
+    } catch (e: any) { 
+      console.error(e); 
+      setError(e.message);
+    }
     finally { setStageSaving(false); }
   };
 
@@ -606,8 +614,9 @@ export default function ProjectDetailsPage({ params }: { params: Promise<{ id: s
     </div>
 
       {/* Add Stage Modal */}
-      <Modal isOpen={isStageModalOpen} onClose={() => setIsStageModalOpen(false)} title="Add Project Stage">
+      <Modal isOpen={isStageModalOpen} onClose={() => { setIsStageModalOpen(false); setError(""); }} title="Add Project Stage">
         <form onSubmit={handleAddStage} className="space-y-4">
+          {error && <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-[10px] font-black text-center uppercase tracking-widest">{error}</div>}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700">Stage Name *</label>
             <Input placeholder="e.g. Foundation, Framing, Roofing" value={stageForm.stageName}

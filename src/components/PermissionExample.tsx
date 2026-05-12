@@ -27,11 +27,11 @@ export default function PermissionExample() {
         
         {userRole?.permissions && userRole.permissions.length > 0 ? (
           <div className="space-y-3">
-            {userRole.permissions.map((perm) => (
-              <div key={perm._id} className="bg-white p-3 rounded-lg border">
+            {userRole.permissions.map((perm: any) => (
+              <div key={perm._id || perm.module} className="bg-white p-3 rounded-lg border">
                 <p className="font-semibold text-slate-900">{perm.module}</p>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {perm.actions.map((action) => (
+                  {perm.actions.map((action: string) => (
                     <span
                       key={action}
                       className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded"
@@ -66,7 +66,7 @@ export default function PermissionExample() {
         <div>
           <p className="text-sm font-bold text-slate-700 mb-2">Can Delete Worker: {canDeleteWorker ? "✅ Yes" : "❌ No"}</p>
           <PermissionGuard module="WORKER" action="DELETE" fallback={<span className="text-xs text-slate-400">No delete permission</span>}>
-            <Button variant="destructive" className="gap-2">
+            <Button variant="danger" className="gap-2">
               <Trash2 className="w-4 h-4" />
               Delete Selected
             </Button>

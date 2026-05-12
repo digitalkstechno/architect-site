@@ -38,10 +38,26 @@ function UsersTab({ roles }: { roles: Role[] }) {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editUser, setEditUser] = useState<SystemUser | null>(null);
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
   const emptyForm = { userName: "", email: "", password: "", contact_no: "", roleId: "", employmentType: "MONTHLY" };
   const [form, setForm] = useState(emptyForm);
+
+  const openCreate = () => { setEditUser(null); setForm(emptyForm); setError(""); setIsModalOpen(true); };
+  const openEdit = (u: SystemUser) => {
+    setEditUser(u);
+    setForm({
+      userName: u.userName,
+      email: u.email,
+      password: "", // Don't show password
+      contact_no: u.contact_no || "",
+      roleId: u.role?._id || "",
+      employmentType: u.employmentType || "MONTHLY"
+    });
+    setError("");
+    setIsModalOpen(true);
+  };
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -54,12 +70,23 @@ function UsersTab({ roles }: { roles: Role[] }) {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true); setError("");
     try {
-      const res = await fetch(`${API_BASE_URL}/user`, {
-        method: "POST", headers: authHeaders(),
-        body: JSON.stringify({ userName: form.userName, email: form.email, password: form.password, contact_no: form.contact_no, role: form.roleId, employmentType: form.employmentType }),
+      const url = editUser ? `${API_BASE_URL}/user/${editUser._id}` : `${API_BASE_URL}/user`;
+      const method = editUser ? "PUT" : "POST";
+      const body: any = { 
+        userName: form.userName, 
+        email: form.email, 
+        contact_no: form.contact_no, 
+        role: form.roleId, 
+        employmentType: form.employmentType 
+      };
+      if (form.password) body.password = form.password; // only update password if provided
+      
+      const res = await fetch(url, {
+        method, headers: authHeaders(),
+        body: JSON.stringify(body),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || d.message || "Failed");
@@ -82,7 +109,7 @@ function UsersTab({ roles }: { roles: Role[] }) {
     <>
       <div className="flex items-center justify-between mb-6">
         <Input placeholder="Search users..." icon={Search} className="w-64" value={search} onChange={e => setSearch(e.target.value)} />
-        <Button onClick={() => setIsModalOpen(true)} className="gap-2"><Plus className="w-4 h-4" />Add User</Button>
+        <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Add User</Button>
       </div>
 
       {loading ? <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 text-indigo-600 animate-spin" /></div>
@@ -90,40 +117,49 @@ function UsersTab({ roles }: { roles: Role[] }) {
         : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map(u => (
-              <Card key={u._id} className="p-5 space-y-4 group hover:border-indigo-200 transition-all">
-                <div className="flex items-start justify-between">
-                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-lg font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
-                    {u.userName?.split(" ").map(n => n[0]).join("").toUpperCase()}
+              <Card key={u._id} className="p-5 space-y-4 group hover:border-indigo-200 transition-all flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-lg font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
+                      {u.userName?.split(" ").map(n => n[0]).join("").toUpperCase()}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => openEdit(u)}
+                        className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors">
+                        <ShieldCheck className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(u._id)} disabled={deletingId === u._id}
+                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                        {deletingId === u._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
-                  <button onClick={() => handleDelete(u._id)} disabled={deletingId === u._id}
-                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-                    {deletingId === u._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                  </button>
+                  <div>
+                    <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{u.userName}</h3>
+                    {u.role && (
+                      <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-indigo-50 text-[10px] font-bold text-indigo-700 rounded-lg border border-indigo-100 uppercase tracking-wider">
+                        <Lock className="w-3 h-3" />{u.role.roleName}
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-1.5 pt-3 border-t border-slate-50">
+                    <div className="flex items-center gap-2 text-slate-500"><Mail className="w-3.5 h-3.5 text-slate-400" /><span className="text-xs font-medium truncate">{u.email}</span></div>
+                    {u.contact_no && <div className="flex items-center gap-2 text-slate-500"><Phone className="w-3.5 h-3.5 text-slate-400" /><span className="text-xs font-medium">{u.contact_no}</span></div>}
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{u.userName}</h3>
-                  {u.role && (
-                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-indigo-50 text-[10px] font-bold text-indigo-700 rounded-lg border border-indigo-100 uppercase tracking-wider">
-                      <ShieldCheck className="w-3 h-3" />{u.role.roleName}
-                    </span>
-                  )}
-                </div>
-                <div className="space-y-1.5 pt-3 border-t border-slate-50">
-                  <div className="flex items-center gap-2 text-slate-500"><Mail className="w-3.5 h-3.5 text-slate-400" /><span className="text-xs font-medium truncate">{u.email}</span></div>
-                  {u.contact_no && <div className="flex items-center gap-2 text-slate-500"><Phone className="w-3.5 h-3.5 text-slate-400" /><span className="text-xs font-medium">{u.contact_no}</span></div>}
-                </div>
+                <Button variant="secondary" className="w-full text-xs mt-4" onClick={() => openEdit(u)}>Update Role & Info</Button>
               </Card>
             ))}
           </div>
         )}
 
-      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setForm(emptyForm); setError(""); }} title="Add New User">
-        <form onSubmit={handleCreate} className="space-y-4">
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setForm(emptyForm); setError(""); }} title={editUser ? "Edit User Account" : "Add New User"}>
+        <form onSubmit={handleSave} className="space-y-4">
           {error && <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-bold text-center">{error}</div>}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5"><label className="text-xs font-bold text-slate-700">Username *</label><Input placeholder="e.g. rahul_arch" value={form.userName} onChange={e => setForm(f => ({ ...f, userName: e.target.value }))} required /></div>
             <div className="space-y-1.5"><label className="text-xs font-bold text-slate-700">Email *</label><Input type="email" placeholder="rahul@site.pro" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required /></div>
-            <div className="space-y-1.5"><label className="text-xs font-bold text-slate-700">Password *</label><Input type="password" placeholder="Min 6 chars" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required /></div>
+            <div className="space-y-1.5"><label className="text-xs font-bold text-slate-700">{editUser ? "New Password (optional)" : "Password *"}</label><Input type="password" placeholder={editUser ? "Leave blank to keep same" : "Min 6 chars"} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required={!editUser} /></div>
             <div className="space-y-1.5"><label className="text-xs font-bold text-slate-700">Phone</label><Input placeholder="9876543210" value={form.contact_no} onChange={e => setForm(f => ({ ...f, contact_no: e.target.value }))} /></div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700">Role *</label>
@@ -145,7 +181,7 @@ function UsersTab({ roles }: { roles: Role[] }) {
           </div>
           <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
             <Button variant="secondary" type="button" onClick={() => { setIsModalOpen(false); setForm(emptyForm); setError(""); }}>Cancel</Button>
-            <Button type="submit" disabled={submitting}>{submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Creating...</> : "Create User"}</Button>
+            <Button type="submit" disabled={submitting}>{submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Saving...</> : editUser ? "Update User" : "Create User"}</Button>
           </div>
         </form>
       </Modal>

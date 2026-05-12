@@ -338,7 +338,7 @@ export default function AttendancePage() {
                               att?.status?.toUpperCase() === "ABSENT" ? "bg-red-50 text-red-700 border-red-200" :
                               "bg-orange-50 text-orange-700 border-orange-200"
                             )}>
-                              {statusLabel(att?.status)}
+                              {statusLabel(att?.status || "ABSENT")}
                             </span>
                           )}
                         </td>

@@ -50,17 +50,26 @@ export function SiteUpdatesProvider({ children }: { children: React.ReactNode })
       const token = localStorage.getItem("auth_token");
       if (!token) {
         setUpdates([]);
+        setIsLoading(false);
         return;
       }
 
-      const res = await fetch(`${API_BASE_URL}/projectupdates`, {
+      const res = await fetch(`${API_BASE_URL}/projectupdate`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (!res.ok) throw new Error("Failed to fetch updates");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        console.error(`fetchUpdates failed: ${res.status}`, errBody);
+        setUpdates([]);
+        return;
+      }
 
       const payload = await res.json();
-      const backendUpdates = payload.data || payload || [];
+
+      // Backend returns { Projectupdates: [...] }
+      const raw = payload.Projectupdates || payload.data || payload.updates || payload;
+      const backendUpdates: any[] = Array.isArray(raw) ? raw : [];
 
       const mapped: SiteUpdate[] = backendUpdates.map((u: any) => ({
         id: u._id,
@@ -68,9 +77,11 @@ export function SiteUpdatesProvider({ children }: { children: React.ReactNode })
         project: u.projectId?.projectName || "Unknown Project",
         update: u.description || "No description",
         date: u.createdAt ? new Date(u.createdAt).toISOString().split("T")[0] : "",
-        progress: 0, // Backend projectupdate doesn't have progress yet
+        progress: 0,
         photos: u.images?.length || 0,
-        images: u.images || [],
+        images: (u.images || []).map((img: string) =>
+          img.startsWith("http") ? img : `http://localhost:9000/uploads/${img}`
+        ),
         stage: u.stageId?.stageName || "—",
         addedBy: u.createdBy?.userName || "Unknown",
         createdAt: u.createdAt,
@@ -79,6 +90,7 @@ export function SiteUpdatesProvider({ children }: { children: React.ReactNode })
       setUpdates(mapped);
     } catch (err) {
       console.error("Fetch updates error:", err);
+      setUpdates([]);
     } finally {
       setIsLoading(false);
     }
@@ -103,12 +115,16 @@ export function SiteUpdatesProvider({ children }: { children: React.ReactNode })
         input.images.forEach((img) => formData.append("images", img));
       }
 
-      const res = await fetch(`${API_BASE_URL}/projectupdates`, {
+      const res = await fetch(`${API_BASE_URL}/projectupdate`, {
+        method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData
       });
 
-      if (!res.ok) throw new Error("Failed to create update");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || errBody.message || "Failed to create update");
+      }
       await fetchUpdates();
     };
 
@@ -116,7 +132,7 @@ export function SiteUpdatesProvider({ children }: { children: React.ReactNode })
       const token = localStorage.getItem("auth_token");
       if (!token) return;
 
-      await fetch(`${API_BASE_URL}/projectupdates/${id}`, {
+      await fetch(`${API_BASE_URL}/projectupdate/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });

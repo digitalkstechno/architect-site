@@ -1,6 +1,6 @@
 "use client";
 
-import { calendarEvents } from "@/lib/dummy-data";
+import { useState, useEffect } from "react";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -13,7 +13,6 @@ import {
   Construction
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 import { 
   format, 
   addMonths, 
@@ -26,17 +25,32 @@ import {
   isSameDay, 
   addDays, 
   eachDayOfInterval,
-  isToday
+  isToday,
+  parseISO
 } from "date-fns";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
+import { useTasks } from "@/lib/tasks-store";
 
 export default function CalendarPage() {
-  const [currentMonth, setCurrentMonth] = useState(new Date(2024, 2, 1)); // March 2024 as default to match dummy data
+  const { tasks, fetchTasks } = useTasks();
+  const [currentMonth, setCurrentMonth] = useState(new Date()); 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  const calendarEvents = tasks.map(t => ({
+    id: t.id,
+    title: t.name,
+    date: t.deadline,
+    type: t.status,
+    project: t.project
+  }));
 
   const handleDateClick = (day: Date) => {
     setSelectedDate(day);

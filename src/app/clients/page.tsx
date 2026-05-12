@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Phone, Mail, ArrowUpRight, MapPin, FileText, Loader2, Trash2 } from "lucide-react";
+import { Plus, Search, Phone, Mail, ArrowUpRight, MapPin, FileText, Loader2, Trash2, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -25,12 +25,27 @@ export default function ClientsPage() {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editClient, setEditClient] = useState<Client | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+
+  const openAdd = () => { setEditClient(null); setForm(emptyForm); setError(""); setIsAddModalOpen(true); };
+  const openEdit = (c: Client) => {
+    setEditClient(c);
+    setForm({
+      clientName: c.clientName,
+      email: c.email,
+      phone: c.phone,
+      address: c.address || "",
+      notes: c.notes || ""
+    });
+    setError("");
+    setIsAddModalOpen(true);
+  };
 
   const fetchClients = useCallback(async () => {
     try {
@@ -86,7 +101,7 @@ export default function ClientsPage() {
     }
   };
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.clientName.trim()) return;
     
@@ -94,7 +109,11 @@ export default function ClientsPage() {
     setError("");
     try {
       const token = localStorage.getItem("auth_token");
-      const res = await fetch(`${API_BASE_URL}/client`, {
+      const url = editClient ? `${API_BASE_URL}/client/${editClient._id}` : `${API_BASE_URL}/client`;
+      const method = editClient ? "PUT" : "POST";
+      
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
@@ -104,13 +123,15 @@ export default function ClientsPage() {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.message || errData.error || "Failed to add client");
+        throw new Error(errData.message || errData.error || "Failed to save client");
       }
 
       const result = await res.json();
-      const plain = result.plainPassword || result.client?.plainPassword;
-      if (plain) {
-        alert(`✅ Client created!\n\nLogin Password: ${plain}\n\n(Save this — it won't be shown again)`);
+      if (!editClient) {
+        const plain = result.plainPassword || result.client?.plainPassword;
+        if (plain) {
+          alert(`✅ Client created!\n\nLogin Password: ${plain}\n\n(Save this — it won't be shown again)`);
+        }
       }
 
       await fetchClients();
@@ -137,7 +158,7 @@ export default function ClientsPage() {
                 value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
             {canAdd && (
-              <Button onClick={() => setIsAddModalOpen(true)} className="gap-2 shadow-lg shadow-indigo-200">
+              <Button onClick={openAdd} className="gap-2 shadow-lg shadow-indigo-200">
                 <Plus className="w-5 h-5" />
                 <span className="hidden sm:inline">Add Client</span>
               </Button>
@@ -169,17 +190,27 @@ export default function ClientsPage() {
                   <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-inner">
                     {client.clientName?.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                   </div>
-                  {canAdd && (
-                    <button
-                      onClick={() => handleDelete(client._id)}
-                      disabled={deletingId === client._id}
-                      className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
-                    >
-                      {deletingId === client._id
-                        ? <Loader2 className="w-5 h-5 animate-spin" />
-                        : <Trash2 className="w-5 h-5" />}
-                    </button>
-                  )}
+                  <div className="flex gap-2">
+                    {canAdd && (
+                      <button
+                        onClick={() => openEdit(client)}
+                        className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
+                      >
+                        <ShieldCheck className="w-5 h-5" />
+                      </button>
+                    )}
+                    {canAdd && (
+                      <button
+                        onClick={() => handleDelete(client._id)}
+                        disabled={deletingId === client._id}
+                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+                      >
+                        {deletingId === client._id
+                          ? <Loader2 className="w-5 h-5 animate-spin" />
+                          : <Trash2 className="w-5 h-5" />}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -218,8 +249,8 @@ export default function ClientsPage() {
         )}
       </div>
 
-      <Modal isOpen={isAddModalOpen} onClose={() => { setIsAddModalOpen(false); setForm(emptyForm); setError(""); }} title="Add New Client">
-        <form className="space-y-6" onSubmit={handleAdd}>
+      <Modal isOpen={isAddModalOpen} onClose={() => { setIsAddModalOpen(false); setForm(emptyForm); setError(""); }} title={editClient ? "Update Client Profile" : "Register New Client"}>
+        <form className="space-y-6" onSubmit={handleSave}>
           {error && (
             <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-bold text-center">
               {error}
@@ -227,24 +258,24 @@ export default function ClientsPage() {
           )}
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700 ml-1">Client Name *</label>
-            <Input placeholder="e.g., XYZ Forum" value={form.clientName}
+            <Input placeholder="e.g., Rahul Sharma" value={form.clientName}
               onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} required />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
-              <Input type="email" placeholder="e.g., divyraj@example.com" value={form.email}
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+              <label className="text-sm font-bold text-slate-700 ml-1">Email Address *</label>
+              <Input type="email" placeholder="client@example.com" value={form.email}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Phone Number</label>
-              <Input placeholder="e.g., 7016228814" value={form.phone}
-                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+              <label className="text-sm font-bold text-slate-700 ml-1">Phone Number *</label>
+              <Input placeholder="9876543210" value={form.phone}
+                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} required />
             </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700 ml-1">Office Address</label>
-            <Input placeholder="e.g., 123, LA" value={form.address}
+            <Input placeholder="Full address of the site" value={form.address}
               onChange={e => setForm(f => ({ ...f, address: e.target.value }))} icon={MapPin} />
           </div>
           <div className="space-y-2">
@@ -264,7 +295,7 @@ export default function ClientsPage() {
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   Saving...
                 </>
-              ) : "Save Client"}
+              ) : editClient ? "Update Client" : "Register Client"}
             </Button>
           </div>
         </form>

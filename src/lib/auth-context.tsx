@@ -80,23 +80,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error(payload.message || "Login failed");
       }
 
-      const userData = payload.data?.user || payload.user;
-      const token = payload.data?.token || payload.token;
+      // Backend returns { token, user: { _id, name, email, role, tenantId } } directly
+      const userData = payload.user || payload.data?.user;
+      const authToken = payload.token || payload.data?.token;
 
       if (!userData) throw new Error("User data not found in response");
+      if (!authToken) throw new Error("Token not found in response");
 
       const finalUser: User = {
-        id: userData.id || userData._id,
-        name: userData.userName || userData.name,
+        id: userData._id || userData.id,
+        name: userData.name || userData.userName || userData.clientName,
         email: userData.email || identifier,
         role: userData.role,
         projectId: userData.projectId,
       };
 
       setUser(finalUser);
-      setToken(token);
+      setToken(authToken);
       localStorage.setItem("auth_user", JSON.stringify(finalUser));
-      if (token) localStorage.setItem("auth_token", token);
+      localStorage.setItem("auth_token", authToken);
       
       router.push("/");
     } catch (error: any) {
