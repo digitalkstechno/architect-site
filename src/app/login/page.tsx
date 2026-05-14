@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import {
@@ -30,13 +30,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [step, setStep] = useState<"role" | "credentials" | "guest">("role");
   const [guestContact, setGuestContact] = useState("");
   const [guestContactType, setGuestContactType] = useState<"email" | "mobile">("email");
   const [guestLoading, setGuestLoading] = useState(false);
+  const [showGuest, setShowGuest] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedRole) {
+      toast.error("Please select a role");
+      return;
+    }
     setLoading(true);
     try {
       await login(identifier, password);
@@ -45,15 +49,6 @@ export default function LoginPage() {
       toast.error(err.message || "Invalid credentials");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleRoleSelect = (roleId: string) => {
-    setSelectedRole(roleId);
-    if (roleId === "guest") {
-      setStep("guest");
-    } else {
-      setStep("credentials");
     }
   };
 
@@ -74,147 +69,88 @@ export default function LoginPage() {
     }
   };
 
-  const handleBack = () => {
-    setStep("role");
-    setSelectedRole(null);
-  };
+  const nonGuestRoles = LOGIN_ROLE_CARDS.filter(role => role.id !== "guest");
+  const guestRole = LOGIN_ROLE_CARDS.find(role => role.id === "guest");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-white to-gray-50 flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-1/2 -right-40 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute -bottom-40 left-1/3 w-72 h-72 bg-purple-500/15 rounded-full blur-3xl animate-pulse delay-500" />
+        <div className="absolute -top-40 -left-40 w-80 h-80 bg-indigo-200/40 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-1/2 -right-40 w-96 h-96 bg-indigo-200/30 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute -bottom-40 left-1/3 w-72 h-72 bg-purple-200/30 rounded-full blur-3xl animate-pulse delay-500" />
       </div>
 
-      <div className="w-full max-w-5xl space-y-8 relative z-10">
-        <div className="text-center space-y-4">
-          <div className="inline-flex bg-gradient-to-r from-orange-500 to-amber-500 p-4 rounded-2xl shadow-2xl shadow-orange-500/30">
-            <Building2 className="w-10 h-10 text-white" />
+      <div className="w-full max-w-md space-y-6 relative z-10">
+        <div className="text-center space-y-3">
+          <div className="inline-flex bg-gradient-to-r from-indigo-500 to-blue-500 p-3 rounded-2xl shadow-xl shadow-indigo-500/20">
+            <Building2 className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-5xl font-bold text-white tracking-tight">ArchiSite</h1>
-          <p className="text-slate-400 font-medium uppercase tracking-wider text-sm">Construction SaaS Platform</p>
+          <h1 className="text-4xl font-bold text-gray-900 tracking-tight">ArchiSite</h1>
+          <p className="text-gray-500 font-medium uppercase tracking-wider text-xs">Construction SaaS Platform</p>
         </div>
 
-        {step === "role" && (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-semibold text-white">Select Your Role</h2>
-              <p className="text-slate-400">Choose how you want to access ArchiSite</p>
+        {!showGuest ? (
+          <Card className="p-8 rounded-3xl shadow-xl border-gray-200 bg-white space-y-6">
+            <div className="text-center space-y-1">
+              <h2 className="text-xl font-semibold text-gray-900">Sign In</h2>
+              <p className="text-xs text-gray-500">Enter your credentials to access your workspace</p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-              {LOGIN_ROLE_CARDS.filter(role => role.id !== "guest").map((role) => {
-                const Icon = iconMap[role.icon] || User;
-                return (
-                  <button
-                    key={role.id}
-                    onClick={() => handleRoleSelect(role.id)}
-                    className={cn(
-                      "group relative h-48 rounded-2xl border border-white/10 backdrop-blur-xl",
-                      "bg-white/5 hover:bg-white/10",
-                      "transition-all duration-300 ease-out",
-                      "flex flex-col items-center justify-center gap-3 p-6",
-                      "hover:scale-105 hover:shadow-xl hover:shadow-orange-500/10",
-                      "focus:outline-none focus:ring-2 focus:ring-orange-500/50"
-                    )}
-                  >
-                    <div className={cn(
-                      "p-3 rounded-xl bg-gradient-to-br transition-all duration-300",
-                      `bg-gradient-to-br ${role.color}`,
-                      "group-hover:scale-110 group-hover:shadow-lg"
-                    )}>
-                      <Icon className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="text-center space-y-1">
-                      <h3 className="text-white font-semibold text-base">{role.displayName}</h3>
-                      <p className="text-slate-400 text-xs">{role.description}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-medium text-gray-600 ml-1">Role</label>
+                <select
+                  value={selectedRole || ""}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="w-full h-11 px-4 rounded-xl border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select your role</option>
+                  {nonGuestRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.displayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="flex justify-center pt-4">
-              <button
-                onClick={() => handleRoleSelect("guest")}
-                className={cn(
-                  "group relative px-8 py-4 rounded-2xl border border-orange-500/30 backdrop-blur-xl",
-                  "bg-gradient-to-r from-orange-500/10 to-amber-500/10 hover:from-orange-500/20 hover:to-amber-500/20",
-                  "transition-all duration-300 ease-out",
-                  "flex items-center gap-3",
-                  "hover:scale-105 hover:shadow-xl hover:shadow-orange-500/20",
-                  "focus:outline-none focus:ring-2 focus:ring-orange-500/50"
-                )}
-              >
-                <div className="p-2 rounded-lg bg-gradient-to-br from-slate-500 to-gray-600">
-                  <Eye className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <span className="text-white font-semibold block">Continue as Guest</span>
-                  <span className="text-slate-400 text-xs">View portfolio & achievements</span>
-                </div>
-                <ArrowRight className="w-5 h-5 text-orange-400 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === "credentials" && selectedRole && (
-          <Card className="p-10 rounded-3xl shadow-2xl border-white/10 bg-white/5 backdrop-blur-xl space-y-8 max-w-md mx-auto">
-            <div className="text-center space-y-2">
-              <button
-                onClick={handleBack}
-                className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2 mx-auto"
-              >
-                <ChevronRight className="w-4 h-4 rotate-180" />
-                Back to Roles
-              </button>
-              <h2 className="text-xl font-semibold text-white">Sign In</h2>
-              <p className="text-xs text-slate-400">
-                Access your workspace as{" "}
-                <span className="text-orange-400 font-medium">
-                  {LOGIN_ROLE_CARDS.find(r => r.id === selectedRole)?.displayName}
-                </span>
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-slate-400 ml-1">Email or Username</label>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-medium text-gray-600 ml-1">Email or Username</label>
                 <Input
                   type="text"
                   placeholder="Enter email or username"
                   icon={User}
                   required
-                  className="rounded-xl h-12 bg-white/5 border-white/10 text-white placeholder:text-slate-500"
+                  className="rounded-xl h-11 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                 />
               </div>
-              <div className="space-y-2">
+
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between ml-1">
-                  <label className="text-xs font-medium text-slate-400">Password</label>
-                  <button type="button" className="text-xs font-medium text-orange-400 hover:text-orange-300">
+                  <label className="text-[11px] font-medium text-gray-600">Password</label>
+                  <button type="button" className="text-[11px] font-medium text-indigo-600 hover:text-indigo-500">
                     Forgot?
                   </button>
                 </div>
                 <Input
                   type="password"
-                  placeholder="{"••••••••"}"
+                  placeholder="••••••••"
                   icon={Lock}
                   required
-                  className="rounded-xl h-12 bg-white/5 border-white/10 text-white placeholder:text-slate-500"
+                  className="rounded-xl h-11 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
+
               <Button
                 type="submit"
                 disabled={loading}
                 className={cn(
-                  "w-full py-4 text-sm font-semibold uppercase tracking-wider gap-2 group rounded-xl",
-                  "shadow-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600",
+                  "w-full py-3.5 text-sm font-semibold uppercase tracking-wider gap-2 group rounded-xl",
+                  "shadow-lg bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600",
                   "transition-all duration-300",
                   loading && "opacity-80 cursor-not-allowed"
                 )}
@@ -233,46 +169,66 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="text-center pt-2">
-              <p className="text-xs text-slate-400">
+            <div className="text-center pt-1 space-y-3">
+              <p className="text-[11px] text-gray-500">
                 Don{"'"}t have an account?{" "}
-                <button type="button" className="text-orange-400 hover:underline font-medium">
+                <button type="button" className="text-indigo-600 hover:underline font-medium">
                   Request Access
                 </button>
               </p>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-[10px] text-gray-400 uppercase tracking-tighter">or</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+              <button
+                onClick={() => setShowGuest(true)}
+                className={cn(
+                  "group w-full px-5 py-2.5 rounded-xl border border-indigo-200",
+                  "bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100",
+                  "transition-all duration-300 ease-out",
+                  "flex items-center justify-center gap-3",
+                  "hover:shadow-sm",
+                  "focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                )}
+              >
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-gray-400 to-gray-500">
+                  <Eye className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-gray-900 font-semibold text-xs">Continue as Guest</span>
+                <ArrowRight className="w-3.5 h-3.5 text-indigo-500 group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
           </Card>
-        )}
-
-        {step === "guest" && (
-          <Card className="p-10 rounded-3xl shadow-2xl border-orange-500/30 bg-white/5 backdrop-blur-xl space-y-8 max-w-md mx-auto">
-            <div className="text-center space-y-2">
+        ) : (
+          <Card className="p-8 rounded-3xl shadow-xl border-indigo-300 bg-white space-y-6">
+            <div className="text-center space-y-3">
               <button
-                onClick={handleBack}
-                className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2 mx-auto"
+                onClick={() => setShowGuest(false)}
+                className="text-xs text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-2 mx-auto"
               >
-                <ChevronRight className="w-4 h-4 rotate-180" />
-                Back to Roles
+                <ChevronRight className="w-3.5 h-3.5 rotate-180" />
+                Back to Sign In
               </button>
-              <div className="inline-flex p-3 rounded-xl bg-gradient-to-br from-slate-500 to-gray-600">
-                <Eye className="w-6 h-6 text-white" />
+              <div className="inline-flex p-2.5 rounded-xl bg-gradient-to-br from-gray-400 to-gray-500">
+                <Eye className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-xl font-semibold text-white">Guest Access</h2>
-              <p className="text-xs text-slate-400">Enter your email or mobile to receive an OTP</p>
+              <h2 className="text-xl font-semibold text-gray-900">Guest Access</h2>
+              <p className="text-xs text-gray-500">Enter your email or mobile to receive an OTP</p>
             </div>
 
-            <form onSubmit={handleGuestSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-slate-400 ml-1">Contact Method</label>
+            <form onSubmit={handleGuestSubmit} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-medium text-gray-600 ml-1">Contact Method</label>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setGuestContactType("email")}
                     className={cn(
-                      "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all",
+                      "flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-all",
                       guestContactType === "email"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white/5 text-slate-400 hover:bg-white/10"
+                        ? "bg-indigo-500 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     )}
                   >
                     Email
@@ -281,10 +237,10 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => setGuestContactType("mobile")}
                     className={cn(
-                      "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all",
+                      "flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-all",
                       guestContactType === "mobile"
-                        ? "bg-orange-500 text-white"
-                        : "bg-white/5 text-slate-400 hover:bg-white/10"
+                        ? "bg-indigo-500 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     )}
                   >
                     Mobile
@@ -292,8 +248,8 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-slate-400 ml-1">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-medium text-gray-600 ml-1">
                   {guestContactType === "email" ? "Email Address" : "Mobile Number"}
                 </label>
                 <Input
@@ -301,7 +257,7 @@ export default function LoginPage() {
                   placeholder={guestContactType === "email" ? "Enter your email" : "Enter mobile number"}
                   icon={User}
                   required
-                  className="rounded-xl h-12 bg-white/5 border-white/10 text-white placeholder:text-slate-500"
+                  className="rounded-xl h-11 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
                   value={guestContact}
                   onChange={(e) => setGuestContact(e.target.value)}
                 />
@@ -311,8 +267,8 @@ export default function LoginPage() {
                 type="submit"
                 disabled={guestLoading}
                 className={cn(
-                  "w-full py-4 text-sm font-semibold uppercase tracking-wider gap-2 group rounded-xl",
-                  "shadow-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600",
+                  "w-full py-3.5 text-sm font-semibold uppercase tracking-wider gap-2 group rounded-xl",
+                  "shadow-lg bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600",
                   "transition-all duration-300",
                   guestLoading && "opacity-80 cursor-not-allowed"
                 )}
@@ -332,9 +288,9 @@ export default function LoginPage() {
             </form>
 
             <div className="text-center pt-2">
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-gray-500">
                 By continuing, you agree to our{" "}
-                <button type="button" className="text-orange-400 hover:underline font-medium">
+                <button type="button" className="text-indigo-600 hover:underline font-medium">
                   Terms of Service
                 </button>
               </p>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
 import { API_BASE_URL } from "@/lib/api-config";
+import { toast } from "react-toastify";
 
 const token = () => (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
 const authHeaders = () => ({ Authorization: `Bearer ${token()}`, "Content-Type": "application/json" });
@@ -91,15 +92,21 @@ function UsersTab({ roles }: { roles: Role[] }) {
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || d.message || "Failed");
       setIsModalOpen(false); setForm(emptyForm); fetchUsers();
-    } catch (err: any) { setError(err.message); }
+      toast.success(editUser ? "User updated successfully!" : "User created successfully!");
+    } catch (err: any) { setError(err.message); toast.error(err.message); }
     finally { setSubmitting(false); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this user?")) return;
     setDeletingId(id);
-    await fetch(`${API_BASE_URL}/user/${id}`, { method: "DELETE", headers: authHeaders() });
-    setUsers(p => p.filter(u => u._id !== id));
+    try {
+      await fetch(`${API_BASE_URL}/user/${id}`, { method: "DELETE", headers: authHeaders() });
+      setUsers(p => p.filter(u => u._id !== id));
+      toast.success("User deleted successfully!");
+    } catch {
+      toast.error("Failed to delete user");
+    }
     setDeletingId(null);
   };
 
@@ -224,15 +231,21 @@ function RolesTab({ roles, permissions, onRolesChange }: { roles: Role[]; permis
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || d.message || "Failed");
       setIsModalOpen(false); onRolesChange();
-    } catch (err: any) { setError(err.message); }
+      toast.success(editRole ? "Role updated successfully!" : "Role created successfully!");
+    } catch (err: any) { setError(err.message); toast.error(err.message); }
     finally { setSubmitting(false); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this role?")) return;
     setDeletingId(id);
-    await fetch(`${API_BASE_URL}/role/${id}`, { method: "DELETE", headers: authHeaders() });
-    onRolesChange();
+    try {
+      await fetch(`${API_BASE_URL}/role/${id}`, { method: "DELETE", headers: authHeaders() });
+      onRolesChange();
+      toast.success("Role deleted successfully!");
+    } catch {
+      toast.error("Failed to delete role");
+    }
     setDeletingId(null);
   };
 
@@ -321,15 +334,21 @@ function PermissionsTab({ permissions, onPermissionsChange }: { permissions: Per
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || d.message || "Failed");
       setIsModalOpen(false); setForm({ module: "", actions: [], permissionName: "" }); onPermissionsChange();
-    } catch (err: any) { setError(err.message); }
+      toast.success("Permission created successfully!");
+    } catch (err: any) { setError(err.message); toast.error(err.message); }
     finally { setSubmitting(false); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this permission?")) return;
     setDeletingId(id);
-    await fetch(`${API_BASE_URL}/permission/${id}`, { method: "DELETE", headers: authHeaders() });
-    onPermissionsChange();
+    try {
+      await fetch(`${API_BASE_URL}/permission/${id}`, { method: "DELETE", headers: authHeaders() });
+      onPermissionsChange();
+      toast.success("Permission deleted successfully!");
+    } catch {
+      toast.error("Failed to delete permission");
+    }
     setDeletingId(null);
   };
 

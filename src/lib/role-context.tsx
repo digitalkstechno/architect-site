@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
@@ -81,7 +81,7 @@ export const LOGIN_ROLE_CARDS: LoginRoleCard[] = [
     name: "Agency",
     displayName: "Agency",
     icon: "Briefcase",
-    color: "from-orange-500 to-amber-600",
+    color: "from-indigo-400 to-blue-500",
     description: "Manage workforce & tasks",
     redirectPath: "/workers",
   },
@@ -131,7 +131,7 @@ export const DEFAULT_ROLES: RoleConfig[] = [
     pages: ["dashboard", "site-photos", "payment-ledger", "messages"],
   },
   {
-    id: "agency", name: "Agency", displayName: "Agency", icon: "Briefcase", color: "orange", canDelete: false, description: "Agency role",
+    id: "agency", name: "Agency", displayName: "Agency", icon: "Briefcase", color: "indigo", canDelete: false, description: "Agency role",
     pages: ["dashboard", "projects", "tasks", "workers", "attendance", "site-updates", "site-photos", "messages"],
   },
   {

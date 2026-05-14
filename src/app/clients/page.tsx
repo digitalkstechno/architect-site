@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/lib/auth-context";
 import { API_BASE_URL } from "@/lib/api-config";
+import { toast } from "react-toastify";
 
 interface Client {
   _id: string;
