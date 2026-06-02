@@ -1,200 +1,127 @@
-﻿﻿"use client";
+"use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 
-import { setSuperAdminToken, clearSuperAdminToken } from "@/lib/superadmin-api";
-import { API_BASE_URL } from "@/lib/api-config";
+import { authService } from "@/services/auth.service";
+import { useRoles } from "./role-context";
 
+// Role is now a string to support dynamic custom roles
 export type Role = string;
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: Role | {
-    roleName?: string;
-    _id: string;
-    tenantId?: string;
-    permissions?: Array<{ module: string; actions: string[] }>;
+  role: string | any;
+  team?: "Office" | "Site";
+  trackAttendance?: boolean;
+  config?: {
+    hoursPerDay: number;
+    daysPerMonth: number;
   };
   projectId?: string;
-  isGuest?: boolean;
+  mobile?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  login: (identifier: string, password: string) => Promise<void>;
-  guestLogin: (contact: string, type: "email" | "mobile") => Promise<void>;
+  login: (email: string, password?: string, isGuest?: boolean, mobile?: string) => Promise<void>;
   logout: () => void;
-  getEffectiveRole: (u: User | null) => string;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const DEMO_USERS: Record<string, User> = {
-  architect:       { id: "1", name: "Arch. Sarah Connor", email: "sarah@archisite.pro",  role: "architect" },
-  "super-admin":   { id: "sa-1", name: "Super Admin",    email: "admin@archisite.pro",  role: "super-admin" },
-  client:          { id: "2", name: "Alice Johnson",       email: "alice@example.com",    role: "client",        projectId: "1" },
-  supervisor:      { id: "3", name: "Mike Ross",           email: "mike@archisite.pro",   role: "supervisor",    projectId: "1" },
-  worker:          { id: "4", name: "John Doe",            email: "john@trades.pro",      role: "worker",        projectId: "1" },
-  accountant:      { id: "5", name: "Riya Mehta",          email: "riya@archisite.pro",   role: "accountant" },
-  "site-engineer": { id: "6", name: "Arjun Kapoor",        email: "arjun@archisite.pro",  role: "site-engineer" },
-};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const { refreshRoles } = useRoles();
 
   useEffect(() => {
     try {
       const savedUser = localStorage.getItem("auth_user");
-      const savedToken = localStorage.getItem("auth_token");
-      if (savedUser) setUser(JSON.parse(savedUser));
-      if (savedToken) setToken(savedToken);
+      const savedToken = localStorage.getItem("token");
+      
+      if (savedUser && savedToken) {
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+      }
     } catch {
       localStorage.removeItem("auth_user");
-      localStorage.removeItem("auth_token");
+      localStorage.removeItem("token");
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const login = async (identifier: string, password: string) => {
+  const login = async (email: string, password?: string, isGuest?: boolean, mobile?: string) => {
+    if (isGuest) {
+      const guestUser: User = {
+        id: "guest_" + Date.now(),
+        name: "Guest User",
+        email: "guest@archisite.pro",
+        role: "guest",
+        mobile
+      };
+      setUser(guestUser);
+      localStorage.setItem("auth_user", JSON.stringify(guestUser));
+      router.push("/guest/home");
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_BASE_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: identifier, password }), 
-      });
+      const data = (await authService.login({ email, password })) as any;
 
-      const payload = await res.json();
-
-      if (!res.ok) {
-        throw new Error(payload.message || "Login failed");
-      }
-
-      const userData = payload.user || payload.data?.user;
-      const authToken = payload.token || payload.data?.token;
-
-      if (!userData) throw new Error("User data not found in response");
-      if (!authToken) throw new Error("Token not found in response");
-
-      const finalUser: User & { isSuperAdmin?: boolean } = {
-        id: userData._id || userData.id,
-        name: userData.name || userData.userName || userData.clientName,
-        email: userData.email || identifier,
-        role: userData.role,
-        projectId: userData.projectId,
-        isSuperAdmin: userData.isSuperAdmin,
+      const finalUser: User = {
+        id: data._id,
+        name: data.name,
+        email: data.email,
+        role: data.role?.name || data.role,
+        team: data.team,
+        trackAttendance: data.trackAttendance,
+        config: data.config,
       };
 
       setUser(finalUser);
-      setToken(authToken);
       localStorage.setItem("auth_user", JSON.stringify(finalUser));
-      localStorage.setItem("auth_token", authToken);
-
-      if (userData.isSuperAdmin) {
-        setSuperAdminToken(authToken);
-        router.push("/super-admin");
-      } else {
-        router.push("/");
-      }
+      localStorage.setItem("token", data.token);
+      // Dispatch storage event so stores re-fetch with the new token
+      window.dispatchEvent(new Event("storage"));
+      
+      // Refresh roles to ensure correct permissions are loaded for the sidebar
+      await refreshRoles();
+      
+      router.push("/");
     } catch (error: any) {
-      console.error("Login Error:", error);
       throw error;
-    }
-  };
-
-  const guestLogin = async (contact: string, type: "email" | "mobile") => {
-    try {
-      const guestUser: User = {
-        id: "guest_" + Date.now(),
-        name: "Guest User",
-        email: type === "email" ? contact : "",
-        role: "guest",
-        isGuest: true,
-      };
-
-      const guestToken = "guest_token_" + Date.now();
-
-      setUser(guestUser);
-      setToken(guestToken);
-      localStorage.setItem("auth_user", JSON.stringify(guestUser));
-      localStorage.setItem("auth_token", guestToken);
-      localStorage.setItem("guest_contact", contact);
-      localStorage.setItem("guest_contact_type", type);
-
-      const otpRes = await fetch(`${API_BASE_URL}/guest-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contact,
-          type,
-          userId: guestUser.id,
-        }),
-      });
-
-      if (otpRes.ok) {
-        console.log("OTP sent successfully");
-      }
-
-      router.push("/guest");
-    } catch (error: any) {
-      console.error("Guest Login Error:", error);
-
-      const guestUser: User = {
-        id: "guest_" + Date.now(),
-        name: "Guest User",
-        email: type === "email" ? contact : "",
-        role: "guest",
-        isGuest: true,
-      };
-
-      const guestToken = "guest_token_" + Date.now();
-      setUser(guestUser);
-      setToken(guestToken);
-      localStorage.setItem("auth_user", JSON.stringify(guestUser));
-      localStorage.setItem("auth_token", guestToken);
-      localStorage.setItem("guest_contact", contact);
-      localStorage.setItem("guest_contact_type", type);
-
-      router.push("/guest");
     }
   };
 
   const logout = () => {
     setUser(null);
-    setToken(null);
     localStorage.removeItem("auth_user");
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("guest_contact");
-    localStorage.removeItem("guest_contact_type");
-    clearSuperAdminToken();
+    localStorage.removeItem("token");
     router.push("/login");
   };
 
-  const getEffectiveRole = (u: User | null): string => {
-    if (!u) return "";
-    if (!u.role) return "";
-    if (typeof u.role === "string") return u.role;
-    return u.role.roleName || "";
-  };
-
   useEffect(() => {
-    const isPublicPath = pathname === "/login" || pathname.startsWith("/super-admin") || pathname.startsWith("/guest");
-    if (!isLoading && !user && !isPublicPath) {
+    if (isLoading) return;
+    const isLoginPage = pathname === "/login";
+    const isGuestPage = pathname.startsWith("/guest");
+    if (!user && !isLoginPage) {
       router.push("/login");
+    } else if (user?.role === "guest" && !isGuestPage) {
+      // Guest trying to access admin pages → redirect to guest home
+      router.push("/guest/home");
     }
   }, [user, isLoading, pathname, router]);
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, guestLogin, logout, getEffectiveRole }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

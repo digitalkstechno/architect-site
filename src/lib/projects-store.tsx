@@ -1,9 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
-import { projects as seedProjects } from "@/lib/dummy-data";
-import { useAuth } from "./auth-context";
-import { API_BASE_URL } from "./api-config";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { projectService } from "@/services/project.service";
+import { ProjectManagementFlow, DesignTask, SiteExecutionTask } from "./types/project-flow";
 
 export type StageStatus = "Pending" | "In Progress" | "Completed";
 export type LifecycleStatus = "Pending" | "In Progress" | "Completed";
@@ -18,7 +17,7 @@ export type ProjectLifecyclePhase = {
   status: LifecycleStatus;
 };
 
-export interface Project {
+export type Project = {
   id: string;
   name: string;
   client: string;
@@ -26,20 +25,20 @@ export interface Project {
   location: string;
   startDate: string;
   expectedCompletion: string;
-  status: "Planned" | "In Progress" | "On Hold" | "Completed";
+  status: string;
   progress: number;
-  budget: string;
-  received: string;
-  pending: string;
-  totalReceived?: number;
-  totalExpense?: number;
-  balance?: number;
+  budget: number | string;
+  received: number | string;
+  pending: number | string;
   supervisorId?: string;
+  supervisor?: any;
   workerIds?: string[];
+  workers?: any[];
   phase?: string;
   lifecycle?: ProjectLifecyclePhase[];
-  stages?: ProjectStage[];
-}
+  stages: ProjectStage[];
+  flow?: ProjectManagementFlow;
+};
 
 type CreateProjectInput = Omit<
   Project,
@@ -56,33 +55,99 @@ type CreateProjectInput = Omit<
 type ProjectsContextType = {
   projects: Project[];
   isHydrated: boolean;
-  fetchProjects: () => Promise<void>;
   getProjectById: (id: string) => Project | undefined;
   createProject: (input: CreateProjectInput) => Promise<Project>;
-  updateProject: (id: string, patch: Partial<Project>) => void;
-  deleteProject: (id: string) => void;
-  updateStageStatus: (projectId: string, stageName: string, status: StageStatus) => void;
+  updateProject: (id: string, patch: Partial<Project>) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  fetchProjects: () => Promise<void>;
+  updateStageStatus: (projectId: string, stageName: string, status: StageStatus) => Promise<void>;
   updateLifecycleStatus: (projectId: string, phaseName: string, status: LifecycleStatus) => void;
 };
 
-const STORAGE_KEY = "archisite_projects";
 const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined);
 
-function safeParse<T>(raw: string | null): T | undefined {
-  if (!raw) return undefined;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return undefined;
-  }
+function createDesignTask(title: string): DesignTask {
+  return {
+    id: "dt_" + Math.random().toString(36).substr(2, 9),
+    title,
+    assignedTo: [],
+    status: "Pending",
+    progress: 0,
+    deadline: "",
+    documents: [],
+    comments: [],
+    activityLogs: [],
+  };
 }
 
-function normalizeSeed(): Project[] {
-  return (seedProjects as unknown as Project[]).map((p) => ({
-    ...p,
-    workerIds: p.workerIds ?? [],
-    stages: p.stages ?? [],
-  }));
+function createExecutionTask(stage: string): SiteExecutionTask {
+  return {
+    id: "et_" + Math.random().toString(36).substr(2, 9),
+    stage,
+    status: "Pending",
+    progress: 0,
+    images: [],
+    materials: [],
+    labourAttendance: [],
+    notes: [],
+    delays: [],
+  };
+}
+
+function initializeFlow(): ProjectManagementFlow {
+  return {
+    officeWork: {
+      civil: {
+        layoutPlan: createDesignTask("Layout Plan Management"),
+        detailedLayout: createDesignTask("Detailed Layout Plan"),
+        elevationExterior: createDesignTask("Elevation & Exterior Design"),
+        columnFooting: createDesignTask("Column & Footing Drawings"),
+        groundPlinthBeam: createDesignTask("Ground Beam & Plinth Beam Drawings"),
+        boringUGT: createDesignTask("Boring & UGT Tank Details"),
+        slabBeamColumn: createDesignTask("Slab / Beam / Column Details"),
+        workingDrawings: createDesignTask("Working Drawings"),
+        elevationWorking: createDesignTask("Elevation Working"),
+        drainageLayout: createDesignTask("Drainage Layout"),
+      },
+      interior: {
+        furnitureLayout: createDesignTask("Furniture Layout"),
+        soLayout: createDesignTask("SO Layout"),
+        electricLayout: createDesignTask("Electric Layout"),
+        loopingLayout: createDesignTask("Looping Layout"),
+        acLayout: createDesignTask("AC Layout"),
+        ceilingLayout: createDesignTask("Ceiling Layout"),
+        plumbingLayout: createDesignTask("Plumbing Layout"),
+        machineWorking: createDesignTask("Machine Working"),
+        cncDrawings: createDesignTask("CNC Drawings"),
+        softFurnishing: createDesignTask("Soft Furnishing Details"),
+        model3D: createDesignTask("3D Model & Rendering"),
+      },
+    },
+    siteWork: {
+      civil: {
+        boring: createExecutionTask("Boring"),
+        foundation: createExecutionTask("Foundation"),
+        plinthWork: createExecutionTask("Plinth Work"),
+        drainageLine: createExecutionTask("Drainage Line"),
+        structuralWork: createExecutionTask("Column, Beam & Slab Work"),
+        brickWork: createExecutionTask("Brick Work"),
+        plasterWork: createExecutionTask("Plaster Work"),
+      },
+      interior: {
+        plumbing: createExecutionTask("Plumbing Work"),
+        electric: createExecutionTask("Electric Work"),
+        acPiping: createExecutionTask("AC Piping"),
+        pestControl: createExecutionTask("Pest Control"),
+        tilesStone: createExecutionTask("Tiles & Stone Work"),
+        furniture: createExecutionTask("Furniture Work"),
+        paint: createExecutionTask("Color/Paint Work"),
+        cleaning: createExecutionTask("Cleaning Work"),
+        lightingSurface: createExecutionTask("Surface Lighting & Headboard"),
+        lightingDecoration: createExecutionTask("Lighting & Decoration"),
+        appliances: createExecutionTask("Appliances & Accessories Installation"),
+      },
+    },
+  };
 }
 
 function computeProgressFromStages(stages: ProjectStage[]): number {
@@ -91,7 +156,7 @@ function computeProgressFromStages(stages: ProjectStage[]): number {
   return Math.round((completed / stages.length) * 100);
 }
 
-function computeStatusFromProgress(progress: number): Project["status"] {
+function computeStatusFromProgress(progress: number): string {
   if (progress <= 0) return "Planned";
   if (progress >= 100) return "Completed";
   return "In Progress";
@@ -104,178 +169,119 @@ function computePhaseFromLifecycle(lifecycle?: ProjectLifecyclePhase[]): string 
 }
 
 export function ProjectsProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  const fetchProjects = useCallback(async () => {
+  // Hydrate from Backend
+  const fetchProjects = async () => {
     try {
-      const token = localStorage.getItem("auth_token");
-      if (!token) {
-        console.warn("fetchProjects: No auth_token in localStorage");
-        setProjects([]);
-        setIsHydrated(true);
-        return;
-      }
-
-      const res = await fetch(`${API_BASE_URL}/project`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        console.error(`fetchProjects failed: ${res.status} ${res.statusText}`, errBody);
-        // 401 = token expired/invalid — clear and redirect
-        if (res.status === 401) {
-          localStorage.removeItem("auth_token");
-          localStorage.removeItem("auth_user");
-        }
-        setProjects([]);
-        return;
-      }
-
-      const payload = await res.json();
-      const backendProjects = payload.projects || payload.data || [];
-
-      // Filter projects for client role
-      const roleName = typeof user?.role === "object" ? (user.role as any)?.roleName ?? "" : (user?.role ?? "");
-      const isClient = roleName === "TENANT_Client" || roleName === "Client";
-
-      const mapped: Project[] = backendProjects
-        .filter((p: any) => {
-          if (!isClient) return true;
-          const pClientId = p.clientId?._id || p.clientId;
-          return pClientId === user?.id;
-        })
-        .map((p: any) => ({
+      const data = await projectService.getAllProjects();
+      if (data && data.length > 0) {
+        // Map backend _id to id for frontend compatibility
+        const mappedProjects = data.map((p: any) => ({
+          ...p,
           id: p._id,
-          name: p.projectName || "Untitled Project",
-          client: p.clientId?.clientName || "Unknown Client",
-          clientId: p.clientId?._id || p.clientId,
-          location: p.siteAddress || "—",
-          startDate: p.startDate ? new Date(p.startDate).toISOString().split("T")[0] : "",
-          expectedCompletion: p.expectedEndDate ? new Date(p.expectedEndDate).toISOString().split("T")[0] : "",
-          status: p.status === "PLANNING" ? "Planned" : p.status === "ACTIVE" ? "In Progress" : p.status === "ON_HOLD" ? "On Hold" : p.status === "COMPLETED" ? "Completed" : "Planned",
-          progress: 0,
-          budget: `₹${(p.budget || 0).toLocaleString()}`,
-          received: `₹${(p.totalReceived || 0).toLocaleString()}`,
-          pending: `₹${((p.budget || 0) - (p.totalReceived || 0)).toLocaleString()}`,
-          totalReceived: p.totalReceived || 0,
-          totalExpense: p.totalExpense || 0,
-          balance: p.balance || 0,
-          stages: [],
+          workerIds: p.workers?.map((w: any) => typeof w === 'string' ? w : w._id) || [],
+          supervisorId: typeof p.supervisor === 'string' ? p.supervisor : p.supervisor?._id,
+          clientId: typeof p.client === 'string' ? p.client : p.client?._id,
+          client: p.client?.name || p.client,
         }));
-
-      setProjects(mapped);
-    } catch (err) {
-      console.error("Fetch projects error:", err);
+        setProjects(mappedProjects);
+      }
+    } catch (error) {
+      console.error("Failed to fetch projects from backend", error);
     } finally {
       setIsHydrated(true);
     }
-  }, [user]);
+  };
 
-  // Hydrate from backend when user changes
   useEffect(() => {
-    fetchProjects();
-  }, [user, fetchProjects]);
+    const token = localStorage.getItem("token");
+    if (token) fetchProjects();
+    else setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    const handleStorage = () => {
+      const token = localStorage.getItem("token");
+      if (token) fetchProjects();
+    };
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("refreshProjects", fetchProjects);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("refreshProjects", fetchProjects);
+    };
+  }, []);
 
   const api = useMemo<ProjectsContextType>(() => {
     const getProjectById = (id: string) => projects.find((p) => p.id === id);
 
     const createProject = async (input: CreateProjectInput): Promise<Project> => {
-      const token = localStorage.getItem("auth_token");
-      if (!token) throw new Error("No token");
-
-      const budgetValue = Number(input.budget.replace(/[^0-9.-]+/g, ""));
-      const res = await fetch(`${API_BASE_URL}/project`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          projectName: input.name,
-          clientId: input.clientId,
-          siteAddress: input.location,
+      try {
+        const payload = {
+          name: input.name,
+          client: input.clientId || input.client,
+          location: input.location,
           startDate: input.startDate,
-          expectedEndDate: input.expectedCompletion,
-          budget: budgetValue,
-          status: "PLANNING",
-        }),
-      });
-
-      if (!res.ok) throw new Error("Failed to create project");
-      const payload = await res.json();
-      const p = payload.data || payload;
-
-      const created: Project = {
-        id: p._id,
-        name: p.projectName,
-        client: input.client,
-        clientId: p.clientId,
-        location: p.siteAddress,
-        startDate: p.startDate,
-        expectedCompletion: p.expectedEndDate,
-        status: "Planned",
-        progress: 0,
-        budget: input.budget,
-        received: "$0",
-        pending: input.budget,
-        stages: [],
-      };
-
-      setProjects((prev) => [...prev, created]);
-      await fetchProjects();
-      return created;
+          expectedCompletion: input.expectedCompletion,
+          budget: input.budget,
+          designer: (input as any).designerId,
+          stages: input.stages,
+        };
+        const data = await projectService.createProject(payload);
+        await fetchProjects();
+        return { ...data, id: data._id } as any;
+      } catch (error) {
+        console.error("Failed to create project on backend", error);
+        throw error;
+      }
     };
 
     const updateProject = async (id: string, patch: Partial<Project>) => {
-      const token = localStorage.getItem("auth_token");
-      if (!token) return;
-
-      const body: any = {};
-      if (patch.name) body.projectName = patch.name;
-      if (patch.location) body.siteAddress = patch.location;
-      if (patch.status) {
-        body.status = patch.status === "Planned" ? "PLANNING" : patch.status === "In Progress" ? "ACTIVE" : patch.status === "On Hold" ? "ON_HOLD" : "COMPLETED";
+      try {
+        const payload = {
+          ...patch,
+          client: patch.clientId || patch.client,
+          designer: (patch as any).designerId || (patch as any).designer?._id,
+          supervisor: patch.supervisorId || patch.supervisor?._id,
+          workers: patch.workerIds || patch.workers,
+        };
+        await projectService.updateProject(id, payload);
+        await fetchProjects();
+      } catch (error) {
+        console.error("Failed to update project on backend", error);
+        // Fallback to local update if API fails (optional, but good for UX)
+        setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
       }
-      if (patch.budget) body.budget = Number(patch.budget.replace(/[^0-9.-]+/g, ""));
-
-      await fetch(`${API_BASE_URL}/project/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-      });
-
-      setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
-      await fetchProjects();
     };
 
     const deleteProject = async (id: string) => {
-      const token = localStorage.getItem("auth_token");
-      if (!token) return;
-
-      await fetch(`${API_BASE_URL}/project/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      setProjects((prev) => prev.filter((p) => p.id !== id));
+      try {
+        await projectService.deleteProject(id);
+        await fetchProjects();
+      } catch (error) {
+        console.error("Failed to delete project on backend", error);
+        setProjects((prev) => prev.filter((p) => p.id !== id));
+      }
     };
 
-    const updateStageStatus = (projectId: string, stageName: string, status: StageStatus) => {
-      setProjects((prev) =>
-        prev.map((p) => {
-          if (p.id !== projectId) return p;
-          const stages = (p.stages ?? []).map((s) => (s.name === stageName ? { ...s, status } : s));
-          const progress = computeProgressFromStages(stages);
-          const statusText = computeStatusFromProgress(progress);
-          return { ...p, stages, progress, status: statusText };
-        })
-      );
+    const updateStageStatus = async (projectId: string, stageName: string, status: StageStatus) => {
+      try {
+        await projectService.updateStage(projectId, { stageName, status });
+        await fetchProjects();
+      } catch (error) {
+        console.error("Failed to update stage status on backend", error);
+        setProjects((prev) =>
+          prev.map((p) => {
+            if (p.id !== projectId) return p;
+            const stages = (p.stages ?? []).map((s) => (s.name === stageName ? { ...s, status } : s));
+            const progress = computeProgressFromStages(stages);
+            const statusText = computeStatusFromProgress(progress);
+            return { ...p, stages, progress, status: statusText };
+          })
+        );
+      }
     };
 
     const updateLifecycleStatus = (projectId: string, phaseName: string, status: LifecycleStatus) => {
@@ -292,15 +298,15 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     return {
       projects,
       isHydrated,
-      fetchProjects,
       getProjectById,
       createProject,
       updateProject,
       deleteProject,
       updateStageStatus,
       updateLifecycleStatus,
+      fetchProjects,
     };
-  }, [projects, isHydrated, fetchProjects]);
+  }, [projects, isHydrated]);
 
   return <ProjectsContext.Provider value={api}>{children}</ProjectsContext.Provider>;
 }

@@ -92,29 +92,29 @@ export const projects = [
 ];
 
 export const tasks = [
-  { id: "1", name: "Foundation Inspection", project: "Modern Villa", stage: "Foundation", worker: "John Doe", deadline: "2024-03-20", status: "Pending" },
-  { id: "2", name: "Electrical Wiring - Floor 1", project: "City Heights Apartment", stage: "Electrical", worker: "Ali Hassan", deadline: "2024-03-18", status: "In Progress" },
-  { id: "3", name: "Plastering - Exterior Wall", project: "City Heights Apartment", stage: "Plaster", worker: "Sarah Lane", deadline: "2024-03-15", status: "Completed" },
-  { id: "4", name: "Structure Beam Reinforcement", project: "Modern Villa", stage: "Structure", worker: "Robert Paulson", deadline: "2024-03-22", status: "In Progress" },
+  { id: "1", name: "Foundation Inspection", project: "Modern Villa", stage: "Foundation", officeTeam: "Ruth Designer", officeStatus: "Pending", siteTeam: "John Doe", siteStatus: "Pending", deadline: "2024-03-20" },
+  { id: "2", name: "Electrical Wiring - Floor 1", project: "City Heights Apartment", stage: "Electrical", officeTeam: "Ali Hassan", officeStatus: "In Progress", siteTeam: "Mike Ross", siteStatus: "In Progress", deadline: "2024-03-18" },
+  { id: "3", name: "Plastering - Exterior Wall", project: "City Heights Apartment", stage: "Plaster", officeTeam: "Sarah Lane", officeStatus: "Completed", siteTeam: "Sarah Lane", siteStatus: "Completed", deadline: "2024-03-15" },
+  { id: "4", name: "Structure Beam Reinforcement", project: "Modern Villa", stage: "Structure", officeTeam: "Robert Paulson", officeStatus: "In Progress", siteTeam: "Robert Paulson", siteStatus: "In Progress", deadline: "2024-03-22" },
 ];
 
 export const supervisors = [
-  { id: "s1", name: "Mike Ross", phone: "555-2001", email: "mike@archisite.pro", experience: "8 years", assignedProjects: ["1", "2"], joinDate: "2022-03-10" },
-  { id: "s2", name: "Priya Sharma", phone: "555-2002", email: "priya@archisite.pro", experience: "5 years", assignedProjects: ["3"], joinDate: "2023-01-15" },
-  { id: "s3", name: "David Khan", phone: "555-2003", email: "david@archisite.pro", experience: "10 years", assignedProjects: [], joinDate: "2021-06-20" },
+  { id: "s1", name: "Mike Ross", type: "Client", phone: "555-2001", email: "mike@archisite.pro", experience: "8 years", assignedProjects: ["1", "2"], joinDate: "2022-03-10" },
+  { id: "s2", name: "Priya Sharma", type: "Client", phone: "555-2002", email: "priya@archisite.pro", experience: "5 years", assignedProjects: ["3"], joinDate: "2023-01-15" },
+  { id: "s3", name: "David Khan", type: "Client", phone: "555-2003", email: "david@archisite.pro", experience: "10 years", assignedProjects: [], joinDate: "2021-06-20" },
 ];
 
 export const WORKER_SPECIALIZATIONS = [
   "Mason", "Electrician", "Plumber", "Painter", "Carpenter",
   "Steel Fixer", "Welder", "Tiler", "Plasterer", "Excavator Operator",
-  "Crane Operator", "Civil Engineer", "Interior Designer", "Supervisor",
+  "Crane Operator", "Civil Engineer", "Interior Designer", "Director",
 ];
 
 export const workers = [
-  { id: "1", name: "John Doe", type: "Mason", specializations: ["Mason", "Plasterer"], phone: "555-0123", rate: "$150/day", assignedProjects: ["Modern Villa"], experience: "6 years", joinDate: "2023-02-01", address: "123 Main St, Beverly Hills" },
-  { id: "2", name: "Ali Hassan", type: "Electrician", specializations: ["Electrician", "Welder"], phone: "555-0124", rate: "$200/day", assignedProjects: ["City Heights Apartment"], experience: "9 years", joinDate: "2022-08-15", address: "45 Oak Ave, Seattle" },
-  { id: "3", name: "Sarah Lane", type: "Painter", specializations: ["Painter", "Tiler"], phone: "555-0125", rate: "$120/day", assignedProjects: ["City Heights Apartment"], experience: "4 years", joinDate: "2023-05-10", address: "78 Pine Rd, Seattle" },
-  { id: "4", name: "Robert Paulson", type: "Plumber", specializations: ["Plumber", "Steel Fixer"], phone: "555-0126", rate: "$180/day", assignedProjects: ["Modern Villa"], experience: "7 years", joinDate: "2022-11-20", address: "90 Elm St, Beverly Hills" },
+  { id: "1", name: "John Doe", type: "Director", team: "Office", specializations: ["Design", "Planning"], phone: "555-0123", email: "john@archisite.pro", rate: "$150/hour", assignedProjects: ["Modern Villa"], experience: "6 years", joinDate: "2023-02-01", address: "123 Main St, Beverly Hills" },
+  { id: "2", name: "Ali Hassan", type: "Designer", team: "Office", specializations: ["Interior", "Electrical Plan"], phone: "555-0124", email: "ali@archisite.pro", rate: "$200/hour", assignedProjects: ["City Heights Apartment"], experience: "9 years", joinDate: "2022-08-15", address: "45 Oak Ave, Seattle" },
+  { id: "3", name: "Sarah Lane", type: "Painter", team: "Site", specializations: ["Painting", "Tiling"], phone: "555-0125", email: "sarah@archisite.pro", rate: "$120/day", assignedProjects: ["City Heights Apartment"], experience: "4 years", joinDate: "2023-05-10", address: "78 Pine Rd, Seattle" },
+  { id: "4", name: "Robert Paulson", type: "Plumber", team: "Site", specializations: ["Plumbing", "Steel Fixing"], phone: "555-0126", email: "robert@archisite.pro", rate: "$180/day", assignedProjects: ["Modern Villa"], experience: "7 years", joinDate: "2022-11-20", address: "90 Elm St, Beverly Hills" },
 ];
 
 export const clients = [
@@ -124,9 +124,9 @@ export const clients = [
 ];
 
 export const siteUpdates = [
-  { id: "1", project: "Modern Villa", update: "Foundation completed, moving to structure.", date: "2024-03-12", progress: 40, photos: 4 },
-  { id: "2", project: "City Heights Apartment", update: "Plastering in progress on floor 2.", date: "2024-03-13", progress: 75, photos: 6 },
-  { id: "3", project: "Lakeview Residence", update: "Excavation started today.", date: "2024-03-14", progress: 10, photos: 2 },
+  { id: "1", project: "Modern Villa", update: "Foundation completed, moving to structure.", date: "2024-03-12", timestamp: "2024-03-12 10:30 AM", user: "Mike Ross", progress: 40, photos: 4 },
+  { id: "2", project: "City Heights Apartment", update: "Plastering in progress on floor 2.", date: "2024-03-13", timestamp: "2024-03-13 02:15 PM", user: "Ali Hassan", progress: 75, photos: 6 },
+  { id: "3", project: "Lakeview Residence", update: "Excavation started today.", date: "2024-03-14", timestamp: "2024-03-14 09:00 AM", user: "John Doe", progress: 10, photos: 2 },
 ];
 
 export const messages = [

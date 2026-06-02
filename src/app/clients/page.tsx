@@ -1,307 +1,210 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Search, Phone, Mail, ArrowUpRight, MapPin, FileText, Loader2, Trash2, ShieldCheck } from "lucide-react";
+
+import { useState, useEffect, useMemo } from "react";
+import { Plus, Search, Phone, Mail, MoreVertical, ArrowUpRight, UserCircle2, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import { useAuth } from "@/lib/auth-context";
-import { API_BASE_URL } from "@/lib/api-config";
-import { toast } from "react-toastify";
-
-interface Client {
-  _id: string;
-  clientName: string;
-  email: string;
-  phone: string;
-  address?: string;
-  notes?: string;
-  paymentStatus?: string;
-}
-
-const emptyForm = { clientName: "", email: "", phone: "", address: "", notes: "" };
+import { staffService, StaffMember } from "@/services/staff.service";
+import { usePayments } from "@/lib/payments-store";
+import { useProjects } from "@/lib/projects-store";
+import { Badge } from "@/components/ui/Badge";
+import { DataTable, Column } from "@/components/ui/DataTable";
 
 export default function ClientsPage() {
   const { user } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
+  const { payments } = usePayments();
+  const { projects } = useProjects();
+  const [clients, setClients] = useState<StaffMember[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editClient, setEditClient] = useState<Client | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [form, setForm] = useState(emptyForm);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [error, setError] = useState("");
 
-  const openAdd = () => { setEditClient(null); setForm(emptyForm); setError(""); setIsAddModalOpen(true); };
-  const openEdit = (c: Client) => {
-    setEditClient(c);
-    setForm({
-      clientName: c.clientName,
-      email: c.email,
-      phone: c.phone,
-      address: c.address || "",
-      notes: c.notes || ""
-    });
-    setError("");
-    setIsAddModalOpen(true);
-  };
+  const canAdd = user?.role === "architect" || user?.role === "director";
 
-  const fetchClients = useCallback(async () => {
+  const fetchData = async () => {
     try {
-      setLoading(true);
-      const token = localStorage.getItem("auth_token");
-      const res = await fetch(`${API_BASE_URL}/client`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      const payload = await res.json();
-      
-      // Handle different payload structures (e.g., { data: [] } or just [])
-      const data = Array.isArray(payload) ? payload : (payload.data || payload.clients || []);
-      setClients(data);
-    } catch (err) {
-      console.error("Fetch clients error:", err);
-      setError("Failed to load clients");
+      const data = await staffService.getAllStaff();
+      setClients(data.filter((s: any) => s.role?.name?.toLowerCase() === "client"));
+    } catch (error) {
+      console.error("Failed to fetch clients", error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    fetchClients();
-  }, [fetchClients]);
+    fetchData();
+  }, []);
 
-  const roleName = typeof user?.role === "object" ? (user.role?.roleName ?? "") : (user?.role ?? "");
-  const canAdd =
-    roleName.toLowerCase().includes("architect") ||
-    roleName.toLowerCase().includes("admin") ||
-    (typeof user?.role === "object" && user.role.permissions?.some(p => p.module === "CLIENT" && p.actions.includes("CREATE")));
-
-  const filteredClients = (clients || []).filter(client =>
-    client.clientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this client?")) return;
-    setDeletingId(id);
-    try {
-      const token = localStorage.getItem("auth_token");
-      await fetch(`${API_BASE_URL}/client/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setClients(prev => prev.filter(c => c._id !== id));
-    } catch (err) {
-      console.error("Delete client error:", err);
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.clientName.trim()) return;
+  const getClientStats = (clientId: string) => {
+    const clientPayments = payments.filter(p => p.clientId === clientId);
+    const clientProjects = projects.filter(p => p.clientId === clientId);
     
-    setSubmitting(true);
-    setError("");
-    try {
-      const token = localStorage.getItem("auth_token");
-      const url = editClient ? `${API_BASE_URL}/client/${editClient._id}` : `${API_BASE_URL}/client`;
-      const method = editClient ? "PUT" : "POST";
-      
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(form)
-      });
+    const hasPending = clientPayments.some(p => p.status !== "Paid");
+    const status = clientPayments.length === 0 ? "Pending" : (hasPending ? "Pending" : "Paid");
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.message || errData.error || "Failed to save client");
-      }
+    const totalBudget = clientProjects.reduce((sum, p) => {
+      const val = typeof p.budget === 'number' ? p.budget : Number(String(p.budget).replace(/[^0-9.-]+/g, "")) || 0;
+      return sum + val;
+    }, 0);
 
-      const result = await res.json();
-      if (!editClient) {
-        const plain = result.plainPassword || result.client?.plainPassword;
-        if (plain) {
-          alert(`✅ Client created!\n\nLogin Password: ${plain}\n\n(Save this — it won't be shown again)`);
-        }
-      }
+    const totalReceived = clientPayments.filter(p => p.status === "Paid").reduce((sum, p) => sum + p.amount, 0);
+    const totalPending = Math.max(0, totalBudget - totalReceived);
 
-      await fetchClients();
-      setForm(emptyForm);
-      setIsAddModalOpen(false);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
+    return {
+      projects: clientProjects.map(p => ({ id: p.id, name: p.name })),
+      status,
+      totalBudget,
+      totalReceived,
+      totalPending
+    };
   };
 
-  return (
-    <>
-      <div className="space-y-10 animate-in fade-in duration-500">
-        <div className="flex flex-row items-center justify-between gap-6">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Client Directory</h2>
-            <p className="text-sm font-medium text-slate-500 hidden sm:block">Manage client relationships and project assignments</p>
+  const columns: Column<StaffMember>[] = [
+    {
+      header: "Client",
+      className: "py-3 px-4",
+      render: (client) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-[10px] font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+            {client.name.split(' ').map(n => n[0]).join('').toUpperCase()}
           </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden md:block">
-              <Input placeholder="Search clients..." icon={Search} className="w-64"
-                value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-            </div>
-            {canAdd && (
-              <Button onClick={openAdd} className="gap-2 shadow-lg shadow-indigo-200">
-                <Plus className="w-5 h-5" />
-                <span className="hidden sm:inline">Add Client</span>
-              </Button>
-            )}
+          <div>
+            <p className="text-xs font-bold text-slate-900">{client.name}</p>
+            <p className="text-[9px] font-medium text-slate-500">{client.email}</p>
           </div>
         </div>
-
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-sm font-medium">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 space-y-4">
-            <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Loading clients...</p>
-          </div>
-        ) : filteredClients.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No clients found</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredClients.map((client) => (
-              <div key={client._id}
-                className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-8 space-y-8 transition-all duration-500 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-2 group">
-                <div className="flex items-start justify-between">
-                  <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-inner">
-                    {client.clientName?.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                  </div>
-                  <div className="flex gap-2">
-                    {canAdd && (
-                      <button
-                        onClick={() => openEdit(client)}
-                        className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
-                      >
-                        <ShieldCheck className="w-5 h-5" />
-                      </button>
-                    )}
-                    {canAdd && (
-                      <button
-                        onClick={() => handleDelete(client._id)}
-                        disabled={deletingId === client._id}
-                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
-                      >
-                        {deletingId === client._id
-                          ? <Loader2 className="w-5 h-5 animate-spin" />
-                          : <Trash2 className="w-5 h-5" />}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-slate-900 tracking-tight group-hover:text-indigo-600 transition-colors">{client.clientName}</h3>
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span className="text-xs font-medium truncate">{client.address || "No address provided"}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-4 border-t border-slate-50">
-                  <div className="flex items-center gap-3 text-slate-500 group-hover:text-indigo-600 transition-colors">
-                    <Phone className="w-4 h-4" />
-                    <span className="text-sm font-medium">{client.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-slate-500 group-hover:text-indigo-600 transition-colors">
-                    <Mail className="w-4 h-4" />
-                    <span className="text-sm font-medium">{client.email}</span>
-                  </div>
-                  {client.notes && (
-                    <div className="flex items-start gap-3 text-slate-400 group-hover:text-indigo-400 transition-colors">
-                      <FileText className="w-4 h-4 mt-0.5" />
-                      <p className="text-xs italic leading-relaxed line-clamp-2">{client.notes}</p>
-                    </div>
-                  )}
-                </div>
-
-                <button className="w-full py-3 bg-slate-50 text-slate-600 rounded-2xl text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100 flex items-center justify-center gap-2 group/btn">
-                  View Project Portfolio
-                  <ArrowUpRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
-                </button>
-
+      ),
+    },
+    {
+      header: "Portfolio & Finance",
+      className: "py-3 px-4",
+      render: (client) => {
+        const stats = getClientStats(client._id);
+        return (
+          <div className="space-y-2 min-w-[200px]">
+            <div className="flex flex-wrap gap-1.5">
+              {stats.projects.length > 0 ? stats.projects.map((p) => (
+                <Link key={p.id} href={`/projects/${p.id}`}>
+                  <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-[9px] font-bold text-indigo-600 border border-indigo-100 uppercase tracking-tight hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1">
+                    <LayoutGrid className="w-2.5 h-2.5" />
+                    {p.name}
+                  </span>
+                </Link>
+              )) : <span className="text-[8px] text-slate-400 italic">No projects yet</span>}
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col">
+                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Received</span>
+                <span className="text-xs font-black text-green-600 font-mono">${stats.totalReceived.toLocaleString()}</span>
               </div>
-            ))}
+              <div className="w-px h-6 bg-slate-100" />
+              <div className="flex flex-col">
+                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Pending</span>
+                <span className="text-xs font-black text-orange-600 font-mono">${stats.totalPending.toLocaleString()}</span>
+              </div>
+            </div>
           </div>
+        );
+      },
+    },
+    {
+      header: "Contact Info",
+      className: "py-3 px-4",
+      render: (client) => (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-slate-600">
+            <Phone className="w-3.5 h-3.5 text-indigo-500" />
+            <span className="text-xs font-bold font-mono tracking-tight">{client.phone || "N/A"}</span>
+          </div>
+          <div className="flex items-center gap-2 text-slate-400">
+            <Mail className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-medium">{client.email}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: "Status",
+      className: "py-3 px-4",
+      render: (client) => {
+        const stats = getClientStats(client._id);
+        return (
+          <Badge 
+            variant="outline" 
+            className={cn(
+              "text-[9px] font-black uppercase tracking-widest border px-2.5 py-1 shadow-sm",
+              stats.status === "Paid" ? "bg-green-50 text-green-700 border-green-200" :
+              "bg-amber-50 text-amber-700 border-amber-200"
+            )}
+          >
+            {stats.status}
+          </Badge>
+        );
+      },
+    },
+    {
+      header: "Action",
+      className: "py-3 px-4 text-right",
+      headerClassName: "text-right",
+      render: (client) => (
+        <div className="flex justify-end gap-1">
+          <Link href={`/clients/${client._id}`}>
+            <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border border-transparent hover:border-indigo-100 shadow-sm hover:shadow-md active:scale-95">
+              <ArrowUpRight className="w-4 h-4" />
+            </button>
+          </Link>
+        </div>
+      ),
+    },
+  ];
+
+  const filteredClients = clients.filter(client =>
+    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500 w-full p-4 sm:p-6">
+      <div className="flex flex-row items-center justify-between gap-4">
+        <div className="space-y-0.5">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">CLIENT PORTFOLIO</h2>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Relationship & Payment Management</p>
+        </div>
+        
+        {canAdd && (
+          <Link href="/staff">
+            <Button size="sm" className="rounded-xl font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
+              <Plus className="w-4 h-4" /> Add Client
+            </Button>
+          </Link>
         )}
       </div>
 
-      <Modal isOpen={isAddModalOpen} onClose={() => { setIsAddModalOpen(false); setForm(emptyForm); setError(""); }} title={editClient ? "Update Client Profile" : "Register New Client"}>
-        <form className="space-y-6" onSubmit={handleSave}>
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-bold text-center">
-              {error}
-            </div>
-          )}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Client Name *</label>
-            <Input placeholder="e.g., Rahul Sharma" value={form.clientName}
-              onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} required />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Email Address *</label>
-              <Input type="email" placeholder="client@example.com" value={form.email}
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Phone Number *</label>
-              <Input placeholder="9876543210" value={form.phone}
-                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} required />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Office Address</label>
-            <Input placeholder="Full address of the site" value={form.address}
-              onChange={e => setForm(f => ({ ...f, address: e.target.value }))} icon={MapPin} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 ml-1">Notes</label>
-            <textarea 
-              placeholder="Any specific requirements..." 
-              value={form.notes}
-              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all min-h-[100px] resize-none"
-            />
-          </div>
-          <div className="flex justify-end gap-4 pt-4 border-t border-slate-100">
-            <Button variant="secondary" onClick={() => { setIsAddModalOpen(false); setForm(emptyForm); setError(""); }} type="button" disabled={submitting}>Cancel</Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Saving...
-                </>
-              ) : editClient ? "Update Client" : "Register Client"}
-            </Button>
-          </div>
-        </form>
-      </Modal>
-    </>
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input 
+            placeholder="Search clients..." 
+            className="pl-9 h-9 text-xs border-none bg-transparent focus:ring-0 shadow-none"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">{filteredClients.length} Clients</span>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <DataTable columns={columns} data={filteredClients} />
+      </div>
+    </div>
   );
 }
-        

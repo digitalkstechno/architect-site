@@ -16,7 +16,7 @@ const stats = [
     border: "border-blue-100"
   },
   { 
-    label: "Active Sites", 
+    label: "RUNNING SITE", 
     value: "8", 
     icon: Construction, 
     color: "text-green-600", 
@@ -57,7 +57,7 @@ export default function DashboardCards() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500 mb-0.5">{stat.label}</p>
-            <p className="text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
+            <p className="text-2xl font-medium text-slate-900 tracking-tight font-mono">{stat.value}</p>
           </div>
         </div>
       ))}

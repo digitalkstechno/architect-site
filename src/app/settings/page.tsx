@@ -39,14 +39,14 @@ export default function SettingsPage() {
   const [newRoleColor, setNewRoleColor] = useState("teal");
   const [savedMsg, setSavedMsg] = useState(false);
 
-  const isArchitect = user?.role === "architect";
+  const isAdmin = user?.role === "architect" || user?.role === "director";
 
   const tabs = [
     { id: "profile",       label: "My Profile",      icon: UserCircle2 },
     { id: "company",       label: "Company Info",     icon: Building2 },
     { id: "notifications", label: "Notifications",    icon: Bell },
     { id: "security",      label: "Security",         icon: ShieldCheck },
-    ...(isArchitect ? [{ id: "roles", label: "Role Management", icon: Users }] : []),
+    ...(isAdmin ? [{ id: "roles", label: "Role Management", icon: Users }] : []),
   ];
 
   const handleSave = () => {
@@ -55,7 +55,7 @@ export default function SettingsPage() {
   };
 
   const handleTogglePage = (role: RoleConfig, pageKey: string) => {
-    if (role.id === "architect") return;
+    if (role.id === "architect" || role.id === "director") return;
     const has = role.pages.includes(pageKey);
     const updated = has ? role.pages.filter(p => p !== pageKey) : [...role.pages, pageKey];
     updateRolePages(role.id, updated);
@@ -111,16 +111,14 @@ export default function SettingsPage() {
               <div className="space-y-8">
                 <div className="flex items-center gap-8">
                   <div className="w-24 h-24 bg-indigo-50 rounded-3xl flex items-center justify-center text-3xl font-bold text-indigo-600 border-2 border-dashed border-indigo-200 relative group cursor-pointer hover:bg-indigo-100 transition-colors">
-                    {user?.name?.split(" ").map((n: string) => n[0]).join("") ?? "U"}
+                    {user?.name?.split(" ").map(n => n[0]).join("") ?? "U"}
                     <div className="absolute inset-0 bg-black/40 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Palette className="w-6 h-6 text-white" />
                     </div>
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">{user?.name}</h3>
-                    <p className="text-sm text-slate-500 uppercase tracking-widest mt-1">
-                      {typeof user?.role === "string" ? user.role : user?.role?.roleName}
-                    </p>
+                    <p className="text-sm text-slate-500 uppercase tracking-widest mt-1">{user?.role}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -128,7 +126,7 @@ export default function SettingsPage() {
                     { label: "Full Name",     value: user?.name ?? "" },
                     { label: "Email Address", value: user?.email ?? "" },
                     { label: "Phone Number",  value: "+1 (555) 902-1234" },
-                    { label: "Role",          value: typeof user?.role === "string" ? user.role : user?.role?.roleName ?? "" },
+                    { label: "Role",          value: user?.role ?? "" },
                   ].map(f => (
                     <div key={f.label} className="space-y-2">
                       <label className="text-sm font-bold text-slate-700 ml-1">{f.label}</label>
@@ -143,9 +141,9 @@ export default function SettingsPage() {
             {activeTab === "company" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {[
-                  { label: "Company Name",    value: (user?.role as any)?.tenantId?.tenantName || "ArchiSite Pro Designs" },
+                  { label: "Company Name",    value: "ArchiSite Pro Designs" },
                   { label: "Tax ID / VAT",    value: "US-9283-1234" },
-                  { label: "Office Address",  value: (user?.role as any)?.tenantId?.siteAddress || "123 Architecture Lane, CA 90210" },
+                  { label: "Office Address",  value: "123 Architecture Lane, CA 90210" },
                   { label: "Company Website", value: "www.archisite.pro" },
                 ].map(f => (
                   <div key={f.label} className="space-y-2">
@@ -206,7 +204,7 @@ export default function SettingsPage() {
             )}
 
             {/* ── ROLE MANAGEMENT ── */}
-            {activeTab === "roles" && isArchitect && (
+            {activeTab === "roles" && isAdmin && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -298,12 +296,14 @@ export default function SettingsPage() {
                         {isExpanded && (
                           <div className="px-5 pb-5 pt-3 border-t border-slate-100 bg-slate-50 space-y-4 animate-in slide-in-from-top-1 duration-150">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                              {role.id === "architect" ? "Architect has access to all pages (locked)" : "Toggle pages to grant or revoke access"}
+                              {(role.id === "architect" || role.id === "director") 
+                                ? `${role.name} has access to all pages (locked)` 
+                                : "Toggle pages to grant or revoke access"}
                             </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                               {ALL_PAGES.map(page => {
                                 const hasAccess = role.pages.includes(page.key);
-                                const locked = role.id === "architect";
+                                const locked = role.id === "architect" || role.id === "director";
                                 return (
                                   <button key={page.key} type="button"
                                     disabled={locked}

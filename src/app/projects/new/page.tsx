@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, User, Building2, MapPin, DollarSign, Calendar,
-  CheckCircle2, ChevronRight, ClipboardList, HardHat, Users, Loader2
+  CheckCircle2, ChevronRight, ClipboardList, HardHat, Users
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/utils";
-import { supervisors, workers } from "@/lib/dummy-data";
 import { useProjects } from "@/lib/projects-store";
-import { API_BASE_URL } from "@/lib/api-config";
+import { clients, supervisors, workers } from "@/lib/dummy-data";
+import { Select } from "@/components/ui/Select";
+import toast from "react-hot-toast";
 
 type Step = "client" | "project" | "team" | "review";
 const STEPS: Step[] = ["client", "project", "team", "review"];
@@ -22,8 +23,7 @@ export default function NewProjectPage() {
   const router = useRouter();
   const { createProject } = useProjects();
   const [step, setStep] = useState<Step>("client");
-  const [clients, setClients] = useState<any[]>([]);
-  const [loadingClients, setLoadingClients] = useState(true);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
     clientId: "", clientName: "", clientEmail: "", clientPhone: "",
     projectName: "", projectType: "Residential", location: "", budget: "",
@@ -31,33 +31,31 @@ export default function NewProjectPage() {
     supervisorId: "", workerIds: [] as string[],
   });
 
-  useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const token = localStorage.getItem("auth_token");
-        if (!token) return;
-        const res = await fetch(`${API_BASE_URL}/client`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const payload = await res.json();
-        setClients(payload.clients || payload.data || []);
-      } catch (err) {
-        console.error("Fetch clients error:", err);
-      } finally {
-        setLoadingClients(false);
-      }
-    };
-    fetchClients();
-  }, []);
-
   const stepIndex = STEPS.indexOf(step);
 
-  const next = () => setStep(STEPS[stepIndex + 1]);
+  const next = () => {
+    const newErrors: Record<string, string> = {};
+    if (step === "client" && !form.clientName) {
+      newErrors.clientName = "Client name is required";
+    }
+    if (step === "project" && !form.projectName) {
+      newErrors.projectName = "Project name is required";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error("Please fill in required fields");
+      return;
+    }
+
+    setErrors({});
+    setStep(STEPS[stepIndex + 1]);
+  };
   const prev = () => setStep(STEPS[stepIndex - 1]);
 
   const handleClientSelect = (id: string) => {
-    const c = clients.find(c => c._id === id);
-    if (c) setForm(f => ({ ...f, clientId: id, clientName: c.clientName, clientEmail: c.email, clientPhone: c.phone }));
+    const c = clients.find(c => c.id === id);
+    if (c) setForm(f => ({ ...f, clientId: id, clientName: c.name, clientEmail: c.email, clientPhone: c.phone }));
   };
 
   const toggleWorker = (id: string) => {
@@ -82,8 +80,8 @@ export default function NewProjectPage() {
   ];
 
   const handleSubmit = async () => {
-    const budgetStr = form.budget?.trim() ? `$${form.budget.replace(/^\$/, "")}` : "$0";
     try {
+      const budgetStr = form.budget?.trim() ? `$${form.budget.replace(/^\$/, "")}` : "$0";
       const created = await createProject({
         name: form.projectName || "Untitled Project",
         client: form.clientName || "Unknown Client",
@@ -97,10 +95,11 @@ export default function NewProjectPage() {
         lifecycle: defaultLifecycle,
         stages: defaultStages,
       });
+      toast.success("Project launched successfully!");
       router.push(`/projects/${created.id}`);
-    } catch (err) {
-      console.error("Create project error:", err);
-      alert("Failed to create project. Please check if all required fields (Client) are filled.");
+    } catch (error) {
+      console.error("Error creating project:", error);
+      toast.error("Failed to launch project");
     }
   };
 
@@ -153,40 +152,41 @@ export default function NewProjectPage() {
 
           <div className="space-y-3">
             <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Existing Clients</p>
-            {loadingClients ? (
-              <div className="flex items-center gap-2 text-slate-400">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Loading...</span>
-              </div>
-            ) : clients.length === 0 ? (
-              <p className="text-xs text-slate-400">No clients found. Add one below.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {clients.map(c => (
-                  <button key={c._id} type="button" onClick={() => handleClientSelect(c._id)}
-                    className={cn(
-                      "p-4 rounded-2xl border-2 text-left transition-all",
-                      form.clientId === c._id ? "bg-indigo-50 border-indigo-400" : "bg-white border-slate-100 hover:border-slate-300"
-                    )}>
-                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black mb-3",
-                      form.clientId === c._id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600")}>
-                      {(c.clientName || "").split(" ").map((n: string) => n[0]).join("")}
-                    </div>
-                    <p className="text-sm font-bold text-slate-900">{c.clientName}</p>
-                    <p className="text-xs text-slate-400 truncate">{c.email}</p>
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {clients.map(c => (
+                <button key={c.id} type="button" onClick={() => handleClientSelect(c.id)}
+                  className={cn(
+                    "p-4 rounded-2xl border-2 text-left transition-all",
+                    form.clientId === c.id ? "bg-indigo-50 border-indigo-400" : "bg-white border-slate-100 hover:border-slate-300"
+                  )}>
+                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black mb-3",
+                    form.clientId === c.id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600")}>
+                    {c.name.split(" ").map(n => n[0]).join("")}
+                  </div>
+                  <p className="text-sm font-bold text-slate-900">{c.name}</p>
+                  <p className="text-xs text-slate-400 truncate">{c.email}</p>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2">
             <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Or Enter New Client</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
-                <Input placeholder="e.g., Ratan Tata" value={form.clientName}
-                  onChange={e => setForm(f => ({ ...f, clientName: e.target.value, clientId: "" }))} />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name *</label>
+                <Input 
+                   placeholder="e.g., Ratan Tata" 
+                   value={form.clientName}
+                   onChange={e => {
+                     setForm(f => ({ ...f, clientName: e.target.value, clientId: "" }));
+                     if (errors.clientName) setErrors(prev => {
+                       const { clientName, ...rest } = prev;
+                       return rest;
+                     });
+                   }} 
+                   error={errors.clientName}
+                 />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</label>
@@ -223,18 +223,31 @@ export default function NewProjectPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Project Name *</label>
-              <Input placeholder="e.g., Sharma Residence" value={form.projectName}
-                onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))} />
+              <Input 
+                 placeholder="e.g., Sharma Residence" 
+                 value={form.projectName}
+                 onChange={e => {
+                   setForm(f => ({ ...f, projectName: e.target.value }));
+                   if (errors.projectName) setErrors(prev => {
+                     const { projectName, ...rest } = prev;
+                     return rest;
+                   });
+                 }} 
+                 error={errors.projectName}
+               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Project Type</label>
-              <select className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={form.projectType} onChange={e => setForm(f => ({ ...f, projectType: e.target.value }))}>
-                <option>Residential</option>
-                <option>Commercial</option>
-                <option>Industrial</option>
-                <option>Interior Design</option>
-              </select>
+              <Select
+                label="Project Type"
+                options={[
+                  { value: "Residential", label: "Residential" },
+                  { value: "Commercial", label: "Commercial" },
+                  { value: "Industrial", label: "Industrial" },
+                  { value: "Interior Design", label: "Interior Design" },
+                ]}
+                value={form.projectType}
+                onChange={val => setForm(f => ({ ...f, projectType: val }))}
+              />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Location</label>
@@ -306,7 +319,7 @@ export default function NewProjectPage() {
                   )}>
                   <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0",
                     form.supervisorId === s.id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600")}>
-                    {s.name.split(" ").map((n: string) => n[0]).join("")}
+                    {s.name.split(" ").map(n => n[0]).join("")}
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-slate-900 truncate">{s.name}</p>
@@ -338,7 +351,7 @@ export default function NewProjectPage() {
                     )}>
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0",
                       selected ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600")}>
-                      {w.name.split(" ").map((n: string) => n[0]).join("")}
+                      {w.name.split(" ").map(n => n[0]).join("")}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold text-slate-900 truncate">{w.name}</p>
@@ -420,3 +433,4 @@ export default function NewProjectPage() {
     </div>
   );
 }
+
