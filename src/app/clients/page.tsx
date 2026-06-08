@@ -180,7 +180,7 @@ export default function ClientsPage() {
         
         {canAdd && (
           <Link href="/staff">
-            <Button size="sm" className="rounded-xl font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
+            <Button size="sm" className="font-bold text-xs gap-2">
               <Plus className="w-4 h-4" /> Add Client
             </Button>
           </Link>

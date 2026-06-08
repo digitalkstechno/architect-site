@@ -114,7 +114,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
         />
       )}
 
-      <header className="h-14 bg-gradient-to-r from-white via-primary-50/30 to-primary-100/20 border-b border-slate-200 fixed top-0 right-0 left-0 lg:left-60 z-40 flex items-center justify-between px-4 lg:px-6 shadow-sm">
+      <header className="h-14 bg-gradient-to-r from-white via-primary-50/50 to-primary-100 border-b border-slate-200 fixed top-0 right-0 left-0 lg:left-60 z-40 flex items-center justify-between px-4 lg:px-6 shadow-sm">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
