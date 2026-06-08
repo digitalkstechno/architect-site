@@ -81,7 +81,7 @@ export default function NewProjectPage() {
 
   const handleSubmit = async () => {
     try {
-      const budgetStr = form.budget?.trim() ? `$${form.budget.replace(/^\$/, "")}` : "$0";
+      const budgetStr = form.budget?.trim() ? `${form.budget}` : "0";
       const created = await createProject({
         name: form.projectName || "Untitled Project",
         client: form.clientName || "Unknown Client",

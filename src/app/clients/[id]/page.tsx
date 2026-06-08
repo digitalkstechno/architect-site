@@ -407,7 +407,7 @@ export default function ClientDetailsPage({ params }: { params: any }) {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Amount ($)</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Amount</label>
               <Input 
                 type="number" 
                 placeholder="5000" 

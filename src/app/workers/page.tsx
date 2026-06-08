@@ -288,7 +288,7 @@ export default function WorkersPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">Daily Rate</label>
-              <Input placeholder="e.g., $150/day" value={form.rate}
+              <Input placeholder="e.g., 150/day" value={form.rate}
                 onChange={e => setForm(f => ({ ...f, rate: e.target.value }))} />
             </div>
             <div className="space-y-2">

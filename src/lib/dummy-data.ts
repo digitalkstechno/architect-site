@@ -9,9 +9,9 @@ export const projects = [
     expectedCompletion: "2024-12-15",
     status: "In Progress",
     progress: 45,
-    budget: "$850,000",
-    received: "$350,000",
-    pending: "$500,000",
+    budget: "850,000",
+    received: "350,000",
+    pending: "500,000",
     supervisorId: "s1",
     workerIds: ["1", "4"],
     stages: [
@@ -39,9 +39,9 @@ export const projects = [
     expectedCompletion: "2024-08-10",
     status: "In Progress",
     progress: 75,
-    budget: "$1,200,000",
-    received: "$900,000",
-    pending: "$300,000",
+    budget: "1,200,000",
+    received: "900,000",
+    pending: "300,000",
     supervisorId: "s1",
     workerIds: ["2", "3"],
     stages: [
@@ -69,9 +69,9 @@ export const projects = [
     expectedCompletion: "2025-01-20",
     status: "Planned",
     progress: 10,
-    budget: "$650,000",
-    received: "$150,000",
-    pending: "$500,000",
+    budget: "650,000",
+    received: "150,000",
+    pending: "500,000",
     supervisorId: "s2",
     workerIds: ["1"],
     stages: [
@@ -111,10 +111,10 @@ export const WORKER_SPECIALIZATIONS = [
 ];
 
 export const workers = [
-  { id: "1", name: "John Doe", type: "Director", team: "Office", specializations: ["Design", "Planning"], phone: "555-0123", email: "john@archisite.pro", rate: "$150/hour", assignedProjects: ["Modern Villa"], experience: "6 years", joinDate: "2023-02-01", address: "123 Main St, Beverly Hills" },
-  { id: "2", name: "Ali Hassan", type: "Designer", team: "Office", specializations: ["Interior", "Electrical Plan"], phone: "555-0124", email: "ali@archisite.pro", rate: "$200/hour", assignedProjects: ["City Heights Apartment"], experience: "9 years", joinDate: "2022-08-15", address: "45 Oak Ave, Seattle" },
-  { id: "3", name: "Sarah Lane", type: "Painter", team: "Site", specializations: ["Painting", "Tiling"], phone: "555-0125", email: "sarah@archisite.pro", rate: "$120/day", assignedProjects: ["City Heights Apartment"], experience: "4 years", joinDate: "2023-05-10", address: "78 Pine Rd, Seattle" },
-  { id: "4", name: "Robert Paulson", type: "Plumber", team: "Site", specializations: ["Plumbing", "Steel Fixing"], phone: "555-0126", email: "robert@archisite.pro", rate: "$180/day", assignedProjects: ["Modern Villa"], experience: "7 years", joinDate: "2022-11-20", address: "90 Elm St, Beverly Hills" },
+  { id: "1", name: "John Doe", type: "Director", team: "Office", specializations: ["Design", "Planning"], phone: "555-0123", email: "john@archisite.pro", rate: "150/hour", assignedProjects: ["Modern Villa"], experience: "6 years", joinDate: "2023-02-01", address: "123 Main St, Beverly Hills" },
+  { id: "2", name: "Ali Hassan", type: "Designer", team: "Office", specializations: ["Interior", "Electrical Plan"], phone: "555-0124", email: "ali@archisite.pro", rate: "200/hour", assignedProjects: ["City Heights Apartment"], experience: "9 years", joinDate: "2022-08-15", address: "45 Oak Ave, Seattle" },
+  { id: "3", name: "Sarah Lane", type: "Painter", team: "Site", specializations: ["Painting", "Tiling"], phone: "555-0125", email: "sarah@archisite.pro", rate: "120/day", assignedProjects: ["City Heights Apartment"], experience: "4 years", joinDate: "2023-05-10", address: "78 Pine Rd, Seattle" },
+  { id: "4", name: "Robert Paulson", type: "Plumber", team: "Site", specializations: ["Plumbing", "Steel Fixing"], phone: "555-0126", email: "robert@archisite.pro", rate: "180/day", assignedProjects: ["Modern Villa"], experience: "7 years", joinDate: "2022-11-20", address: "90 Elm St, Beverly Hills" },
 ];
 
 export const clients = [
@@ -141,7 +141,7 @@ export const calendarEvents = [
 ];
 
 export const payments = [
-  { id: "1", project: "Modern Villa", client: "Alice Johnson", milestone: "Foundation Payment", amount: "$50,000", status: "Paid", date: "2024-02-10" },
-  { id: "2", project: "Modern Villa", client: "Alice Johnson", milestone: "Structure Payment", amount: "$75,000", status: "Pending", date: "2024-04-15" },
-  { id: "3", project: "City Heights Apartment", client: "Bob Smith", milestone: "Initial Payment", amount: "$100,000", status: "Paid", date: "2023-12-01" },
+  { id: "1", project: "Modern Villa", client: "Alice Johnson", milestone: "Foundation Payment", amount: "50,000", status: "Paid", date: "2024-02-10" },
+  { id: "2", project: "Modern Villa", client: "Alice Johnson", milestone: "Structure Payment", amount: "75,000", status: "Pending", date: "2024-04-15" },
+  { id: "3", project: "City Heights Apartment", client: "Bob Smith", milestone: "Initial Payment", amount: "100,000", status: "Paid", date: "2023-12-01" },
 ];

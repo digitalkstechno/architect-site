@@ -978,7 +978,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Amount ($)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Amount</label>
                 <Input
                   type="number"
                   placeholder="5000"
@@ -1092,7 +1092,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Budget ($)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Budget</label>
                 <Input
                   type="number"
                   value={editForm.budget}

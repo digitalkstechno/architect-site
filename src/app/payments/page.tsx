@@ -78,9 +78,9 @@ export default function PaymentsPage() {
     }, 0);
     
     return {
-      total: `$${totalBudget.toLocaleString()}`,
-      received: `$${totalReceived.toLocaleString()}`,
-      pending: `$${totalPending.toLocaleString()}`
+      total: `${totalBudget.toLocaleString()}`,
+      received: `${totalReceived.toLocaleString()}`,
+      pending: `${totalPending.toLocaleString()}`
     };
   }, [projects]);
 
@@ -308,7 +308,7 @@ export default function PaymentsPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 ml-1">Amount ($)</label>
+              <label className="text-sm font-bold text-slate-700 ml-1">Amount</label>
               <Input 
                 type="number"
                 placeholder="e.g., 10000" 

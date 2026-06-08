@@ -1,5 +1,7 @@
 "use client";
 
+import CompleteDashboardPage from "./dashboard/page";
+
 import { useAuth } from "@/lib/auth-context";
 import { useProjects } from "@/lib/projects-store";
 import { useTasks } from "@/lib/tasks-store";
@@ -61,94 +63,7 @@ export default function Dashboard() {
 
 // --- Architect Dashboard ---
 function ArchitectDashboard({ role = "architect" }: { role?: string }) {
-  const { tasks } = useTasks();
-  const todayTasks = tasks.slice(0, 3);
-  const messages: { id: string; from: string; text: string; date: string; unread: boolean }[] = [];
-
-  return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <PageHeader
-        title={role === "director" ? "Director Console" : "Architect Console"}
-        description="Monitor projects, tasks, and team performance across all sites."
-      >
-        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded border border-slate-200 shadow-sm">
-          <Calendar className="w-3.5 h-3.5 text-indigo-600" />
-          <span className="text-xs font-medium text-slate-700 font-mono">May 22, 2026</span>
-        </div>
-      </PageHeader>
-
-
-      <DashboardCards />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-slate-50 p-2 rounded border border-slate-100">
-                <HardHat className="w-4 h-4 text-slate-600" />
-              </div>
-              <CardTitle className="font-medium">Live Site Schedule</CardTitle>
-            </div>
-            <Link href="/tasks">
-              <Button variant="ghost" size="sm" className="text-primary-600 font-medium gap-1">
-                View all tasks
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {todayTasks.map((task) => (
-                <div key={task.id} className="p-4 border border-slate-200 rounded-md hover:border-primary-200 transition-all group bg-white shadow-sm">
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">{task.project}</span>
-                    <DashboardStatusBadge status={task.officeStatus} className="text-[10px] px-2 py-0" />
-                  </div>
-                  <h3 className="text-sm font-medium text-slate-900 group-hover:text-primary-600 transition-colors mb-3">{task.name}</h3>
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-primary-50 rounded flex items-center justify-center text-[9px] font-medium text-primary-600 border border-primary-100">
-                        {(task.officeTeam || "").split(' ').map((n: string) => n[0]).join('')}
-                      </div>
-                      <span className="text-xs font-medium text-slate-600">{task.officeTeam || "—"}</span>
-                    </div>
-                    <span className="text-[10px] font-medium text-slate-400 font-mono">{task.deadline}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-slate-50 p-2 rounded border border-slate-100">
-                <MessageSquare className="w-4 h-4 text-slate-600" />
-              </div>
-              <CardTitle>Client Feed</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {messages.slice(0, 3).map((msg) => (
-              <div key={msg.id} className={cn("p-4 rounded border transition-all", msg.unread ? "bg-primary-50/30 border-primary-100" : "bg-white border-slate-100 hover:bg-slate-50")}>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-7 h-7 bg-slate-100 rounded flex items-center justify-center text-[10px] font-bold text-primary-600 border border-slate-200">
-                    {msg.from.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <h3 className="text-xs font-bold text-slate-900">{msg.from}</h3>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2 font-medium">{msg.text}</p>
-              </div>
-            ))}
-          </CardContent>
-          <CardFooter>
-            <Button variant="secondary" className="w-full text-xs font-bold py-2">View all messages</Button>
-          </CardFooter>
-        </Card>
-      </div>
-    </div>
-  );
+  return <CompleteDashboardPage />;
 }
 
 // --- Client Dashboard ---
@@ -562,9 +477,9 @@ function AccountantDashboard() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatsCard label="Total Budget" value={`₹${totalBudget.toLocaleString()}`} icon={CreditCard} />
-        <StatsCard label="Received" value={`₹${paid.toLocaleString()}`} icon={CircleCheck} className="border-emerald-100" />
-        <StatsCard label="Pending" value={`₹${pending.toLocaleString()}`} icon={Clock} className="border-amber-100" />
+        <StatsCard label="Total Budget" value={`${totalBudget.toLocaleString()}`} icon={CreditCard} />
+        <StatsCard label="Received" value={`${paid.toLocaleString()}`} icon={CircleCheck} className="border-emerald-100" />
+        <StatsCard label="Pending" value={`${pending.toLocaleString()}`} icon={Clock} className="border-amber-100" />
       </div>
 
       <Card>

@@ -1,0 +1,30 @@
+import { api } from "./api";
+
+export interface DashboardStats {
+  projects: {
+    total: number;
+    active: number;
+    completed: number;
+  };
+  tasks: {
+    office: { total: number; pending: number };
+    site: { total: number; pending: number };
+  };
+  finances: {
+    totalBudget: number;
+    totalReceived: number;
+    totalPending: number;
+  };
+  recentActivity: {
+    messages: any[];
+    siteUpdates: any[];
+    upcomingOfficeTasks: any[];
+    upcomingSiteTasks: any[];
+  };
+}
+
+export const dashboardService = {
+  getDashboardStats: async (): Promise<DashboardStats> => {
+    return api.get("/dashboard");
+  },
+};
