@@ -110,7 +110,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
   });
 
   return (
-    <div className="w-60 h-screen bg-gradient-to-b from-white via-primary-50/30 to-primary-100/40 text-slate-800 flex flex-col relative border-r border-slate-200">
+    <div className="w-60 h-screen bg-gradient-to-b from-primary-100 via-primary-50/50 to-white text-slate-800 flex flex-col relative border-r border-slate-200">
       <div className="px-6 py-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-premium p-1.5 rounded-lg text-white">

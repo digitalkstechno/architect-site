@@ -151,7 +151,7 @@ export default function OfficeWorkPage() {
             setEditingTask(null);
             setNewTask({ title: "", project: "", assignedTo: [], priority: "Medium", startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] });
             setIsModalOpen(true);
-          }} size="sm" className="rounded-xl font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
+          }} size="sm" className="font-bold text-xs gap-2">
             <Plus className="w-4 h-4" /> New Task
           </Button>
         )}
@@ -253,7 +253,7 @@ export default function OfficeWorkPage() {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
             <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit" className="font-medium bg-indigo-600 hover:bg-indigo-500">
+            <Button type="submit" className="font-medium">
               {editingTask ? "Update Task" : "Create Task"}
             </Button>
           </div>
@@ -452,7 +452,7 @@ export default function OfficeWorkPage() {
                                     />
                                     <Button
                                       size="sm"
-                                      className="rounded-xl text-[10px] h-8 bg-indigo-600 hover:bg-indigo-500"
+                                      className="text-[10px] h-8"
                                       onClick={async () => {
                                         await updateOfficeTask(task.id, { notes: noteValues[task.id] ?? task.notes });
                                         setNoteValues(prev => {
