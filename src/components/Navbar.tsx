@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
-import { LogIn, LogOut, Timer, Pause, Play } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 import { attendanceService } from "@/services/attendance.service";
 import toast from "react-hot-toast";
 

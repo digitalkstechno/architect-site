@@ -24,7 +24,7 @@ import {
   PenTool,
   Hammer,
   Trash2,
-    FileText,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, use, useEffect, useRef, useMemo } from "react";
@@ -89,6 +89,8 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
   const [isSubmittingTask, setIsSubmittingTask] = useState(false);
   const [isSubmittingTeam, setIsSubmittingTeam] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedStaffProfile, setSelectedStaffProfile] = useState<any>(null);
+  const [viewTask, setViewTask] = useState<any>(null);
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
   const [paymentForm, setPaymentForm] = useState({
     milestone: "",
@@ -327,22 +329,26 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
         name: t.title,
         stage: t.category,
         assignee: t.assignedTo?.map((a: any) => a.name).join(", ") || "Unassigned",
+        assigneeRoles: t.assignedTo?.map((a: any) => a.role?.name || a.role || "Staff").join(", ") || "",
         status: t.status,
         progress: t.progress,
         type: "Office" as const,
         startDate: t.startDate,
-        deadline: t.endDate
+        deadline: t.endDate,
+        taskRaw: t
       })),
       ...projectSiteTasks.map(t => ({
         id: t.id,
         name: t.title,
         stage: t.category,
         assignee: t.assignedTo?.map((a: any) => a.name).join(", ") || "Unassigned",
+        assigneeRoles: t.assignedTo?.map((a: any) => a.role?.name || a.role || "Staff").join(", ") || "",
         status: t.status,
         progress: t.progress,
         type: "Site" as const,
         startDate: t.startDate,
-        deadline: t.endDate
+        deadline: t.endDate,
+        taskRaw: t
       }))
     ];
     return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
@@ -381,41 +387,46 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
     if (!project) return [];
     return allSiteUpdates.filter(u => u.projectId === project.id || u.project === project.name);
   }, [allSiteUpdates, project]);
-  
+
   // Extract all unique assigned staff from office, site and global tasks
   const projectWorkers = useMemo(() => {
     if (!project) return [];
     const staffFromOffice = projectOfficeTasks.flatMap(t => t.assignedTo || []);
     const staffFromSite = projectSiteTasks.flatMap(t => t.assignedTo || []);
     const allAssignedStaff = [...staffFromOffice, ...staffFromSite];
-    
+
     // Use a Map to keep unique staff by ID
     const uniqueStaffMap = new Map();
-    
+
     // Also include supervisor and project workers as a fallback/additional list if needed,
     // but prioritize staff assigned to tasks.
     if (project.supervisor) {
       const s = project.supervisor;
       uniqueStaffMap.set(s._id || s.id, { ...s, type: "Supervisor" });
     }
-    
+
     allAssignedStaff.forEach((s: any) => {
       if (!s) return;
       const id = s._id || s.id || (typeof s === 'string' ? s : null);
       if (!id) return;
-      
+
       if (!uniqueStaffMap.has(id)) {
+        const fullStaffDetail = allStaff.find(staff => staff._id === id || staff.id === id) || s;
         uniqueStaffMap.set(id, {
           id,
-          name: s.name || (typeof s === 'string' ? s : "Unknown"),
-          type: s.role?.name || s.role || "Staff",
-          rate: s.rate || "N/A"
+          name: fullStaffDetail.name || (typeof s === 'string' ? s : "Unknown"),
+          type: fullStaffDetail.role?.name || fullStaffDetail.role || "Staff",
+          rate: fullStaffDetail.rate || "N/A",
+          email: fullStaffDetail.email || "N/A",
+          phone: fullStaffDetail.phone || "N/A",
+          status: fullStaffDetail.status || "Active",
+          role: fullStaffDetail.role
         });
       }
     });
 
     return Array.from(uniqueStaffMap.values());
-  }, [project, projectOfficeTasks, projectSiteTasks]);
+  }, [project, projectOfficeTasks, projectSiteTasks, allStaff]);
 
   const projectPayments = useMemo(() => {
     if (!project) return [];
@@ -509,7 +520,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
         <div className="space-y-4">
           <Link
             href="/projects"
-            className="inline-flex items-center gap-2 text-[10px] font-semibold text-slate-400 hover:text-indigo-600 transition-colors group uppercase tracking-wider"
+            className="inline-flex items-center gap-2 text-[10px] font-semibold text-slate-400 hover:text-indigo-600 transition-colors group uppercase tracking-wider cursor-pointer"
           >
             <ArrowLeft className="w-3 h-3 transition-transform group-hover:-translate-x-1" />
             Back to Projects
@@ -537,7 +548,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
 
         <div className="flex items-center gap-2">
           {isAdmin && (
-            <button 
+            <button
               onClick={() => setIsEditModalOpen(true)}
               className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-md text-xs font-medium shadow-sm hover:bg-slate-50 transition-all active:scale-95"
             >
@@ -551,7 +562,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-1 p-1 bg-white border border-slate-200 rounded-lg shadow-sm overflow-x-auto scrollbar-hide sticky top-20 z-10">
+      <div className="flex items-center gap-2 p-1.5 bg-white border border-slate-200 rounded-lg shadow-sm overflow-x-auto scrollbar-hide sticky top-20 z-10">
         {[
           { id: "office-work", label: "Office", icon: PenTool },
           { id: "site-work", label: "Site", icon: Hammer },
@@ -566,13 +577,13 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as Tab)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-md text-[11px] font-medium transition-all duration-200 whitespace-nowrap",
+              "flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-bold transition-all duration-200 whitespace-nowrap cursor-pointer",
               activeTab === tab.id
                 ? "bg-indigo-600 text-white shadow-md shadow-indigo-100"
-                : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                : "text-slate-500 hover:text-indigo-600 hover:bg-indigo-50"
             )}
           >
-            <tab.icon className="w-3.5 h-3.5" />
+            <tab.icon className="w-4 h-4" />
             {tab.label}
           </button>
         ))}
@@ -580,17 +591,17 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
 
       <div className="min-h-[400px] animate-in fade-in slide-in-from-top-4 duration-500">
         {activeTab === "office-work" && (
-          <DesignModule 
-            tasks={projectOfficeTasks} 
-            projectId={project.id} 
+          <DesignModule
+            tasks={projectOfficeTasks}
+            projectId={project.id}
             updateTaskStatus={updateOfficeTaskStatus}
           />
         )}
 
         {activeTab === "site-work" && (
-          <ExecutionModule 
-            tasks={projectSiteTasks} 
-            projectId={project.id} 
+          <ExecutionModule
+            tasks={projectSiteTasks}
+            projectId={project.id}
             updateTaskStatus={updateSiteTaskStatus}
           />
         )}
@@ -599,8 +610,8 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
           <div className="space-y-4">
             <div className="flex justify-end">
               {isAdmin && (
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   className="gap-2 text-[10px] font-bold uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500"
                   onClick={() => setIsAddTaskModalOpen(true)}
                 >
@@ -608,82 +619,149 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                 </Button>
               )}
             </div>
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-              <Table>
-                <TableHeader>
-                <TableRow className="bg-slate-50/50">
-                  <TableHead className="px-4 py-3">Task Details</TableHead>
-                  <TableHead className="px-4 py-3">Assignee</TableHead>
-                  <TableHead className="px-4 py-3">Deadline</TableHead>
-                  <TableHead className="px-4 py-3">Status & Progress</TableHead>
-                  <TableHead className="px-4 py-3 text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y divide-slate-50">
-                {projectTasks.map((task) => (
-                  <TableRow key={task.id} className="group hover:bg-slate-50/30 transition-all">
-                    <TableCell className="px-4 py-4">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <p className="text-xs font-semibold text-slate-900">{task.name}</p>
-                        <span className={cn(
-                          "text-[7px] font-bold px-1 py-0 rounded border uppercase tracking-wider",
-                          task.type === "Office" ? "bg-purple-50 text-purple-600 border-purple-100" : "bg-orange-50 text-orange-600 border-orange-100"
-                        )}>
-                          {task.type}
-                        </span>
-                      </div>
-                      <span className="text-[8px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0 rounded uppercase tracking-wider border border-indigo-100/50">{task.stage}</span>
-                    </TableCell>
-                    <TableCell className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-slate-50 rounded-md flex items-center justify-center text-[10px] font-bold text-slate-600 border border-slate-100 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 transition-all duration-300">
-                          {task.assignee?.split(',')[0]?.split(' ').map((n: string) => n[0]).join('') || "U"}
-                        </div>
-                        <span className="text-xs font-semibold text-slate-700">{task.assignee || "Unassigned"}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-4 py-4">
-                      <span className="text-xs font-medium text-slate-500">{task.deadline || "N/A"}</span>
-                    </TableCell>
-                    <TableCell className="px-4 py-4">
-                      <div className="space-y-2 max-w-[120px]">
-                        <div className="flex justify-between items-center text-[9px] font-bold">
-                          <span className={cn(
-                            "uppercase tracking-widest",
-                            task.status === "In Progress" || task.status === "On Track" ? "text-blue-600" :
-                            task.status === "Completed" ? "text-green-600" :
-                            task.status === "Critical" ? "text-red-600" :
-                            task.status === "Delayed" ? "text-orange-600" :
-                            "text-slate-500"
-                          )}>
-                            {task.status}
-                          </span>
-                          <span className="text-slate-500 font-mono">{task.progress}%</span>
-                        </div>
-                        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-indigo-600 transition-all duration-500" 
-                            style={{ width: `${task.progress}%` }} 
-                          />
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-4 py-4 text-right">
-                      <button className="text-slate-300 hover:text-indigo-600 p-1 hover:bg-white hover:shadow-sm rounded-md transition-all">
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2">
+              {/* Office Tasks Side */}
+              <div className="space-y-4 xl:pr-8">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-2">Office Tasks</h3>
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50/50">
+                        <TableHead className="px-4 py-3">Task Details</TableHead>
+                        <TableHead className="px-4 py-3">Assignee</TableHead>
+                        <TableHead className="px-4 py-3">Status & Progress</TableHead>
+                        <TableHead className="px-4 py-3 text-right">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-slate-50">
+                      {projectTasks.filter(t => t.type === "Office").map((task) => (
+                        <TableRow key={task.id} className="group hover:bg-slate-50/30 transition-all">
+                          <TableCell className="px-4 py-4">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <p className="text-sm font-semibold text-slate-900">{task.name}</p>
+                            </div>
+                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-wider border border-indigo-100/50">{task.stage}</span>
+                          </TableCell>
+                          <TableCell className="px-4 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 bg-slate-50 rounded-md flex items-center justify-center text-xs font-bold text-slate-600 border border-slate-100 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 transition-all duration-300">
+                                {task.assignee?.split(',')[0]?.split(' ').map((n: string) => n[0]).join('') || "U"}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-slate-700">{task.assignee || "Unassigned"}</span>
+                                {task.assigneeRoles && <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest">{task.assigneeRoles}</span>}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-4 py-4">
+                            <div className="space-y-2 max-w-[120px]">
+                              <div className="flex justify-between items-center text-[10px] font-bold">
+                                <span className={cn(
+                                  "uppercase tracking-widest",
+                                  task.status === "In Progress" || task.status === "On Track" ? "text-blue-600" :
+                                    task.status === "Completed" ? "text-green-600" :
+                                      task.status === "Critical" ? "text-red-600" :
+                                        task.status === "Delayed" ? "text-orange-600" :
+                                          "text-slate-500"
+                                )}>
+                                  {task.status}
+                                </span>
+                                <span className="text-slate-500 font-mono">{task.progress}%</span>
+                              </div>
+                              <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-indigo-600 transition-all duration-500"
+                                  style={{ width: `${task.progress}%` }}
+                                />
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-4 py-4 text-right">
+                            <button 
+                              onClick={() => setViewTask(task)}
+                              className="bg-slate-50 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200 px-3 py-1.5 text-xs font-bold rounded-md transition-all uppercase tracking-widest shadow-sm cursor-pointer">
+                              View
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {/* Site Tasks Side */}
+              <div className="space-y-4 xl:pl-8 xl:border-l xl:border-slate-200 mt-8 xl:mt-0 pt-8 xl:pt-0 border-t xl:border-t-0 border-slate-200">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-2">Site Tasks</h3>
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50/50">
+                        <TableHead className="px-4 py-3">Task Details</TableHead>
+                        <TableHead className="px-4 py-3">Assignee</TableHead>
+                        <TableHead className="px-4 py-3">Status & Progress</TableHead>
+                        <TableHead className="px-4 py-3 text-right">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-slate-50">
+                      {projectTasks.filter(t => t.type === "Site").map((task) => (
+                        <TableRow key={task.id} className="group hover:bg-slate-50/30 transition-all">
+                          <TableCell className="px-4 py-4">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <p className="text-sm font-semibold text-slate-900">{task.name}</p>
+                            </div>
+                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-wider border border-indigo-100/50">{task.stage}</span>
+                          </TableCell>
+                          <TableCell className="px-4 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 bg-slate-50 rounded-md flex items-center justify-center text-xs font-bold text-slate-600 border border-slate-100 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 transition-all duration-300">
+                                {task.assignee?.split(',')[0]?.split(' ').map((n: string) => n[0]).join('') || "U"}
+                              </div>
+                              <span className="text-xs font-semibold text-slate-700">{task.assignee || "Unassigned"}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-4 py-4">
+                            <div className="space-y-2 max-w-[120px]">
+                              <div className="flex justify-between items-center text-[10px] font-bold">
+                                <span className={cn(
+                                  "uppercase tracking-widest",
+                                  task.status === "In Progress" || task.status === "On Track" ? "text-blue-600" :
+                                    task.status === "Completed" ? "text-green-600" :
+                                      task.status === "Critical" ? "text-red-600" :
+                                        task.status === "Delayed" ? "text-orange-600" :
+                                          "text-slate-500"
+                                )}>
+                                  {task.status}
+                                </span>
+                                <span className="text-slate-500 font-mono">{task.progress}%</span>
+                              </div>
+                              <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-indigo-600 transition-all duration-500"
+                                  style={{ width: `${task.progress}%` }}
+                                />
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-4 py-4 text-right">
+                            <button className="bg-slate-50 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200 px-3 py-1.5 text-xs font-bold rounded-md transition-all uppercase tracking-widest shadow-sm">
+                              View
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
         )}
 
         {activeTab === "workers" && (
           <div className="space-y-4">
-            <div className="flex justify-end">
+            {/* <div className="flex justify-end">
               {isAdmin && (
                 <Button 
                   size="sm" 
@@ -693,30 +771,28 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                   <Users className="w-3.5 h-3.5" /> Manage Team
                 </Button>
               )}
-            </div>
+            </div> */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {projectWorkers.map((worker) => (
-              <div key={worker.id} className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-4 hover:shadow-md transition-all duration-300 group">
-                <div className="flex justify-center">
-                  <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center text-lg font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-                    {worker.name?.split(' ').map((n: string) => n[0]).join('') || "W"}
+                <div key={worker.id} className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-4 hover:shadow-md transition-all duration-300 group">
+                  <div className="flex justify-center">
+                    <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center text-lg font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
+                      {worker.name?.split(' ').map((n: string) => n[0]).join('') || "W"}
+                    </div>
                   </div>
+                  <div className="text-center space-y-0.5">
+                    <h4 className="text-sm font-bold text-slate-900 tracking-tight">{worker.name}</h4>
+                    <p className="text-[10px] font-semibold text-indigo-500 uppercase tracking-wider">{worker.role?.name || worker.type}</p>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedStaffProfile(worker)}
+                    className="w-full text-center py-2 bg-slate-50 text-slate-500 rounded-md text-[10px] font-bold hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100 uppercase tracking-wider cursor-pointer">
+                    Profile
+                  </button>
                 </div>
-                <div className="text-center space-y-0.5">
-                  <h4 className="text-sm font-bold text-slate-900 tracking-tight">{worker.name}</h4>
-                  <p className="text-[10px] font-semibold text-indigo-500 uppercase tracking-wider">{worker.type}</p>
-                </div>
-                <div className="pt-2 border-t border-slate-50 flex justify-between items-center">
-                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Rate</span>
-                  <span className="text-xs font-bold text-slate-900">{worker.rate}</span>
-                </div>
-                <button className="w-full py-2 bg-slate-50 text-slate-500 rounded-md text-[10px] font-bold hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100 uppercase tracking-wider">
-                  Profile
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
         )}
 
         {/* {activeTab === "updates" && (
@@ -760,8 +836,8 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Financial Overview</h3>
               {isAdmin && (
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   className="gap-2 text-[10px] font-bold uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100"
                   onClick={() => setIsPaymentModalOpen(true)}
                 >
@@ -769,7 +845,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                 </Button>
               )}
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1 hover:shadow-md transition-shadow">
                 <div className="bg-green-50 p-2 rounded-lg w-fit mb-1 border border-green-100">
@@ -825,9 +901,9 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                       <TableCell className="px-6 py-4">
                         <span className={cn(
                           "px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border",
-                          payment.status === "Paid" ? "bg-green-50 text-green-700 border-green-100" : 
-                          payment.status === "Pending" ? "bg-indigo-50 text-indigo-700 border-indigo-100" :
-                          "bg-red-50 text-red-700 border-red-100"
+                          payment.status === "Paid" ? "bg-green-50 text-green-700 border-green-100" :
+                            payment.status === "Pending" ? "bg-indigo-50 text-indigo-700 border-indigo-100" :
+                              "bg-red-50 text-red-700 border-red-100"
                         )}>
                           {payment.status}
                         </span>
@@ -836,7 +912,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                         <div className="flex items-center justify-end gap-1">
                           {isAdmin && (
                             <>
-                              <button 
+                              <button
                                 onClick={() => {
                                   setEditingPayment(payment);
                                   setPaymentForm({
@@ -852,7 +928,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                               >
                                 <PenTool className="w-3.5 h-3.5" />
                               </button>
-                              <button 
+                              <button
                                 onClick={() => {
                                   setPaymentToDelete(payment.id);
                                   setIsDeleteDialogOpen(true);
@@ -882,8 +958,8 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
         )}
 
         {/* Payment Modal */}
-        <Modal 
-          isOpen={isPaymentModalOpen} 
+        <Modal
+          isOpen={isPaymentModalOpen}
           onClose={() => {
             setIsPaymentModalOpen(false);
             setEditingPayment(null);
@@ -894,41 +970,41 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Milestone Name</label>
-                <Input 
-                  placeholder="e.g., Slab Completion" 
+                <Input
+                  placeholder="e.g., Slab Completion"
                   value={paymentForm.milestone}
-                  onChange={e => setPaymentForm({...paymentForm, milestone: e.target.value})}
+                  onChange={e => setPaymentForm({ ...paymentForm, milestone: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Amount ($)</label>
-                <Input 
-                  type="number" 
-                  placeholder="5000" 
+                <Input
+                  type="number"
+                  placeholder="5000"
                   value={paymentForm.amount}
-                  onChange={e => setPaymentForm({...paymentForm, amount: e.target.value})}
+                  onChange={e => setPaymentForm({ ...paymentForm, amount: e.target.value })}
                   required
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Payment Date</label>
-                <Input 
-                  type="date" 
+                <Input
+                  type="date"
                   value={paymentForm.date}
-                  onChange={e => setPaymentForm({...paymentForm, date: e.target.value})}
+                  onChange={e => setPaymentForm({ ...paymentForm, date: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Status</label>
-                <select 
+                <select
                   className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   value={paymentForm.status}
-                  onChange={e => setPaymentForm({...paymentForm, status: e.target.value})}
+                  onChange={e => setPaymentForm({ ...paymentForm, status: e.target.value })}
                 >
                   <option value="Paid">Paid</option>
                   <option value="Pending">Pending</option>
@@ -939,11 +1015,11 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
 
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Notes</label>
-              <textarea 
+              <textarea
                 className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all min-h-[80px]"
                 placeholder="Details about this transaction..."
                 value={paymentForm.notes}
-                onChange={e => setPaymentForm({...paymentForm, notes: e.target.value})}
+                onChange={e => setPaymentForm({ ...paymentForm, notes: e.target.value })}
               />
             </div>
 
@@ -970,25 +1046,25 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
 
         {/* Edit Project Modal */}
         <Modal
-          isOpen={isEditModalOpen} 
+          isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           title="Edit Project Details"
         >
           <form onSubmit={handleEditProject} className="space-y-6">
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Project Name</label>
-              <Input 
+              <Input
                 value={editForm.name}
-                onChange={e => setEditForm({...editForm, name: e.target.value})}
+                onChange={e => setEditForm({ ...editForm, name: e.target.value })}
                 required
               />
             </div>
-            
+
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Location</label>
-              <Input 
+              <Input
                 value={editForm.location}
-                onChange={e => setEditForm({...editForm, location: e.target.value})}
+                onChange={e => setEditForm({ ...editForm, location: e.target.value })}
                 required
               />
             </div>
@@ -996,19 +1072,19 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Start Date</label>
-                <Input 
-                  type="date" 
+                <Input
+                  type="date"
                   value={editForm.startDate}
-                  onChange={e => setEditForm({...editForm, startDate: e.target.value})}
+                  onChange={e => setEditForm({ ...editForm, startDate: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Expected Completion</label>
-                <Input 
-                  type="date" 
+                <Input
+                  type="date"
                   value={editForm.expectedCompletion}
-                  onChange={e => setEditForm({...editForm, expectedCompletion: e.target.value})}
+                  onChange={e => setEditForm({ ...editForm, expectedCompletion: e.target.value })}
                   required
                 />
               </div>
@@ -1017,19 +1093,19 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Budget ($)</label>
-                <Input 
-                  type="number" 
+                <Input
+                  type="number"
                   value={editForm.budget}
-                  onChange={e => setEditForm({...editForm, budget: e.target.value})}
+                  onChange={e => setEditForm({ ...editForm, budget: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Status</label>
-                <select 
+                <select
                   className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   value={editForm.status}
-                  onChange={e => setEditForm({...editForm, status: e.target.value})}
+                  onChange={e => setEditForm({ ...editForm, status: e.target.value })}
                 >
                   <option value="Planned">Planned</option>
                   <option value="In Progress">In Progress</option>
@@ -1041,10 +1117,10 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
 
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Supervisor</label>
-              <select 
+              <select
                 className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                 value={editForm.supervisorId}
-                onChange={e => setEditForm({...editForm, supervisorId: e.target.value})}
+                onChange={e => setEditForm({ ...editForm, supervisorId: e.target.value })}
               >
                 <option value="">Select Supervisor...</option>
                 {allStaff.filter(s => s.role?.name?.toLowerCase() === "supervisor" || s.role?.name?.toLowerCase() === "architect").map(s => (
@@ -1058,15 +1134,15 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
               <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-slate-100 rounded-xl bg-slate-50/50">
                 {allStaff.filter(s => s.role?.name?.toLowerCase() === "worker" || s.role?.name?.toLowerCase() === "staff").map(s => (
                   <label key={s._id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-1 rounded transition-colors">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                       checked={editForm.workerIds.includes(s._id)}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setEditForm({...editForm, workerIds: [...editForm.workerIds, s._id]});
+                          setEditForm({ ...editForm, workerIds: [...editForm.workerIds, s._id] });
                         } else {
-                          setEditForm({...editForm, workerIds: editForm.workerIds.filter(id => id !== s._id)});
+                          setEditForm({ ...editForm, workerIds: editForm.workerIds.filter(id => id !== s._id) });
                         }
                       }}
                     />
@@ -1083,167 +1159,167 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
               </Button>
             </div>
           </form>
-         </Modal>
+        </Modal>
 
-         {/* Add Task Modal */}
-         <Modal 
-           isOpen={isAddTaskModalOpen} 
-           onClose={() => setIsAddTaskModalOpen(false)}
-           title="Create New Task"
-         >
-           <form onSubmit={handleAddTask} className="space-y-6">
-             <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-1.5">
-                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Task Type</label>
-                 <select 
-                   className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                   value={taskForm.type}
-                   onChange={e => setTaskForm({...taskForm, type: e.target.value as any})}
-                 >
-                   <option value="Office">Office (Design)</option>
-                   <option value="Site">Site (Execution)</option>
-                 </select>
-               </div>
-               <div className="space-y-1.5">
-                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Category</label>
-                 <select 
-                   className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                   value={taskForm.category}
-                   onChange={e => setTaskForm({...taskForm, category: e.target.value as any})}
-                 >
-                   <option value="Civil">Civil</option>
-                   <option value="Interior">Interior</option>
-                 </select>
-               </div>
-             </div>
-
-             <div className="space-y-1.5">
-               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Task Title</label>
-               <Input 
-                 placeholder="e.g., Layout Plan Finalization" 
-                 value={taskForm.title}
-                 onChange={e => setTaskForm({...taskForm, title: e.target.value})}
-                 required
-               />
-             </div>
-
-             <div className="space-y-1.5">
-               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Assign To</label>
-               <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-slate-100 rounded-xl bg-slate-50/50">
-                 {allStaff.filter(s => s.role?.name?.toLowerCase() !== "client").map(s => (
-                   <label key={s._id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-1 rounded transition-colors">
-                     <input 
-                       type="checkbox" 
-                       className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                       checked={taskForm.assignedTo.includes(s._id)}
-                       onChange={(e) => {
-                         if (e.target.checked) {
-                           setTaskForm({...taskForm, assignedTo: [...taskForm.assignedTo, s._id]});
-                         } else {
-                           setTaskForm({...taskForm, assignedTo: taskForm.assignedTo.filter(id => id !== s._id)});
-                         }
-                       }}
-                     />
-                     <span className="text-xs font-medium text-slate-700">{s.name}</span>
-                   </label>
-                 ))}
-               </div>
-             </div>
-
-             <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-1.5">
-                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Start Date</label>
-                 <Input
-                   type="date"
-                   value={taskForm.startDate}
-                   onChange={e => setTaskForm({...taskForm, startDate: e.target.value})}
-                   required
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">End Date</label>
-                 <Input
-                   type="date"
-                   value={taskForm.endDate}
-                   onChange={e => setTaskForm({...taskForm, endDate: e.target.value})}
-                   required
-                 />
-               </div>
-             </div>
-
-             <div className="space-y-1.5">
-               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Notes</label>
-               <textarea 
-                 className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all min-h-[80px]"
-                 placeholder="Describe the task..."
-                 value={taskForm.notes}
-                 onChange={e => setTaskForm({...taskForm, notes: e.target.value})}
-               />
-             </div>
-
-             <div className="flex justify-end gap-3 pt-4 border-t border-slate-50">
-               <Button variant="ghost" type="button" onClick={() => setIsAddTaskModalOpen(false)}>Cancel</Button>
-               <Button type="submit" isLoading={isSubmittingTask} className="bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
-                 Create Task
-               </Button>
-             </div>
-           </form>
-          </Modal>
-
-          {/* Manage Team Modal */}
-          <Modal 
-            isOpen={isManageTeamModalOpen} 
-            onClose={() => setIsManageTeamModalOpen(false)}
-            title="Manage Project Team"
-          >
-            <form onSubmit={handleUpdateTeam} className="space-y-6">
+        {/* Add Task Modal */}
+        <Modal
+          isOpen={isAddTaskModalOpen}
+          onClose={() => setIsAddTaskModalOpen(false)}
+          title="Create New Task"
+        >
+          <form onSubmit={handleAddTask} className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Project Supervisor</label>
-                <select 
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Task Type</label>
+                <select
                   className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                  value={teamForm.supervisorId}
-                  onChange={e => setTeamForm({...teamForm, supervisorId: e.target.value})}
+                  value={taskForm.type}
+                  onChange={e => setTaskForm({ ...taskForm, type: e.target.value as any })}
                 >
-                  <option value="">Select Supervisor...</option>
-                  {allStaff.filter(s => s.role?.name?.toLowerCase() === "supervisor" || s.role?.name?.toLowerCase() === "architect").map(s => (
-                    <option key={s._id} value={s._id}>{s.name} ({s.role?.name})</option>
-                  ))}
+                  <option value="Office">Office (Design)</option>
+                  <option value="Site">Site (Execution)</option>
                 </select>
               </div>
-
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Assigned Workers</label>
-                <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2 border border-slate-100 rounded-xl bg-slate-50/50">
-                  {allStaff.filter(s => s.role?.name?.toLowerCase() === "worker" || s.role?.name?.toLowerCase() === "staff").map(s => (
-                    <label key={s._id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-1 rounded transition-colors">
-                      <input 
-                        type="checkbox" 
-                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                        checked={teamForm.workerIds.includes(s._id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setTeamForm({...teamForm, workerIds: [...teamForm.workerIds, s._id]});
-                          } else {
-                            setTeamForm({...teamForm, workerIds: teamForm.workerIds.filter(id => id !== s._id)});
-                          }
-                        }}
-                      />
-                      <span className="text-xs font-medium text-slate-700">{s.name}</span>
-                    </label>
-                  ))}
-                </div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Category</label>
+                <select
+                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  value={taskForm.category}
+                  onChange={e => setTaskForm({ ...taskForm, category: e.target.value as any })}
+                >
+                  <option value="Civil">Civil</option>
+                  <option value="Interior">Interior</option>
+                </select>
               </div>
+            </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-50">
-                <Button variant="ghost" type="button" onClick={() => setIsManageTeamModalOpen(false)}>Cancel</Button>
-                <Button type="submit" isLoading={isSubmittingTeam} className="bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
-                  Update Team
-                </Button>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Task Title</label>
+              <Input
+                placeholder="e.g., Layout Plan Finalization"
+                value={taskForm.title}
+                onChange={e => setTaskForm({ ...taskForm, title: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Assign To</label>
+              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-slate-100 rounded-xl bg-slate-50/50">
+                {allStaff.filter(s => s.role?.name?.toLowerCase() !== "client").map(s => (
+                  <label key={s._id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-1 rounded transition-colors">
+                    <input
+                      type="checkbox"
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      checked={taskForm.assignedTo.includes(s._id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setTaskForm({ ...taskForm, assignedTo: [...taskForm.assignedTo, s._id] });
+                        } else {
+                          setTaskForm({ ...taskForm, assignedTo: taskForm.assignedTo.filter(id => id !== s._id) });
+                        }
+                      }}
+                    />
+                    <span className="text-xs font-medium text-slate-700">{s.name}</span>
+                  </label>
+                ))}
               </div>
-            </form>
-          </Modal>
-  
-           {activeTab === "timeline" && (
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Start Date</label>
+                <Input
+                  type="date"
+                  value={taskForm.startDate}
+                  onChange={e => setTaskForm({ ...taskForm, startDate: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">End Date</label>
+                <Input
+                  type="date"
+                  value={taskForm.endDate}
+                  onChange={e => setTaskForm({ ...taskForm, endDate: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Notes</label>
+              <textarea
+                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all min-h-[80px]"
+                placeholder="Describe the task..."
+                value={taskForm.notes}
+                onChange={e => setTaskForm({ ...taskForm, notes: e.target.value })}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-50">
+              <Button variant="ghost" type="button" onClick={() => setIsAddTaskModalOpen(false)}>Cancel</Button>
+              <Button type="submit" isLoading={isSubmittingTask} className="bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
+                Create Task
+              </Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* Manage Team Modal */}
+        <Modal
+          isOpen={isManageTeamModalOpen}
+          onClose={() => setIsManageTeamModalOpen(false)}
+          title="Manage Project Team"
+        >
+          <form onSubmit={handleUpdateTeam} className="space-y-6">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Project Supervisor</label>
+              <select
+                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                value={teamForm.supervisorId}
+                onChange={e => setTeamForm({ ...teamForm, supervisorId: e.target.value })}
+              >
+                <option value="">Select Supervisor...</option>
+                {allStaff.filter(s => s.role?.name?.toLowerCase() === "supervisor" || s.role?.name?.toLowerCase() === "architect").map(s => (
+                  <option key={s._id} value={s._id}>{s.name} ({s.role?.name})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Assigned Workers</label>
+              <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2 border border-slate-100 rounded-xl bg-slate-50/50">
+                {allStaff.filter(s => s.role?.name?.toLowerCase() === "worker" || s.role?.name?.toLowerCase() === "staff").map(s => (
+                  <label key={s._id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-1 rounded transition-colors">
+                    <input
+                      type="checkbox"
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      checked={teamForm.workerIds.includes(s._id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setTeamForm({ ...teamForm, workerIds: [...teamForm.workerIds, s._id] });
+                        } else {
+                          setTeamForm({ ...teamForm, workerIds: teamForm.workerIds.filter(id => id !== s._id) });
+                        }
+                      }}
+                    />
+                    <span className="text-xs font-medium text-slate-700">{s.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-50">
+              <Button variant="ghost" type="button" onClick={() => setIsManageTeamModalOpen(false)}>Cancel</Button>
+              <Button type="submit" isLoading={isSubmittingTeam} className="bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
+                Update Team
+              </Button>
+            </div>
+          </form>
+        </Modal>
+
+        {activeTab === "timeline" && (
           <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
               <div>
@@ -1309,9 +1385,9 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                         <span className={cn(
                           "text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
                           event.status === "Completed" ? "bg-emerald-100 text-emerald-700" :
-                          event.status === "In Progress" ? "bg-indigo-100 text-indigo-700" :
-                          event.status === "Delayed" ? "bg-rose-100 text-rose-700" :
-                          "bg-slate-100 text-slate-500"
+                            event.status === "In Progress" ? "bg-indigo-100 text-indigo-700" :
+                              event.status === "Delayed" ? "bg-rose-100 text-rose-700" :
+                                "bg-slate-100 text-slate-500"
                         )}
                         >{event.status}</span>
                       </div>
@@ -1343,7 +1419,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                 {isUploading ? "Uploading..." : "Upload Photos"}
               </button>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {photosLoading ? (
                 <div className="col-span-full flex items-center justify-center py-10">
                   <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -1351,12 +1427,12 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
               ) : (
                 <>
                   {projectPhotos.map((photo: any) => (
-                    <div key={photo.id} className="aspect-square bg-slate-50 rounded-lg border border-slate-100 shadow-sm group hover:border-indigo-300 transition-all cursor-pointer relative overflow-hidden max-w-[120px]">
+                    <div key={photo.id} className="aspect-square bg-slate-50 rounded-lg border border-slate-100 shadow-sm group hover:border-indigo-300 transition-all cursor-pointer relative overflow-hidden">
                       <img src={photo.url} alt="Project photo" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 p-1">
-                        <p className="text-white text-[7px] font-bold uppercase tracking-wider">{photo.date}</p>
-                        <p className="text-indigo-300 text-[6px] font-black uppercase tracking-tighter text-center line-clamp-1">{photo.uploadedBy || "Staff"}</p>
-                        <div className="flex gap-1 mt-1">
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2">
+                        <p className="text-white text-[11px] font-bold uppercase tracking-wider">{photo.date}</p>
+                        <p className="text-indigo-300 text-[10px] font-black uppercase tracking-widest text-center line-clamp-1">{photo.uploadedBy || "Staff"}</p>
+                        <div className="flex gap-2 mt-2">
                           <a href={photo.url} target="_blank" rel="noreferrer" className="p-1 bg-white/20 hover:bg-white/40 text-white rounded transition-colors">
                             <ArrowUpRight className="w-2.5 h-2.5" />
                           </a>
@@ -1368,16 +1444,38 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                     </div>
                   ))}
 
-                  {projectPhotos.length === 0 && [1, 2, 3].map((i) => (
-                    <div key={i} className="aspect-square bg-slate-50 rounded-lg border border-dashed border-slate-200 flex flex-col items-center justify-center gap-1 max-w-[120px]">
+                  {projectPhotos.length === 0 && projectOfficeTasks.flatMap(t => t.images || []).length === 0 && projectSiteTasks.flatMap(t => t.images || []).length === 0 && [1].map((i) => (
+                    <div key={i} className="aspect-square bg-slate-50 rounded-lg border border-dashed border-slate-200 flex flex-col items-center justify-center gap-1">
                       <Camera className="w-4 h-4 text-slate-200" />
                       <p className="text-[7px] font-bold text-slate-300 uppercase tracking-wider">Empty</p>
                     </div>
                   ))}
 
+                  {projectOfficeTasks.flatMap(t => (t.images || []).map((img: string) => ({ img, task: t }))).map(({img, task}, i) => (
+                    <a key={`office-${i}`} href={img} target="_blank" rel="noreferrer" className="aspect-square bg-slate-50 rounded-lg border border-slate-100 shadow-sm group hover:border-indigo-300 transition-all cursor-pointer relative overflow-hidden">
+                      <img src={img} alt="Office Task Photo" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2">
+                        <p className="text-white text-[11px] font-bold uppercase tracking-wider text-center">Office Task</p>
+                        <p className="text-white text-[10px] font-bold uppercase tracking-wider">{task.startDate ? formatDateForDisplay(task.startDate) : "N/A"}</p>
+                        <p className="text-indigo-300 text-[9px] font-black uppercase tracking-widest text-center line-clamp-2">{task.assignedTo?.map((a: any) => a.name).join(", ") || "Staff"}</p>
+                      </div>
+                    </a>
+                  ))}
+                  
+                  {projectSiteTasks.flatMap(t => (t.images || []).map((img: string) => ({ img, task: t }))).map(({img, task}, i) => (
+                    <a key={`site-${i}`} href={img} target="_blank" rel="noreferrer" className="aspect-square bg-slate-50 rounded-lg border border-slate-100 shadow-sm group hover:border-indigo-300 transition-all cursor-pointer relative overflow-hidden">
+                      <img src={img} alt="Site Task Photo" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2">
+                        <p className="text-white text-[11px] font-bold uppercase tracking-wider text-center">Site Task</p>
+                        <p className="text-white text-[10px] font-bold uppercase tracking-wider">{task.startDate ? formatDateForDisplay(task.startDate) : "N/A"}</p>
+                        <p className="text-indigo-300 text-[9px] font-black uppercase tracking-widest text-center line-clamp-2">{task.assignedTo?.map((a: any) => a.name).join(", ") || "Staff"}</p>
+                      </div>
+                    </a>
+                  ))}
+
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square w-full max-w-[120px] bg-indigo-50 rounded-lg border border-dashed border-indigo-200 flex flex-col items-center justify-center gap-1 group hover:bg-indigo-100 transition-all"
+                    className="aspect-square w-full bg-indigo-50 rounded-lg border border-dashed border-indigo-200 flex flex-col items-center justify-center gap-1 group hover:bg-indigo-100 transition-all cursor-pointer"
                   >
                     <Plus className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform" />
                     <p className="text-[8px] font-bold text-indigo-600 uppercase tracking-wider">Add</p>
@@ -1388,6 +1486,101 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
             <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
           </div>
         )}
+        {/* View Task Modal */}
+        <Modal
+          isOpen={!!viewTask}
+          onClose={() => setViewTask(null)}
+          title="Task Details"
+        >
+          {viewTask && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-wider border border-indigo-100/50 mb-2 inline-block">{viewTask.stage}</span>
+                  <h3 className="text-xl font-bold text-slate-900">{viewTask.name}</h3>
+                </div>
+                <div className="text-right">
+                  <span className={cn(
+                    "px-3 py-1 text-xs font-bold uppercase tracking-widest rounded-md border",
+                    viewTask.status === "Completed" ? "bg-green-50 text-green-700 border-green-100" :
+                    viewTask.status === "In Progress" || viewTask.status === "On Track" ? "bg-indigo-50 text-indigo-700 border-indigo-100" :
+                    viewTask.status === "Critical" ? "bg-red-50 text-red-700 border-red-100" :
+                    "bg-slate-50 text-slate-500 border-slate-200"
+                  )}>
+                    {viewTask.status}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Assignee</p>
+                    <p className="text-sm font-semibold text-slate-900">{viewTask.assignee}</p>
+                    <p className="text-[10px] font-semibold text-indigo-500 uppercase tracking-wider mt-0.5">{viewTask.assigneeRoles}</p>
+                 </div>
+                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Progress</p>
+                    <p className="text-sm font-semibold text-slate-900">{viewTask.progress}%</p>
+                 </div>
+                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Start Date</p>
+                    <p className="text-sm font-semibold text-slate-900">{formatDateForDisplay(viewTask.startDate)}</p>
+                 </div>
+                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Deadline</p>
+                    <p className="text-sm font-semibold text-slate-900">{formatDateForDisplay(viewTask.deadline)}</p>
+                 </div>
+              </div>
+
+              {viewTask.taskRaw?.notes && (
+                <div className="p-4 bg-white rounded-lg border border-slate-200">
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Notes</p>
+                   <p className="text-sm text-slate-700 whitespace-pre-wrap">{viewTask.taskRaw.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </Modal>
+
+        {/* Staff Profile Modal */}
+        <Modal
+          isOpen={!!selectedStaffProfile}
+          onClose={() => setSelectedStaffProfile(null)}
+          title="Staff Profile"
+        >
+          {selectedStaffProfile && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-indigo-50 rounded-xl flex items-center justify-center text-2xl font-bold text-indigo-600 border border-indigo-100">
+                  {selectedStaffProfile.name?.split(' ').map((n: string) => n[0]).join('') || "U"}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">{selectedStaffProfile.name}</h3>
+                  <p className="text-sm font-semibold text-indigo-600 uppercase tracking-wider">{selectedStaffProfile.role?.name || selectedStaffProfile.type}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Email</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedStaffProfile.email || "N/A"}</p>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Phone</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedStaffProfile.phone || "N/A"}</p>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedStaffProfile.status || "Active"}</p>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rate</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedStaffProfile.rate || "N/A"}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </Modal>
       </div>
     </div>
   );

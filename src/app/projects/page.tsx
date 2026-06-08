@@ -17,6 +17,7 @@ import { Select } from "@/components/ui/Select";
 import Modal from "@/components/ui/Modal";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ActionButtons } from "@/components/ui/ActionButtons";
 import toast from "react-hot-toast";
 
 type Project = ReturnType<typeof useProjects>["projects"][0];
@@ -150,49 +151,30 @@ export default function ProjectsPage() {
       headerClassName: "text-right",
       cellClassName: "text-right",
       render: (project) => (
-        <div className="flex items-center justify-end gap-2">
-          <Link href={`/projects/${project.id}`}
-            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-            title="View Details"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Link>
-          {canAdd && (
-            <>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingProject(project);
-                  setForm({
-                    name: project.name,
-                    clientId: project.clientId || "",
-                    location: project.location,
-                    startDate: project.startDate || "",
-                    expectedCompletion: project.expectedCompletion || "",
-                    budget: String(project.budget || ""),
-                    designerId: (project as any).designer?._id || (project as any).designerId || "",
-                  });
-                  setIsAddModalOpen(true);
-                }}
-                className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
-                title="Edit Project"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setProjectToDelete(project.id);
-                  setIsConfirmOpen(true);
-                }}
-                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                title="Delete Project"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </>
-          )}
-        </div>
+        <ActionButtons
+          hasEdit={canAdd}
+          hasDelete={canAdd}
+          viewHref={`/projects/${project.id}`}
+          onEdit={(e) => {
+            e.stopPropagation();
+            setEditingProject(project);
+            setForm({
+              name: project.name,
+              clientId: project.clientId || "",
+              location: project.location,
+              startDate: project.startDate || "",
+              expectedCompletion: project.expectedCompletion || "",
+              budget: String(project.budget || ""),
+              designerId: (project as any).designer?._id || (project as any).designerId || "",
+            });
+            setIsAddModalOpen(true);
+          }}
+          onDelete={(e) => {
+            e.stopPropagation();
+            setProjectToDelete(project.id);
+            setIsConfirmOpen(true);
+          }}
+        />
       ),
     },
   ];

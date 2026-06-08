@@ -28,3 +28,12 @@ export function formatDateForDisplay(date?: string | Date | null): string {
 
   return trimmed;
 }
+
+export function toTitleCase(str?: string | null): string {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}

@@ -16,40 +16,29 @@ interface DesignModuleProps {
 }
 
 export function DesignModule({ tasks, projectId, updateTaskStatus }: DesignModuleProps) {
-  const [activeSubTab, setActiveSubTab] = useState<"civil" | "interior">("civil");
-
   if (!tasks) return <div className="p-10 text-center text-slate-500">Design data not available.</div>;
 
   const civilTasks = tasks.filter(t => t.category === "Civil");
   const interiorTasks = tasks.filter(t => t.category === "Interior");
   console.log("DesignModule tasks:", tasks);
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-slate-200 w-fit">
-        <button
-          onClick={() => setActiveSubTab("civil")}
-          className={cn(
-            "px-6 py-2 rounded-xl text-xs font-medium transition-all",
-            activeSubTab === "civil" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "text-slate-400 hover:text-slate-900"
-          )}
-        >
-          Civil Designing
-        </button>
-        <button
-          onClick={() => setActiveSubTab("interior")}
-          className={cn(
-            "px-6 py-2 rounded-xl text-xs font-medium transition-all",
-            activeSubTab === "interior" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "text-slate-400 hover:text-slate-900"
-          )}
-        >
-          Interior Designing
-        </button>
+    <div className="grid grid-cols-1 md:grid-cols-2">
+      <div className="space-y-4 md:pr-8">
+        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-2">Civil Designing</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {civilTasks.map((task) => (
+            <DesignTaskCard key={task.id} task={task} onStatusChange={(status) => updateTaskStatus?.(task.id, status)} />
+          ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-        {(activeSubTab === "civil" ? civilTasks : interiorTasks).map((task) => (
-          <DesignTaskCard key={task.id} task={task} onStatusChange={(status) => updateTaskStatus?.(task.id, status)} />
-        ))}
+      <div className="space-y-4 md:pl-8 md:border-l md:border-slate-200 mt-8 md:mt-0 pt-8 md:pt-0 border-t md:border-t-0 border-slate-200">
+        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-2">Interior Designing</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {interiorTasks.map((task) => (
+            <DesignTaskCard key={task.id} task={task} onStatusChange={(status) => updateTaskStatus?.(task.id, status)} />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -70,12 +59,12 @@ function DesignTaskCard({ task, onStatusChange }: { task: OfficeTask, onStatusCh
       <Card className="p-2.5 space-y-2.5 hover:shadow-md transition-all group border-slate-200">
         <div className="flex items-start justify-between">
           <div className="space-y-0.5">
-            <h4 className="text-[10px] font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">{task.title}</h4>
+            <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">{task.title}</h4>
             <select
               value={task.status}
               onChange={(e) => onStatusChange?.(e.target.value as OfficeTaskStatus)}
               className={cn(
-                "text-[7px] px-1 py-0.5 rounded-md border font-black uppercase tracking-tighter focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer",
+                "text-xs px-1.5 py-0.5 rounded-md border font-black uppercase tracking-tighter focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer",
                 statusColors[task.status]
               )}
             >
@@ -88,7 +77,7 @@ function DesignTaskCard({ task, onStatusChange }: { task: OfficeTask, onStatusCh
         </div>
 
         <div className="space-y-1">
-          <div className="flex items-center justify-between text-[7px] font-bold text-slate-400 uppercase tracking-tighter font-mono">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-tighter font-mono">
             <span>Progress</span>
             <span>{task.progress}%</span>
           </div>
@@ -108,32 +97,38 @@ function DesignTaskCard({ task, onStatusChange }: { task: OfficeTask, onStatusCh
               </div>
             ))}
             {task.images.length > 2 && (
-              <div className="w-6 h-6 rounded-md bg-slate-50 border border-slate-100 flex items-center justify-center text-[7px] font-bold text-slate-400">
+              <div className="w-6 h-6 rounded-md bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400">
                 +{task.images.length - 2}
               </div>
             )}
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-2 border-t border-slate-50">
-          <div className="flex -space-x-1">
+        <div className="flex items-center justify-between pt-2 border-t border-slate-50 gap-2">
+          <div className="flex flex-col gap-1 w-full overflow-hidden">
             {task.assignedTo && task.assignedTo.length > 0 ? (
               task.assignedTo.map((user, i) => (
-                <div key={i} className="w-4 h-4 rounded-full bg-indigo-100 border border-white flex items-center justify-center text-[7px] font-bold text-indigo-600 font-mono shadow-sm" title={user.name}>
-                  {(user.name || user)[0]}
+                <div key={i} className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600 font-mono shrink-0 shadow-sm">
+                    {(user.name || user)[0]}
+                  </div>
+                  <div className="flex flex-col truncate">
+                    <span className="text-xs font-bold text-slate-700 truncate">{user.name || user}</span>
+                    {user.role && <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest truncate">{user.role?.name || user.role}</span>}
+                  </div>
                 </div>
               ))
             ) : (
-              <span className="text-[7px] text-slate-400 font-bold uppercase tracking-widest">None</span>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Unassigned</span>
             )}
           </div>
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-5 text-[7px] font-bold uppercase tracking-widest gap-0.5 hover:text-indigo-600 p-0"
+            className="h-6 text-xs font-bold uppercase tracking-widest gap-0.5 hover:text-indigo-600 p-0"
             onClick={() => setIsPreviewOpen(true)}
           >
-            Info <ChevronRight className="w-2 h-2" />
+            Info <ChevronRight className="w-3 h-3" />
           </Button>
         </div>
       </Card>

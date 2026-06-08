@@ -4,13 +4,14 @@ import { useState, useEffect, Fragment } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Hammer, Camera, ClipboardList, MapPin, CheckCircle2, Plus, Search, Filter, ArrowRight, HardHat, Edit2, Trash2 } from "lucide-react";
+import { Hammer, Camera, ClipboardList, MapPin, CheckCircle2, Plus, Minus, Search, Filter, ArrowRight, HardHat, Edit2, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { cn, formatDateForDisplay } from "@/lib/utils";
+import { cn, formatDateForDisplay, toTitleCase } from "@/lib/utils";
 import Modal from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ActionButtons } from "@/components/ui/ActionButtons";
 
 import { useAuth } from "@/lib/auth-context";
 import { useSiteTasks, SiteTaskCategory } from "@/lib/site-tasks-store";
@@ -28,7 +29,7 @@ export default function SiteWorkPage() {
   const canDeleteImages = (task: any) => isAdminRole || task.assignedTo?.some((s: any) => (s._id || s.id || s) === user?.id);
   const { siteTasks, createSiteTask, updateSiteTask, updateSiteTaskStatus, deleteSiteTask, refreshTasks } = useSiteTasks();
   const { projects } = useProjects();
-  
+
   const [activeTab, setActiveTab] = useState<SiteTaskCategory>("Civil");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -54,18 +55,18 @@ export default function SiteWorkPage() {
 
   const siteStaff = staffList.filter(s => {
     const roleName = s.role?.name?.toLowerCase() || "";
-    return roleName && 
-           !roleName.includes("director") && 
-           !roleName.includes("admin") && 
-           !roleName.includes("client") && 
-           !roleName.includes("designer");
+    return roleName &&
+      !roleName.includes("director") &&
+      !roleName.includes("admin") &&
+      !roleName.includes("client") &&
+      !roleName.includes("designer");
   });
 
   const siteStats = [
     { title: "Active Sites", count: projects.filter(p => p.status === "In Progress" || p.status === "Active").length, icon: MapPin, color: "text-indigo-600", bg: "bg-indigo-50" },
     { title: "On-site Team", count: siteStaff.length, icon: HardHat, color: "text-indigo-600", bg: "bg-indigo-50" },
     { title: "Site Logs", count: siteTasks.length, icon: ClipboardList, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { title: "Inspections", count: siteTasks.filter(t => t.status === "Critical" || t.status === "Delayed").length, icon: CheckCircle2, color: "text-indigo-600", bg: "bg-indigo-50" },
+    { title: "Inspections", count: siteTasks.reduce((sum, task) => sum + (task.inspections || 0), 0), icon: CheckCircle2, color: "text-indigo-600", bg: "bg-indigo-50" },
   ];
 
   const handleAddLog = async (e: React.FormEvent) => {
@@ -151,14 +152,14 @@ export default function SiteWorkPage() {
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">SITE WORK</h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">On-site Execution & Logs</p>
         </div>
-        
-        { canCreate && (
+
+        {canCreate && (
           <Button onClick={() => {
             setEditingTask(null);
             setNewTask({ title: "", project: "", assignedTo: [], status: "On Track", startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] });
             setIsModalOpen(true);
           }} size="sm" className="rounded-xl font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100 text-white">
-            <Plus className="w-4 h-4" /> New Log
+            <Plus className="w-4 h-4" /> New Task
           </Button>
         )}
       </div>
@@ -171,14 +172,14 @@ export default function SiteWorkPage() {
         message="Are you sure you want to delete this site task? This will remove all associated technical notes and photos."
       />
 
-      <Modal 
-        isOpen={isModalOpen} 
+      <Modal
+        isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
           setEditingTask(null);
           setNewTask({ title: "", project: "", assignedTo: [], status: "On Track", startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] });
           setErrors({});
-        }} 
+        }}
         title={editingTask ? "Edit Site Task" : `Create New ${activeTab} Site Task`}
       >
         <form onSubmit={handleAddLog} className="space-y-6">
@@ -188,7 +189,7 @@ export default function SiteWorkPage() {
               options={projects.map(p => ({ value: p.id, label: p.name }))}
               value={newTask.project}
               onChange={(val) => {
-                setNewTask({...newTask, project: val});
+                setNewTask({ ...newTask, project: val });
                 if (errors.project) setErrors(prev => {
                   const { project, ...rest } = prev;
                   return rest;
@@ -199,12 +200,12 @@ export default function SiteWorkPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Current Task / Activity</label>
-            <Input 
-              placeholder="e.g., Foundation Casting" 
+            <label className="text-xs font-bold text-slate-700">Current Task / Activity</label>
+            <Input
+              placeholder="e.g., Foundation Casting"
               value={newTask.title}
               onChange={(e) => {
-                setNewTask({...newTask, title: e.target.value});
+                setNewTask({ ...newTask, title: e.target.value });
                 if (errors.title) setErrors(prev => {
                   const { title, ...rest } = prev;
                   return rest;
@@ -217,14 +218,14 @@ export default function SiteWorkPage() {
             <div className="space-y-2">
               <Select
                 label="Assign To"
-                options={siteStaff.map(s => ({ 
-                  value: s._id, 
+                options={siteStaff.map(s => ({
+                  value: s._id,
                   label: s.name,
-                  description: s.role?.name || s.team 
+                  description: s.role?.name || s.team
                 }))}
                 value={newTask.assignedTo[0] || ""}
                 onChange={(val) => {
-                  setNewTask({...newTask, assignedTo: [val]});
+                  setNewTask({ ...newTask, assignedTo: [val] });
                   if (errors.assignedTo) setErrors(prev => {
                     const { assignedTo, ...rest } = prev;
                     return rest;
@@ -243,13 +244,13 @@ export default function SiteWorkPage() {
                   { value: "Critical", label: "Critical" },
                 ]}
                 value={newTask.status}
-                onChange={(val) => setNewTask({...newTask, status: val})}
+                onChange={(val) => setNewTask({ ...newTask, status: val })}
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Start Date</label>
+              <label className="text-xs font-bold text-slate-700">Start Date</label>
               <Input
                 type="date"
                 value={newTask.startDate}
@@ -258,7 +259,7 @@ export default function SiteWorkPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">End Date</label>
+              <label className="text-xs font-bold text-slate-700">End Date</label>
               <Input
                 type="date"
                 value={newTask.endDate}
@@ -270,7 +271,7 @@ export default function SiteWorkPage() {
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
             <Button variant="ghost" type="button" onClick={() => setIsModalOpen(false)}>Cancel</Button>
             <Button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium">
-              {editingTask ? "Update Log" : "Save Log"}
+              {editingTask ? "Update Task" : "Save Task"}
             </Button>
           </div>
         </form>
@@ -340,7 +341,7 @@ export default function SiteWorkPage() {
                 )}
                 {filteredTasks.map((task) => (
                   <Fragment key={task.id}>
-                    <TableRow 
+                    <TableRow
                       className={cn(
                         "hover:bg-slate-50/50 transition-colors group cursor-pointer",
                         expandedTaskId === task.id && "bg-slate-50"
@@ -351,24 +352,24 @@ export default function SiteWorkPage() {
                         <div className="flex items-center gap-4">
                           <div className={cn(
                             "w-10 h-10 rounded-xl flex items-center justify-center border shadow-inner transition-colors",
-                            task.status === "Completed" ? "bg-green-50 text-green-600 border-green-100" : 
-                            task.status === "Critical" ? "bg-red-50 text-red-600 border-red-100" :
-                            "bg-slate-50 text-slate-400 border-slate-100"
+                            task.status === "Completed" ? "bg-green-50 text-green-600 border-green-100" :
+                              task.status === "Critical" ? "bg-red-50 text-red-600 border-red-100" :
+                                "bg-slate-50 text-slate-400 border-slate-100"
                           )}>
                             {task.status === "Completed" ? <CheckCircle2 className="w-5 h-5" /> : <HardHat className="w-5 h-5" />}
                           </div>
                           <div>
                             <p className="text-sm font-bold text-slate-900">{task.title}</p>
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-[10px] text-slate-400 font-medium font-mono">Added: {formatDateForDisplay(task.createdAt)}</span>
-                              {task.startDate && <span className="text-[10px] text-slate-400 font-medium font-mono">Start {formatDateForDisplay(task.startDate)}</span>}
-                              {task.endDate && <span className="text-[10px] text-slate-400 font-medium font-mono">End {formatDateForDisplay(task.endDate)}</span>}
+                              <span className="text-[11px] text-slate-600 font-bold bg-slate-100 px-2 py-0.5 rounded-md">Added: {formatDateForDisplay(task.createdAt)}</span>
+                              {task.startDate && <span className="text-[11px] text-slate-600 font-bold bg-slate-100 px-2 py-0.5 rounded-md">Start: {formatDateForDisplay(task.startDate)}</span>}
+                              {task.endDate && <span className="text-[11px] text-slate-600 font-bold bg-slate-100 px-2 py-0.5 rounded-md">End: {formatDateForDisplay(task.endDate)}</span>}
                             </div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="px-6 py-4">
-                        <p className="text-xs font-bold text-slate-700">{(task.project as any)?.name || task.project}</p>
+                        <p className="text-xs font-bold text-slate-700">{toTitleCase((task.project as any)?.name || task.project)}</p>
                       </TableCell>
                       <TableCell className="px-6 py-4">
                         <div className="space-y-2 max-w-[150px]">
@@ -376,15 +377,15 @@ export default function SiteWorkPage() {
                             <span className={cn(
                               "uppercase tracking-widest",
                               task.status === "Completed" ? "text-green-600" :
-                              task.status === "Critical" ? "text-red-600" : 
-                              task.status === "Delayed" ? "text-orange-600" : "text-blue-600"
+                                task.status === "Critical" ? "text-red-600" :
+                                  task.status === "Delayed" ? "text-orange-600" : "text-blue-600"
                             )}>{task.status}</span>
                             <span className="text-slate-500 font-mono">{task.progress}%</span>
                           </div>
                           <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-indigo-600 transition-all duration-500" 
-                              style={{ width: `${task.progress}%` }} 
+                            <div
+                              className="h-full bg-indigo-600 transition-all duration-500"
+                              style={{ width: `${task.progress}%` }}
                             />
                           </div>
                         </div>
@@ -395,7 +396,7 @@ export default function SiteWorkPage() {
                             task.assignedTo.map((user: any, i: number) => (
                               <div
                                 key={i}
-                                className="px-3 py-1 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-xs font-semibold text-indigo-600 shadow-sm"
+                                className="px-2 py-0.5 rounded-md bg-indigo-50 text-[11px] font-bold text-indigo-700 w-fit"
                                 title={user.name || user}
                               >
                                 {user.name || user}
@@ -409,54 +410,65 @@ export default function SiteWorkPage() {
                         </div>
                       </TableCell>
                       <TableCell className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {canCreate && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-amber-600 hover:bg-amber-50"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingTask(task);
-                                  setNewTask({
-                                    title: task.title,
-                                    project: (task.projectId || (task.project as any)?.id || task.project as any)?._id || (task.project as any)?.id || task.project as string,
-                                    assignedTo: task.assignedTo?.map((s: any) => s._id || s.id || s) || [],
-                                    status: task.status || "On Track",
-                                    startDate: task.startDate || new Date().toISOString().split('T')[0],
-                                    endDate: task.endDate || new Date().toISOString().split('T')[0],
-                                  });
-                                  setIsModalOpen(true);
-                                }}
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setTaskToDelete(task.id);
-                                  setIsConfirmOpen(true);
-                                }}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </>
-                          )}
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className={cn("h-8 w-8 rounded-lg transition-all", expandedTaskId === task.id ? "bg-indigo-600 text-white" : "text-slate-400")}
-                            onClick={(e) => {
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg h-8 px-1 mr-1" title="Inspection Count">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const current = task.inspections || 0;
+                                if (current > 0) {
+                                  updateSiteTask(task.id, { inspections: current - 1 });
+                                }
+                              }}
+                              className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                              title="Decrease Inspection"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+
+                            <span className="w-6 text-center font-bold text-[11px] text-slate-700 font-mono">
+                              {task.inspections || 0}
+                            </span>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateSiteTask(task.id, { inspections: (task.inspections || 0) + 1 });
+                              }}
+                              className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                              title="Increase Inspection"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <ActionButtons
+                            hasEdit={canCreate}
+                            hasDelete={canCreate}
+                            hasExpand={true}
+                            isExpanded={expandedTaskId === task.id}
+                            onEdit={(e) => {
+                              e.stopPropagation();
+                              setEditingTask(task);
+                              setNewTask({
+                                title: task.title,
+                                project: (task.projectId || (task.project as any)?.id || task.project as any)?._id || (task.project as any)?.id || task.project as string,
+                                assignedTo: task.assignedTo?.map((s: any) => s._id || s.id || s) || [],
+                                status: task.status || "On Track",
+                                startDate: task.startDate || new Date().toISOString().split('T')[0],
+                                endDate: task.endDate || new Date().toISOString().split('T')[0],
+                              });
+                              setIsModalOpen(true);
+                            }}
+                            onDelete={(e) => {
+                              e.stopPropagation();
+                              setTaskToDelete(task.id);
+                              setIsConfirmOpen(true);
+                            }}
+                            onExpand={(e) => {
                               e.stopPropagation();
                               setExpandedTaskId(expandedTaskId === task.id ? null : task.id);
                             }}
-                          >
-                            <ArrowRight className={cn("w-4 h-4 transition-transform", expandedTaskId === task.id && "rotate-90")} />
-                          </Button>
+                          />
                         </div>
                       </TableCell>
                     </TableRow>
@@ -520,15 +532,15 @@ export default function SiteWorkPage() {
                             <div className="space-y-4">
                               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Site Photos</h4>
                               <TaskImageUpload
-                                  taskId={task.id}
-                                  type="Site"
-                                  existingImages={task.images}
-                                  canDelete={canDeleteImages(task)}
-                                  onUploadComplete={() => {
-                                    refreshTasks();
-                                    toast.success("Site photos updated successfully");
-                                  }}
-                                />
+                                taskId={task.id}
+                                type="Site"
+                                existingImages={task.images}
+                                canDelete={canDeleteImages(task)}
+                                onUploadComplete={() => {
+                                  refreshTasks();
+                                  toast.success("Site photos updated successfully");
+                                }}
+                              />
                             </div>
                           </div>
                         </TableCell>

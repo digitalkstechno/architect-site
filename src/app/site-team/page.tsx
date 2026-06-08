@@ -34,12 +34,12 @@ export default function SiteTeamPage() {
       className: "py-3 px-4",
       render: (member) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center text-[10px] font-bold text-amber-600 border border-amber-100 group-hover:bg-amber-500 group-hover:text-white transition-all">
+          <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center text-xs font-bold text-amber-600 border border-amber-100 group-hover:bg-amber-500 group-hover:text-white transition-all shrink-0">
             {member.name.split(" ").map((n) => n[0]).join("")}
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-900">{member.name}</p>
-            <p className="text-[9px] font-normal text-slate-500 font-mono">{member.email}</p>
+            <p className="text-sm font-bold text-slate-900">{member.name}</p>
+            <p className="text-xs font-medium text-slate-500 font-mono">{member.email}</p>
           </div>
         </div>
       ),
@@ -58,9 +58,9 @@ export default function SiteTeamPage() {
       header: "Contact",
       className: "py-3 px-4",
       render: (member) => (
-        <div className="flex items-center gap-1.5 text-slate-600">
-          <Phone className="w-3 h-3 text-slate-400" />
-          <span className="text-xs font-mono">{member.phone || "—"}</span>
+        <div className="flex items-center gap-1.5 text-slate-700">
+          <Phone className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-sm font-mono">{member.phone || "—"}</span>
         </div>
       ),
     },

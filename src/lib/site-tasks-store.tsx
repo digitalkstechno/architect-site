@@ -19,6 +19,7 @@ export type SiteTask = {
   endDate?: string;
   notes?: string;
   images?: string[];
+  inspections?: number;
   createdAt?: string;
 };
 

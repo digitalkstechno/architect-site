@@ -3,7 +3,7 @@
 import {
   Plus, Search, CircleCheck, CircleAlert, Clock, ChevronRight
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, toTitleCase } from "@/lib/utils";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -46,13 +46,13 @@ export default function TasksPage() {
           <div className="flex items-center gap-2">
             <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{task.name}</p>
             <span className={cn(
-              "text-[8px] font-black px-1.5 py-0.5 rounded border uppercase tracking-widest",
+              "text-[8px] font-black px-1.5 py-0.5 rounded border  tracking-widest",
               task.type === "Office" ? "bg-purple-50 text-purple-600 border-purple-100" : "bg-orange-50 text-orange-600 border-orange-100"
             )}>
               {task.type}
             </span>
           </div>
-          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">{task.project} • {task.stage}</p>
+          <p className="text-[10px] font-medium text-slate-500 tracking-wide">{toTitleCase(task.project)} • {toTitleCase(task.stage)}</p>
         </div>
       ),
     },
@@ -75,7 +75,7 @@ export default function TasksPage() {
             value={task.status}
             onChange={() => {}}
             className={cn(
-              "px-3 py-1.5 rounded-full text-[10px] font-bold border uppercase tracking-wider cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500",
+              "px-3 py-1.5 rounded-full text-[10px] font-bold border  tracking-wider cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500",
               task.status === "Completed" ? "bg-green-50 text-green-700 border-green-200" :
               task.status === "In Progress" || task.status === "On Track" ? "bg-blue-50 text-blue-700 border-blue-200" :
               "bg-slate-100 text-slate-600 border-slate-200"

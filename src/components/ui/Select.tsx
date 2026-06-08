@@ -70,7 +70,7 @@ export function Select({
   return (
     <div className={cn("relative space-y-1.5", className)} ref={containerRef}>
       {label && (
-        <label className="text-sm font-medium text-slate-700 ml-1">
+        <label className="text-xs font-bold text-slate-700 ml-1">
           {label}
         </label>
       )}

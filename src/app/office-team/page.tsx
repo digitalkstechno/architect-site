@@ -34,12 +34,12 @@ export default function OfficeTeamPage() {
       className: "py-3 px-4",
       render: (member) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-[10px] font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+          <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-xs font-bold text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all shrink-0">
             {member.name.split(" ").map((n) => n[0]).join("")}
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-900">{member.name}</p>
-            <p className="text-[9px] font-normal text-slate-500 font-mono">{member.email}</p>
+            <p className="text-sm font-bold text-slate-900">{member.name}</p>
+            <p className="text-xs font-medium text-slate-500 font-mono">{member.email}</p>
           </div>
         </div>
       ),
@@ -59,13 +59,13 @@ export default function OfficeTeamPage() {
       className: "py-3 px-4",
       render: (member) => (
         <div className="space-y-0.5">
-          <div className="flex items-center gap-1 text-slate-600">
-            <Phone className="w-3 h-3 text-slate-400" />
-            <span className="text-[10px] font-mono">{member.phone || "—"}</span>
+          <div className="flex items-center gap-1 text-slate-700">
+            <Phone className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs font-mono">{member.phone || "—"}</span>
           </div>
-          <div className="flex items-center gap-1 text-slate-500">
-            <Mail className="w-3 h-3 text-slate-400" />
-            <span className="text-[10px] font-mono truncate max-w-[120px]">{member.email}</span>
+          <div className="flex items-center gap-1 text-slate-600">
+            <Mail className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs font-mono truncate max-w-[155px]">{member.email}</span>
           </div>
         </div>
       ),

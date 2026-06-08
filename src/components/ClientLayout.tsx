@@ -12,7 +12,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const isLoginPage = pathname === "/login";
 
   if (isLoading) {
     return (
@@ -22,7 +21,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     );
   }
 
-  if (isLoginPage) {
+  const isLoginPage = pathname === "/login";
+  const isResetPasswordPage = pathname === "/reset-password";
+
+  if (isLoginPage || isResetPasswordPage) {
     return <main className="min-h-screen bg-slate-50">{children}</main>;
   }
 

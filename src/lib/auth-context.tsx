@@ -110,9 +110,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoading) return;
-    const isLoginPage = pathname === "/login";
+    const isPublicPage = pathname === "/login" || pathname === "/reset-password";
     const isGuestPage = pathname.startsWith("/guest");
-    if (!user && !isLoginPage) {
+    if (!user && !isPublicPage) {
       router.push("/login");
     } else if (user?.role === "guest" && !isGuestPage) {
       // Guest trying to access admin pages → redirect to guest home

@@ -12,6 +12,7 @@ import { staffService, StaffMember } from "@/services/staff.service";
 import { roleService, Role } from "@/services/role.service";
 import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ActionButtons } from "@/components/ui/ActionButtons";
 import toast from "react-hot-toast";
 
 export default function StaffPage() {
@@ -85,7 +86,7 @@ export default function StaffPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.name.trim()) newErrors.name = "Full name is required";
     if (!formData.email.trim()) newErrors.email = "Email is required";
     if (!editingStaff && !formData.password) newErrors.password = "Password is required";
@@ -166,11 +167,10 @@ export default function StaffPage() {
       render: (member) => (
         <Badge
           variant="secondary"
-          className={`text-[9px] font-bold uppercase px-1.5 py-0 ${
-            member.team === "Site"
+          className={`text-[9px] font-bold uppercase px-1.5 py-0 ${member.team === "Site"
               ? "bg-amber-50 text-amber-700 border-amber-100"
               : "bg-slate-100 text-slate-600"
-          }`}
+            }`}
         >
           {member.team}
         </Badge>
@@ -200,17 +200,15 @@ export default function StaffPage() {
       header: "Actions",
       className: "text-right",
       render: (member) => (
-        <div className="flex justify-end gap-1">
-          <button onClick={() => handleOpenModal(member)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-all">
-            <Edit2 className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={() => {
+        <ActionButtons
+          hasEdit
+          hasDelete
+          onEdit={() => handleOpenModal(member)}
+          onDelete={() => {
             setMemberToDelete(member._id);
             setIsConfirmOpen(true);
-          }} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all">
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
+          }}
+        />
       ),
     },
   ];
@@ -229,7 +227,7 @@ export default function StaffPage() {
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">STAFF MANAGEMENT</h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Office & Site Team</p>
         </div>
-        
+
         <Button onClick={() => handleOpenModal()} size="sm" className="rounded-xl font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
           <Plus className="w-4 h-4" /> Add Member
         </Button>
@@ -238,8 +236,8 @@ export default function StaffPage() {
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
         <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input 
-            placeholder="Search staff..." 
+          <Input
+            placeholder="Search staff..."
             className="pl-9 h-9 text-xs border-none bg-transparent focus:ring-0 shadow-none"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -259,8 +257,8 @@ export default function StaffPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700 ml-1">Full Name *</label>
-              <Input 
-                placeholder="e.g., John Doe" 
+              <Input
+                placeholder="e.g., John Doe"
                 value={formData.name}
                 onChange={e => {
                   setFormData(f => ({ ...f, name: e.target.value }));
@@ -268,16 +266,16 @@ export default function StaffPage() {
                     const { name, ...rest } = prev;
                     return rest;
                   });
-                }} 
+                }}
                 error={errors.name}
-                className="h-9 text-xs" 
+                className="h-9 text-xs"
               />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700 ml-1">Email Address *</label>
-              <Input 
-                type="email" 
-                placeholder="e.g., john@example.com" 
+              <Input
+                type="email"
+                placeholder="e.g., john@example.com"
                 value={formData.email}
                 onChange={e => {
                   setFormData(f => ({ ...f, email: e.target.value }));
@@ -285,18 +283,18 @@ export default function StaffPage() {
                     const { email, ...rest } = prev;
                     return rest;
                   });
-                }} 
+                }}
                 error={errors.email}
-                className="h-9 text-xs" 
+                className="h-9 text-xs"
               />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700 ml-1">Password {editingStaff && "(leave blank to keep current)"}</label>
-              <Input 
-                type="password" 
-                placeholder="••••••••" 
+              <Input
+                type="password"
+                placeholder="••••••••"
                 value={formData.password}
                 onChange={e => {
                   setFormData(f => ({ ...f, password: e.target.value }));
@@ -304,9 +302,9 @@ export default function StaffPage() {
                     const { password, ...rest } = prev;
                     return rest;
                   });
-                }} 
+                }}
                 error={errors.password}
-                className="h-9 text-xs" 
+                className="h-9 text-xs"
               />
             </div>
             <div className="space-y-1">

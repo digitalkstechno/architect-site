@@ -41,6 +41,34 @@ export default function LoginPage() {
   };
 
   const [showPassword, setShowPassword] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [recoveredPassword, setRecoveredPassword] = useState<string | null>(null);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setErrors({ email: "Please enter a valid email address" });
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to send reset email");
+      
+      setRecoveredPassword("SENT"); // using this as a flag that it was sent successfully
+      toast.success("Password reset email sent!");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +88,7 @@ export default function LoginPage() {
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         newErrors.email = "Please enter a valid email address";
       }
-      
+
       if (!password.trim()) {
         newErrors.password = "Password is required";
       }
@@ -249,6 +277,71 @@ export default function LoginPage() {
                 </button>
               </p>
             </div>
+          ) : isForgotPassword ? (
+            /* ── FORGOT PASSWORD PANEL ── */
+            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+              <div className="text-center space-y-1">
+                <h2 className="text-2xl font-bold text-slate-900">Reset Password</h2>
+                <p className="text-sm text-slate-500">Enter your email to receive a reset link</p>
+              </div>
+
+              {recoveredPassword === "SENT" ? (
+                <div className="space-y-6">
+                  <div className="p-4 bg-green-50 border border-green-100 rounded-xl text-center">
+                    <p className="text-sm text-green-800 font-medium mb-1">Check your email!</p>
+                    <p className="text-xs text-green-700 mt-2">We've sent a password reset link to <strong>{email}</strong></p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsForgotPassword(false);
+                      setRecoveredPassword(null);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3.5 rounded-xl transition-all"
+                  >
+                    Back to Login
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-5">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="email"
+                        placeholder="you@company.com"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (errors.email) setErrors({ ...errors, email: "" });
+                        }}
+                        className={cn(
+                          "w-full pl-10 pr-4 py-3 bg-white border rounded-xl text-sm focus:outline-none transition-all placeholder:text-slate-300",
+                          errors.email ? "border-red-500 focus:ring-2 focus:ring-red-500/10" : "border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+                        )}
+                      />
+                    </div>
+                    {errors.email && <p className="text-[10px] font-bold text-red-500 pl-1">{errors.email}</p>}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all"
+                  >
+                    {isLoading ? "Sending..." : "Send Reset Link"}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPassword(false)}
+                    className="w-full text-center text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </form>
+              )}
+            </div>
           ) : (
             /* ── STAFF LOGIN PANEL ── */
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
@@ -284,7 +377,7 @@ export default function LoginPage() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-semibold text-slate-700">Password</label>
-                    <button type="button" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">Forgot?</button>
+                    <button type="button" onClick={() => { setIsForgotPassword(true); setErrors({}); setRecoveredPassword(null); }} className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">Forgot?</button>
                   </div>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />

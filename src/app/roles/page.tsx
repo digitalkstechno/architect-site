@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import { roleService, Role } from "@/services/role.service";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ActionButtons } from "@/components/ui/ActionButtons";
 import toast from "react-hot-toast";
 
 const MODULES = [
@@ -158,15 +159,15 @@ export default function RolesPage() {
               </div>
 
               <div className="flex gap-1">
-                <button onClick={() => handleOpenModal(role)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={() => {
-                  setRoleToDelete(role._id);
-                  setIsConfirmOpen(true);
-                }} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <ActionButtons
+                  hasEdit
+                  hasDelete
+                  onEdit={() => handleOpenModal(role)}
+                  onDelete={() => {
+                    setRoleToDelete(role._id);
+                    setIsConfirmOpen(true);
+                  }}
+                />
               </div>
             </div>
           </Card>

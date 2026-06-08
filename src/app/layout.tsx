@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { Geist, Geist_Mono, Playfair_Display, Nunito_Sans, Inter } from "next/font/google";
 import "../styles/globals.css";
 import ClientLayout from "@/components/ClientLayout";
 import { AuthProvider } from "@/lib/auth-context";
@@ -11,6 +11,16 @@ import { SiteTasksProvider } from "@/lib/site-tasks-store";
 import { SiteUpdatesProvider } from "@/lib/site-updates-store";
 import { PaymentsProvider } from "@/lib/payments-store";
 import { Toaster } from "react-hot-toast";
+
+const nunito = Nunito_Sans({
+  variable: "--font-nunito",
+  subsets: ["latin"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,7 +50,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased bg-slate-50 text-slate-900 min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${nunito.variable} ${inter.variable} antialiased bg-slate-50 text-slate-900 min-h-screen`}
       >
         <RoleProvider>
           <AuthProvider>
