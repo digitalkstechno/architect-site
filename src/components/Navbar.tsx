@@ -114,7 +114,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
         />
       )}
 
-      <header className="h-14 bg-white border-b border-slate-200 fixed top-0 right-0 left-0 lg:left-60 z-40 flex items-center justify-between px-4 lg:px-6 shadow-sm">
+      <header className="h-14 bg-gradient-to-r from-white via-primary-50/30 to-primary-100/20 border-b border-slate-200 fixed top-0 right-0 left-0 lg:left-60 z-40 flex items-center justify-between px-4 lg:px-6 shadow-sm">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -152,7 +152,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                   <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-0.5">Shift Duration</span>
                   <span className={cn(
                     "text-xs font-mono font-bold leading-none",
-                    isClockedIn ? "text-indigo-600 animate-pulse" : "text-slate-400"
+                    isClockedIn ? "text-primary-600 animate-pulse" : "text-slate-400"
                   )}>
                     {formatTimer(timer)}
                   </span>
@@ -164,7 +164,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                     "p-1.5 rounded-full transition-all active:scale-95 shadow-sm",
                     isClockedIn
                       ? "bg-rose-500 text-white hover:bg-rose-600"
-                      : "bg-indigo-600 text-white hover:bg-indigo-700"
+                      : "bg-primary-600 text-white hover:bg-primary-700"
                   )}
                   title={isClockedIn ? "Clock Out" : "Clock In"}
                 >
@@ -257,8 +257,8 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
             <div className="h-8 w-[1px] bg-slate-200 mx-1 lg:mx-2 hidden sm:block" />
 
             <button className="flex items-center gap-3 p-1.5 hover:bg-slate-50 rounded-xl transition-all duration-200 group">
-              <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors flex-shrink-0">
-                <UserCircle className="w-6 h-6 text-indigo-600" />
+              <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors flex-shrink-0">
+                <UserCircle className="w-6 h-6 text-primary-600" />
               </div>
               <div className="text-left hidden lg:block">
                 <p className="text-xs font-bold text-slate-900 leading-none truncate max-w-[100px]">{user?.name}</p>

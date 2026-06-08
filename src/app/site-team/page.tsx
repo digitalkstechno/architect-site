@@ -34,7 +34,7 @@ export default function SiteTeamPage() {
       className: "py-3 px-4",
       render: (member) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center text-xs font-bold text-amber-600 border border-amber-100 group-hover:bg-amber-500 group-hover:text-white transition-all shrink-0">
+          <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center text-xs font-bold text-primary-600 border border-primary-100 group-hover:bg-primary-600 group-hover:text-white transition-all shrink-0">
             {member.name.split(" ").map((n) => n[0]).join("")}
           </div>
           <div>
@@ -48,7 +48,7 @@ export default function SiteTeamPage() {
       header: "Role",
       className: "py-3 px-4",
       render: (member) => (
-        <Badge variant="outline" className="text-[9px] font-bold uppercase bg-amber-50 text-amber-700 border-amber-100 px-1.5 py-0">
+        <Badge variant="outline" className="text-[9px] font-bold uppercase bg-primary-50 text-primary-700 border-primary-100 px-1.5 py-0">
           <HardHat className="w-3 h-3 mr-1" />
           {member.role?.name || "—"}
         </Badge>

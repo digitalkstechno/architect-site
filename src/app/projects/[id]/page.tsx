@@ -411,7 +411,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
       if (!id) return;
 
       if (!uniqueStaffMap.has(id)) {
-        const fullStaffDetail = allStaff.find(staff => staff._id === id || staff.id === id) || s;
+        const fullStaffDetail = allStaff.find(staff => staff._id === id || (staff as any).id === id) || s;
         uniqueStaffMap.set(id, {
           id,
           name: fullStaffDetail.name || (typeof s === 'string' ? s : "Unknown"),
@@ -659,10 +659,10 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                               <div className="flex justify-between items-center text-[10px] font-bold">
                                 <span className={cn(
                                   "uppercase tracking-widest",
-                                  task.status === "In Progress" || task.status === "On Track" ? "text-blue-600" :
-                                    task.status === "Completed" ? "text-green-600" :
-                                      task.status === "Critical" ? "text-red-600" :
-                                        task.status === "Delayed" ? "text-orange-600" :
+                                  (task.status as string) === "In Progress" || (task.status as string) === "On Track" ? "text-blue-600" :
+                                    (task.status as string) === "Completed" ? "text-green-600" :
+                                      (task.status as string) === "Critical" ? "text-red-600" :
+                                        (task.status as string) === "Delayed" ? "text-orange-600" :
                                           "text-slate-500"
                                 )}>
                                   {task.status}
@@ -726,10 +726,10 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                               <div className="flex justify-between items-center text-[10px] font-bold">
                                 <span className={cn(
                                   "uppercase tracking-widest",
-                                  task.status === "In Progress" || task.status === "On Track" ? "text-blue-600" :
-                                    task.status === "Completed" ? "text-green-600" :
-                                      task.status === "Critical" ? "text-red-600" :
-                                        task.status === "Delayed" ? "text-orange-600" :
+                                  (task.status as string) === "In Progress" || (task.status as string) === "On Track" ? "text-blue-600" :
+                                    (task.status as string) === "Completed" ? "text-green-600" :
+                                      (task.status as string) === "Critical" ? "text-red-600" :
+                                        (task.status as string) === "Delayed" ? "text-orange-600" :
                                           "text-slate-500"
                                 )}>
                                   {task.status}

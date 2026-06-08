@@ -11,8 +11,8 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", isLoading = false, children, ...props }, ref) => {
     const variants = {
-      primary: "bg-primary-600 text-white shadow-sm hover:bg-primary-700 focus:ring-2 focus:ring-primary-500/20 border border-primary-700",
-      secondary: "bg-slate-100 text-slate-900 border border-slate-200 hover:bg-slate-200 focus:ring-2 focus:ring-slate-500/10",
+      primary: "bg-gradient-premium text-white border-0 shadow-sm hover-shadow-premium hover:opacity-95 focus:ring-2 focus:ring-primary-500/20 transition-all duration-200",
+      secondary: "bg-white text-primary-600 border border-primary-600 hover:bg-primary-50 focus:ring-2 focus:ring-primary-500/20 transition-all duration-200",
       outline: "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 focus:ring-2 focus:ring-slate-500/10 shadow-sm",
       ghost: "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:ring-2 focus:ring-slate-500/10",
       danger: "bg-red-600 text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500/20 border border-red-700",
@@ -21,10 +21,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizes = {
-      sm: "px-3 py-1.5 text-xs font-medium rounded-md",
-      md: "px-4 py-2 text-sm font-medium rounded-md",
-      lg: "px-6 py-3 text-base font-medium rounded-md",
-      icon: "p-2 rounded-md",
+      sm: "px-4 py-2 text-xs font-semibold rounded-md",
+      md: "px-5 py-2.5 text-sm font-semibold rounded-md",
+      lg: "px-7 py-3.5 text-base font-bold rounded-md",
+      icon: "p-2.5 rounded-md",
     };
 
     return (

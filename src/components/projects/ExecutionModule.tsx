@@ -48,11 +48,11 @@ function ExecutionStageCard({ stage, onStatusChange }: { stage: SiteTask, onStat
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const statusColors = {
     "Pending": "bg-slate-100 text-slate-500 border-slate-200",
-    "In Progress": "bg-blue-50 text-blue-600 border-blue-200",
+    "In Progress": "bg-primary-50 text-primary-600 border-primary-200",
     "Completed": "bg-green-50 text-green-600 border-green-200",
     "Critical": "bg-red-50 text-red-600 border-red-200",
-    "Delayed": "bg-orange-50 text-orange-600 border-orange-200",
-    "On Track": "bg-blue-50 text-blue-600 border-blue-200",
+    "Delayed": "bg-amber-50 text-amber-700 border-amber-200",
+    "On Track": "bg-primary-50 text-primary-600 border-primary-200",
   };
 
   const statusOptions: SiteTaskStatus[] = ["On Track", "In Progress", "Completed", "Critical", "Delayed", "Pending"];
@@ -62,12 +62,12 @@ function ExecutionStageCard({ stage, onStatusChange }: { stage: SiteTask, onStat
       <Card className="p-2.5 space-y-2.5 hover:shadow-md transition-all group border-slate-200">
         <div className="flex items-start justify-between">
           <div className="space-y-0.5">
-            <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">{stage.title}</h4>
+            <h4 className="text-sm font-bold text-slate-900 group-hover:text-primary-600 transition-colors line-clamp-1">{stage.title}</h4>
             <select
               value={stage.status}
               onChange={(e) => onStatusChange?.(e.target.value as SiteTaskStatus)}
               className={cn(
-                "text-xs px-1.5 py-0.5 rounded-md border font-black uppercase tracking-tighter focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer",
+                "text-xs px-1.5 py-0.5 rounded-md border font-black uppercase tracking-tighter focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer",
                 statusColors[stage.status as keyof typeof statusColors] || statusColors["Pending"]
               )}
             >
@@ -77,7 +77,7 @@ function ExecutionStageCard({ stage, onStatusChange }: { stage: SiteTask, onStat
           <div className={cn(
             "p-1 rounded-lg border shrink-0",
              stage.status === "Completed" ? "bg-green-50 border-green-100 text-green-600" :
-             stage.status === "In Progress" ? "bg-indigo-50 border-indigo-100 text-indigo-600" :
+             stage.status === "In Progress" ? "bg-primary-50 border-primary-100 text-primary-600" :
              "bg-slate-50 border-slate-100 text-slate-400"
           )}>
             {stage.status === "Completed" ? <CheckCircle2 className="w-4 h-4" /> : <HardHat className="w-4 h-4" />}
@@ -91,7 +91,7 @@ function ExecutionStageCard({ stage, onStatusChange }: { stage: SiteTask, onStat
           </div>
           <div className="h-0.5 w-full bg-slate-100 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-indigo-600 transition-all duration-500" 
+              className="h-full bg-primary-600 transition-all duration-500" 
               style={{ width: `${stage.progress}%` }} 
             />
           </div>
@@ -117,7 +117,7 @@ function ExecutionStageCard({ stage, onStatusChange }: { stage: SiteTask, onStat
             {stage.assignedTo && stage.assignedTo.length > 0 ? (
               stage.assignedTo.map((user: any, i: number) => (
                 <div key={i} className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600 font-mono shrink-0 shadow-sm">
+                  <div className="w-5 h-5 rounded-md bg-primary-50 border border-primary-100 flex items-center justify-center text-[10px] font-bold text-primary-600 font-mono shrink-0 shadow-sm">
                     {(user.name || user)[0]}
                   </div>
                   <div className="flex flex-col truncate">
@@ -133,7 +133,7 @@ function ExecutionStageCard({ stage, onStatusChange }: { stage: SiteTask, onStat
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-6 text-xs font-bold uppercase tracking-widest gap-0.5 hover:text-indigo-600 p-0"
+            className="h-6 text-xs font-bold uppercase tracking-widest gap-0.5 hover:text-primary-600 p-0"
             onClick={() => setIsPreviewOpen(true)}
           >
             Info <ChevronRight className="w-3 h-3" />

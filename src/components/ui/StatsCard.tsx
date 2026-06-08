@@ -18,8 +18,8 @@ interface StatsCardProps {
 export function StatsCard({ label, value, icon: Icon, description, trend, className }: StatsCardProps) {
   return (
     <Card className={cn("p-6 flex items-start gap-4", className)}>
-      <div className="p-2.5 bg-slate-50 rounded-md border border-slate-100">
-        <Icon className="w-5 h-5 text-slate-600" />
+      <div className="p-2.5 bg-primary-50 rounded-xl border border-primary-100/50">
+        <Icon className="w-5 h-5 text-primary-600" />
       </div>
       <div className="space-y-1">
         <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{label}</p>
