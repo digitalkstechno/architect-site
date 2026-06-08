@@ -63,13 +63,13 @@ type StaffAttendance = {
     daysPerMonth: number;
   };
   attendance?: {
-      _id?: string;
-      status: AttendanceStatus;
-      totalMinutes: number;
-      logs: AttendanceLog[];
-      overtime?: OvertimeData;
-    };
+    _id?: string;
+    status: AttendanceStatus;
+    totalMinutes: number;
+    logs: AttendanceLog[];
+    overtime?: OvertimeData;
   };
+};
 
 export default function AttendancePage() {
   const { user } = useAuth();
@@ -98,7 +98,7 @@ export default function AttendancePage() {
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
   const [untrackedStaff, setUntrackedStaff] = useState<StaffMember[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState("");
-  const [newStaffConfig, setNewStaffConfig] = useState({ 
+  const [newStaffConfig, setNewStaffConfig] = useState({
     payoutType: "Monthly" as SalaryPayoutType,
     salaryAmount: 0,
   });
@@ -122,7 +122,7 @@ export default function AttendancePage() {
     setIsLoading(true);
     try {
       const dateStr = currentDate.toISOString().split('T')[0];
-      
+
       if (isAdmin) {
         const [staffData, attendanceData, rolesData, allOfficeStaff]: [any, any, any, any] = await Promise.all([
           staffService.getAllStaff({ team: "Office", trackAttendance: "true" }),
@@ -133,7 +133,7 @@ export default function AttendancePage() {
 
         setRoles(rolesData);
         setUntrackedStaff(allOfficeStaff.filter((s: any) => !s.trackAttendance));
-        
+
         const combined = staffData.map((s: any) => {
           const att = attendanceData.find((a: any) => (a.user?._id || a.user) === s._id);
           return { ...s, attendance: att };
@@ -166,7 +166,7 @@ export default function AttendancePage() {
     try {
       const staff = staffList.find(s => s._id === staffId);
       const dateStr = currentDate.toISOString().split('T')[0];
-      
+
       let totalMinutes = 0;
       if (status === "Present") totalMinutes = (staff?.config?.hoursPerDay || 8) * 60;
       else if (status === "Half Day") totalMinutes = ((staff?.config?.hoursPerDay || 8) / 2) * 60;
@@ -180,7 +180,7 @@ export default function AttendancePage() {
       };
 
       await attendanceService.updateAttendance(staff?.attendance?._id || "new", payload);
-      
+
       toast.success("Attendance updated");
       fetchData();
     } catch (error) {
@@ -201,7 +201,7 @@ export default function AttendancePage() {
       };
 
       await attendanceService.updateAttendance(selectedStaffForEdit.attendance?._id || "new", payload);
-      
+
       toast.success("Manual update saved");
       setIsEditTimeModalOpen(false);
       fetchData();
@@ -240,7 +240,7 @@ export default function AttendancePage() {
     try {
       const dateStr = currentDate.toISOString().split('T')[0];
       const amount = otType === "hourly" ? (otHours + otMins / 60) * otRate : otFixedAmount;
-      
+
       const payload = {
         user: selectedStaffForOT._id,
         date: dateStr,
@@ -265,7 +265,7 @@ export default function AttendancePage() {
   const calculateBalance = (staff: StaffAttendance) => {
     let balance = 0;
     const dailyRate = staff.payoutType === "Daily" ? staff.salaryAmount : (staff.salaryAmount / (staff.config?.daysPerMonth || 26));
-    
+
     // Last month due
     balance += (staff.lastMonthDue || 0);
 
@@ -273,7 +273,7 @@ export default function AttendancePage() {
     if (staff.attendance) {
       if (staff.attendance.status === "Present") balance += dailyRate;
       else if (staff.attendance.status === "Half Day") balance += (dailyRate / 2);
-      
+
       if (staff.attendance.overtime?.amount) {
         balance += staff.attendance.overtime.amount;
       }
@@ -293,7 +293,7 @@ export default function AttendancePage() {
     }
   };
 
-  const filteredStaff = staffList.filter(s => 
+  const filteredStaff = staffList.filter(s =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.phone?.includes(searchQuery)
   );
@@ -414,7 +414,7 @@ export default function AttendancePage() {
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow><TableCell colSpan={4} className="text-center py-10"><div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"/></TableCell></TableRow>
+                    <TableRow><TableCell colSpan={4} className="text-center py-10"><div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" /></TableCell></TableRow>
                   ) : myAttendance.length === 0 ? (
                     <TableRow><TableCell colSpan={4} className="text-center py-20 text-slate-400 text-xs font-bold uppercase tracking-widest">No records found for this month</TableCell></TableRow>
                   ) : myAttendance.map((record) => (
@@ -426,9 +426,9 @@ export default function AttendancePage() {
                         <Badge className={cn(
                           "text-[9px] font-black uppercase px-2 py-0.5",
                           record.status === "Present" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
-                          record.status === "Absent" ? "bg-rose-50 text-rose-700 border-rose-100" :
-                          record.status === "Half Day" ? "bg-amber-50 text-amber-700 border-amber-100" :
-                          "bg-slate-50 text-slate-700 border-slate-100"
+                            record.status === "Absent" ? "bg-rose-50 text-rose-700 border-rose-100" :
+                              record.status === "Half Day" ? "bg-amber-50 text-amber-700 border-amber-100" :
+                                "bg-slate-50 text-slate-700 border-slate-100"
                         )}>
                           {record.status}
                         </Badge>
@@ -473,7 +473,7 @@ export default function AttendancePage() {
             </div>
           </div>
           <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-            <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 1)))} 
+            <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 1)))}
               className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-600">
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -539,11 +539,12 @@ export default function AttendancePage() {
                   <TableHead>Last Month Due</TableHead>
                   <TableHead>Balance</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
+
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-10"><div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"/></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center py-10"><div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" /></TableCell></TableRow>
                 ) : filteredStaff.map((staff) => (
                   <TableRow key={staff._id} className="group hover:bg-slate-50/50">
                     <TableCell className="px-4 py-3">
@@ -561,8 +562,8 @@ export default function AttendancePage() {
                       <Badge className={cn(
                         "text-[9px] font-black uppercase px-2 py-0.5",
                         staff.payoutType === "Monthly" ? "bg-indigo-50 text-indigo-700 border-indigo-100" :
-                        staff.payoutType === "Daily" ? "bg-amber-50 text-amber-700 border-amber-100" :
-                        "bg-emerald-50 text-emerald-700 border-emerald-100"
+                          staff.payoutType === "Daily" ? "bg-amber-50 text-amber-700 border-amber-100" :
+                            "bg-emerald-50 text-emerald-700 border-emerald-100"
                       )}>
                         {staff.payoutType || "Monthly"}
                       </Badge>
@@ -578,10 +579,10 @@ export default function AttendancePage() {
                               "px-2 py-1 rounded-md text-[9px] font-black transition-all border shadow-sm",
                               (staff.attendance?.status || (status === "Absent" && !staff.attendance ? "Absent" : null)) === status
                                 ? (status === "Present" ? "bg-emerald-600 border-emerald-600 text-white" :
-                                   status === "Absent" ? "bg-rose-600 border-rose-600 text-white" :
-                                   status === "Half Day" ? "bg-amber-500 border-amber-500 text-white" :
-                                   status === "Leave" ? "bg-blue-600 border-blue-600 text-white" :
-                                   "bg-slate-600 border-slate-600 text-white")
+                                  status === "Absent" ? "bg-rose-600 border-rose-600 text-white" :
+                                    status === "Half Day" ? "bg-amber-500 border-amber-500 text-white" :
+                                      status === "Leave" ? "bg-blue-600 border-blue-600 text-white" :
+                                        "bg-slate-600 border-slate-600 text-white")
                                 : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-50"
                             )}
                           >
@@ -604,7 +605,7 @@ export default function AttendancePage() {
                       <div className="flex flex-col gap-1">
                         <span className="text-xs font-bold text-slate-900">₹{(staff.lastMonthDue || 0).toLocaleString()}</span>
                         {isAdmin && staff.lastMonthDue > 0 && (
-                          <button 
+                          <button
                             onClick={() => handleClearDues(staff._id)}
                             className="text-[8px] font-black text-rose-500 uppercase tracking-tighter hover:underline text-left"
                           >
@@ -623,7 +624,7 @@ export default function AttendancePage() {
                       <div className="flex justify-end gap-1">
                         {isAdmin && (
                           <>
-                            <button 
+                            <button
                               onClick={() => {
                                 setSelectedStaffForSlip(staff);
                                 setIsSalarySlipModalOpen(true);
@@ -633,7 +634,7 @@ export default function AttendancePage() {
                             >
                               <FileText className="w-3.5 h-3.5" />
                             </button>
-                            <button 
+                            <button
                               onClick={() => {
                                 setSelectedStaffForOT(staff);
                                 const dailyRate = staff.payoutType === "Daily" ? staff.salaryAmount : (staff.salaryAmount / (staff.config?.daysPerMonth || 26));
@@ -645,7 +646,7 @@ export default function AttendancePage() {
                             >
                               <Plus className="w-3.5 h-3.5" />
                             </button>
-                            <button 
+                            <button
                               onClick={() => {
                                 setSelectedStaffForEdit(staff);
                                 setManualHours(staff.attendance?.totalMinutes ? Number((staff.attendance.totalMinutes / 60).toFixed(1)) : (staff.config?.hoursPerDay || 8));
@@ -673,9 +674,9 @@ export default function AttendancePage() {
       </div>
 
       {/* Add Staff Modal */}
-      <Modal 
-        isOpen={isAddStaffModalOpen} 
-        onClose={() => setIsAddStaffModalOpen(false)} 
+      <Modal
+        isOpen={isAddStaffModalOpen}
+        onClose={() => setIsAddStaffModalOpen(false)}
         title="Add Staff to Attendance"
         className="max-w-md"
       >
@@ -683,7 +684,7 @@ export default function AttendancePage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Select Office Staff</label>
-              <select 
+              <select
                 className="w-full h-10 px-3 bg-white border border-slate-200 rounded-md text-sm focus:ring-2 focus:ring-indigo-500/20"
                 value={selectedStaffId}
                 onChange={(e) => setSelectedStaffId(e.target.value)}
@@ -702,10 +703,10 @@ export default function AttendancePage() {
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Payout Type</label>
-                <select 
+                <select
                   className="w-full h-10 px-3 bg-white border border-slate-200 rounded-md text-sm focus:ring-2 focus:ring-indigo-500/20"
                   value={newStaffConfig.payoutType}
-                  onChange={(e) => setNewStaffConfig({...newStaffConfig, payoutType: e.target.value as SalaryPayoutType})}
+                  onChange={(e) => setNewStaffConfig({ ...newStaffConfig, payoutType: e.target.value as SalaryPayoutType })}
                 >
                   <option value="Monthly">Monthly</option>
                   <option value="Daily">Daily</option>
@@ -714,11 +715,11 @@ export default function AttendancePage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Salary/Rate (₹)</label>
-                <Input 
+                <Input
                   type="number"
-                  placeholder="Amount" 
+                  placeholder="Amount"
                   value={newStaffConfig.salaryAmount}
-                  onChange={(e) => setNewStaffConfig({...newStaffConfig, salaryAmount: Number(e.target.value)})}
+                  onChange={(e) => setNewStaffConfig({ ...newStaffConfig, salaryAmount: Number(e.target.value) })}
                 />
               </div>
             </div>
@@ -742,19 +743,19 @@ export default function AttendancePage() {
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Standard Working Hours</h3>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase">Hours per Full Day</label>
-              <Input 
-                type="number" 
-                value={globalConfig.hoursPerDay} 
-                onChange={(e) => setGlobalConfig({...globalConfig, hoursPerDay: Number(e.target.value)})}
+              <Input
+                type="number"
+                value={globalConfig.hoursPerDay}
+                onChange={(e) => setGlobalConfig({ ...globalConfig, hoursPerDay: Number(e.target.value) })}
               />
               <p className="text-[10px] text-slate-400">Used for "Present" status calculation (default: 8)</p>
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase">Working Days per Month</label>
-              <Input 
-                type="number" 
-                value={globalConfig.daysPerMonth} 
-                onChange={(e) => setGlobalConfig({...globalConfig, daysPerMonth: Number(e.target.value)})}
+              <Input
+                type="number"
+                value={globalConfig.daysPerMonth}
+                onChange={(e) => setGlobalConfig({ ...globalConfig, daysPerMonth: Number(e.target.value) })}
               />
               <p className="text-[10px] text-slate-400">Used for monthly salary calculation (default: 26)</p>
             </div>
@@ -867,7 +868,7 @@ export default function AttendancePage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase">Attendance Status</label>
-              <select 
+              <select
                 className="w-full h-10 px-3 bg-white border border-slate-200 rounded-md text-sm"
                 value={manualStatus || "Present"}
                 onChange={(e) => setManualStatus(e.target.value as AttendanceStatus)}
@@ -882,10 +883,10 @@ export default function AttendancePage() {
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase">Work Hours</label>
-              <Input 
-                type="number" 
+              <Input
+                type="number"
                 step="0.5"
-                value={manualHours} 
+                value={manualHours}
                 onChange={(e) => setManualHours(Number(e.target.value))}
               />
               <p className="text-[10px] text-slate-400">Specify total hours worked for this day</p>
@@ -977,12 +978,12 @@ export default function AttendancePage() {
                     </TableRow>
                     <TableRow>
                       <TableCell className="text-sm font-medium">
-                        Today's Earnings 
+                        Today's Earnings
                         <span className="text-[10px] text-slate-400 ml-2">({selectedStaffForSlip.attendance?.status || "N/A"})</span>
                       </TableCell>
                       <TableCell className="text-right text-sm font-bold">
                         ₹{(
-                          selectedStaffForSlip.attendance?.status === "Present" 
+                          selectedStaffForSlip.attendance?.status === "Present"
                             ? (selectedStaffForSlip.payoutType === "Daily" ? selectedStaffForSlip.salaryAmount : (selectedStaffForSlip.salaryAmount / (selectedStaffForSlip.config?.daysPerMonth || 26)))
                             : selectedStaffForSlip.attendance?.status === "Half Day"
                               ? ((selectedStaffForSlip.payoutType === "Daily" ? selectedStaffForSlip.salaryAmount : (selectedStaffForSlip.salaryAmount / (selectedStaffForSlip.config?.daysPerMonth || 26))) / 2)
@@ -993,7 +994,7 @@ export default function AttendancePage() {
                     {selectedStaffForSlip.attendance?.overtime?.amount && (
                       <TableRow>
                         <TableCell className="text-sm font-medium">
-                          Overtime 
+                          Overtime
                           <span className="text-[10px] text-emerald-500 ml-2">
                             ({selectedStaffForSlip.attendance.overtime.type === 'hourly' ? `${selectedStaffForSlip.attendance.overtime.hours.toFixed(1)} hrs` : 'Fixed'})
                           </span>
