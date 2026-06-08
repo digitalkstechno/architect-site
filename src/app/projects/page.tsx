@@ -260,7 +260,7 @@ export default function ProjectsPage() {
               setEditingProject(null);
               setForm(emptyForm);
               setIsAddModalOpen(true);
-            }} size="sm" className="rounded-xl font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
+            }} size="sm" className="font-bold text-xs gap-2">
               <Plus className="w-4 h-4" /> New Project
             </Button>
           )}
