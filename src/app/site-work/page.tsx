@@ -44,7 +44,7 @@ export default function SiteWorkPage() {
     title: "",
     project: "",
     assignedTo: [] as string[],
-    status: "On Track",
+    status: "Pending",
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   });
@@ -115,7 +115,7 @@ export default function SiteWorkPage() {
 
       setIsModalOpen(false);
       setEditingTask(null);
-      setNewTask({ title: "", project: "", assignedTo: [], status: "On Track", startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] });
+      setNewTask({ title: "", project: "", assignedTo: [], status: "Pending", startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] });
       setErrors({});
     } catch (error) {
       console.error("Error saving site task:", error);
@@ -156,7 +156,7 @@ export default function SiteWorkPage() {
         {canCreate && (
           <Button onClick={() => {
             setEditingTask(null);
-            setNewTask({ title: "", project: "", assignedTo: [], status: "On Track", startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] });
+            setNewTask({ title: "", project: "", assignedTo: [], status: "Pending", startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] });
             setIsModalOpen(true);
           }} size="sm" className="rounded-xl font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100 text-white">
             <Plus className="w-4 h-4" /> New Task
@@ -177,7 +177,7 @@ export default function SiteWorkPage() {
         onClose={() => {
           setIsModalOpen(false);
           setEditingTask(null);
-          setNewTask({ title: "", project: "", assignedTo: [], status: "On Track", startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] });
+          setNewTask({ title: "", project: "", assignedTo: [], status: "Pending", startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] });
           setErrors({});
         }}
         title={editingTask ? "Edit Site Task" : `Create New ${activeTab} Site Task`}
@@ -214,39 +214,25 @@ export default function SiteWorkPage() {
               error={errors.title}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Select
-                label="Assign To"
-                options={siteStaff.map(s => ({
-                  value: s._id,
-                  label: s.name,
-                  description: s.role?.name || s.team
-                }))}
-                value={newTask.assignedTo[0] || ""}
-                onChange={(val) => {
-                  setNewTask({ ...newTask, assignedTo: [val] });
-                  if (errors.assignedTo) setErrors(prev => {
-                    const { assignedTo, ...rest } = prev;
-                    return rest;
-                  });
-                }}
-                placeholder="Select Staff"
-                error={errors.assignedTo}
-              />
-            </div>
-            <div className="space-y-2">
-              <Select
-                label="Status"
-                options={[
-                  { value: "On Track", label: "On Track" },
-                  { value: "Delayed", label: "Delayed" },
-                  { value: "Critical", label: "Critical" },
-                ]}
-                value={newTask.status}
-                onChange={(val) => setNewTask({ ...newTask, status: val })}
-              />
-            </div>
+          <div className="space-y-2">
+            <Select
+              label="Assign To"
+              options={siteStaff.map(s => ({
+                value: s._id,
+                label: s.name,
+                description: s.role?.name || s.team
+              }))}
+              value={newTask.assignedTo[0] || ""}
+              onChange={(val) => {
+                setNewTask({ ...newTask, assignedTo: [val] });
+                if (errors.assignedTo) setErrors(prev => {
+                  const { assignedTo, ...rest } = prev;
+                  return rest;
+                });
+              }}
+              placeholder="Select Staff"
+              error={errors.assignedTo}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -453,7 +439,7 @@ export default function SiteWorkPage() {
                                 title: task.title,
                                 project: (task.projectId || (task.project as any)?.id || task.project as any)?._id || (task.project as any)?.id || task.project as string,
                                 assignedTo: task.assignedTo?.map((s: any) => s._id || s.id || s) || [],
-                                status: task.status || "On Track",
+                                status: task.status || "Pending",
                                 startDate: task.startDate || new Date().toISOString().split('T')[0],
                                 endDate: task.endDate || new Date().toISOString().split('T')[0],
                               });
@@ -481,7 +467,7 @@ export default function SiteWorkPage() {
                                 <>
                                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Update Execution Status</h4>
                                   <div className="flex flex-wrap gap-2">
-                                    {["On Track", "In Progress", "Completed", "Critical", "Delayed"].map((status) => (
+                                    {["Pending", "In Progress", "Completed", "Critical", "Delayed", "On Track"].map((status) => (
                                       <Button
                                         key={status}
                                         variant={task.status === status ? "primary" : "outline"}
