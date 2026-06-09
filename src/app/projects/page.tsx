@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
+import { useRoles } from "@/lib/role-context";
 import { useProjects } from "@/lib/projects-store";
 import { staffService, StaffMember } from "@/services/staff.service";
 import { projectService } from "@/services/project.service";
@@ -35,6 +36,7 @@ const emptyForm = {
 
 export default function ProjectsPage() {
   const { user } = useAuth();
+  const { getRoleById } = useRoles();
   const router = useRouter();
   const { projects, createProject, updateProject, deleteProject, fetchProjects } = useProjects() as any;
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -75,13 +77,24 @@ export default function ProjectsPage() {
     return rn === "designer";
   });
 
+  const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.name || "");
+  const roleId = roleName.toLowerCase().replace(/\s+/g, '-');
+  const roleConfig = getRoleById(roleId);
+  const userPermissions = roleConfig?.permissions || [];
+  
+  const isAdmin = roleId === "architect" || roleId === "director" || roleId === "accountant" || roleId === "admin" || userPermissions.includes("all");
+  const canAdd = isAdmin || userPermissions.includes("projects.create");
+  const canEdit = isAdmin || userPermissions.includes("projects.edit");
+  const canDelete = isAdmin || userPermissions.includes("projects.delete");
+  const canViewDetails = isAdmin || userPermissions.includes("projects.view-details");
+
   const filteredProjects = projects.filter((p: any) => {
     const searchQueryMatch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.client?.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Role based filtering
-    if (user?.role === "director" || user?.role === "architect" || user?.role === "admin") {
+    if (isAdmin) {
       return searchQueryMatch;
     }
 
@@ -97,8 +110,6 @@ export default function ProjectsPage() {
     
     return searchQueryMatch && isAssignedOnProject;
   });
-
-  const canAdd = user?.role === "architect" || user?.role === "director";
 
   const columns: Column<Project>[] = [
     {
@@ -152,9 +163,9 @@ export default function ProjectsPage() {
       cellClassName: "text-right",
       render: (project) => (
         <ActionButtons
-          hasEdit={canAdd}
-          hasDelete={canAdd}
-          viewHref={`/projects/${project.id}`}
+          hasEdit={canEdit}
+          hasDelete={canDelete}
+          viewHref={canViewDetails ? `/projects/${project.id}` : undefined}
           onEdit={(e) => {
             e.stopPropagation();
             setEditingProject(project);

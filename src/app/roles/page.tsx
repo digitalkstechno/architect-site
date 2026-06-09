@@ -12,16 +12,31 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ActionButtons } from "@/components/ui/ActionButtons";
 import toast from "react-hot-toast";
 
-const MODULES = [
-  "projects", "tasks", "office-work", "site-work", "office-team", "site-team",
-  "clients", "site-photos", "attendance", "payments", "reports", "messages",
-  "staff", "roles", "settings", "working-sop", "calendar"
+const MODULE_CONFIG = [
+  { id: "projects", name: "Projects", actions: ["view", "view-details", "create", "edit", "delete", "view-office", "view-site", "view-tasks", "view-documents", "view-materials", "view-team", "view-photos", "view-finances", "view-timeline"] },
+  { id: "tasks", name: "Tasks", actions: ["view", "create", "edit", "delete"] },
+  { id: "office-work", name: "Office Work", actions: ["view", "create", "edit", "delete"] },
+  { id: "site-work", name: "Site Work", actions: ["view", "create", "edit", "delete"] },
+  { id: "office-team", name: "Office Team", actions: ["view", "create", "edit", "delete"] },
+  { id: "site-team", name: "Site Team", actions: ["view", "create", "edit", "delete"] },
+  { id: "clients", name: "Clients", actions: ["view", "create", "edit", "delete"] },
+  { id: "site-photos", name: "Site Photos", actions: ["view", "create", "delete"] },
+  { id: "attendance", name: "Attendance", actions: ["view", "create", "edit", "delete"] },
+  { id: "payments", name: "Payments", actions: ["view", "create", "edit", "delete"] },
+  { id: "reports", name: "Reports", actions: ["view"] },
+  { id: "messages", name: "Messages", actions: ["view", "create", "delete"] },
+  { id: "staff", name: "Staff", actions: ["view", "create", "edit", "delete"] },
+  { id: "roles", name: "Roles", actions: ["view", "create", "edit", "delete"] },
+  { id: "settings", name: "Settings", actions: ["view", "edit"] },
+  { id: "working-sop", name: "Working SOP", actions: ["view", "create", "edit", "delete"] },
+  { id: "calendar", name: "Calendar", actions: ["view", "create", "edit", "delete"] },
+  { id: "invoices", name: "Invoices", actions: ["view", "create", "edit", "delete"] }
 ];
 
 const ALL_AVAILABLE_PERMISSIONS = [
   "all",
   "dashboard.view",
-  ...MODULES.flatMap(m => [`${m}.view`, `${m}.create`, `${m}.edit`, `${m}.delete`])
+  ...MODULE_CONFIG.flatMap(m => m.actions.map(a => `${m.id}.${a}`))
 ];
 
 export default function RolesPage() {
@@ -182,7 +197,7 @@ export default function RolesPage() {
         message="Are you sure you want to delete this role? This might affect users assigned to this role."
       />
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingRole ? "Edit Role" : "Create New Role"}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingRole ? "Edit Role" : "Create New Role"} className="max-w-4xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-3">
             <div>
@@ -211,65 +226,81 @@ export default function RolesPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 mb-2 block">Permissions</label>
+              <label className="text-xs font-bold text-slate-700 mb-3 block">Permissions</label>
 
-              <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
                 {/* Special Permissions */}
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-2">System Access</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["all", "dashboard.view"].map(perm => (
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest">System Access</h4>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { key: "all", label: "Full System Access (Admin)" },
+                      { key: "dashboard.view", label: "Dashboard Access" }
+                    ].map(item => (
                       <button
-                        key={perm}
+                        key={item.key}
                         type="button"
-                        onClick={() => handleTogglePermission(perm)}
-                        className={`flex items-center gap-2 p-2 rounded-md border text-left transition-all ${formData.permissions.includes(perm)
-                            ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
-                            : "bg-white border-slate-200 text-slate-600 hover:border-indigo-100"
+                        onClick={() => handleTogglePermission(item.key)}
+                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${formData.permissions.includes(item.key)
+                            ? "bg-indigo-50 border-indigo-500 text-indigo-700 shadow-sm"
+                            : "bg-slate-50 border-slate-200 text-slate-600 hover:border-indigo-300"
                           }`}
                       >
-                        {formData.permissions.includes(perm) ? (
-                          <ShieldCheck className="w-3.5 h-3.5 text-white" />
-                        ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-slate-200" />
-                        )}
-                        <span className="text-[10px] font-bold capitalize">{perm.replace('.', ' ')}</span>
+                        <div className={`w-4 h-4 rounded flex items-center justify-center border ${formData.permissions.includes(item.key) ? "bg-indigo-600 border-indigo-600" : "bg-white border-slate-300"
+                          }`}>
+                          {formData.permissions.includes(item.key) && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <span className="text-xs font-bold">{item.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Module Permissions */}
-                {MODULES.map(module => (
-                  <div key={module} className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-2">{module.replace('-', ' ')} Module</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {["view", "create", "edit", "delete"].map(action => {
-                        const perm = `${module}.${action}`;
-                        const isSelected = formData.permissions.includes(perm) || formData.permissions.includes("all");
-                        return (
-                          <button
-                            key={perm}
-                            type="button"
-                            onClick={() => handleTogglePermission(perm)}
-                            disabled={formData.permissions.includes("all")}
-                            className={`flex items-center gap-2 p-2 rounded-md border text-left transition-all ${isSelected
-                                ? "bg-indigo-50 border-indigo-200 text-indigo-700"
-                                : "bg-white border-slate-100 text-slate-500 hover:border-indigo-100"
-                              } ${formData.permissions.includes("all") ? "opacity-50 cursor-not-allowed" : ""}`}
-                          >
-                            {isSelected ? (
-                              <Check className="w-3 h-3 text-indigo-600" />
-                            ) : (
-                              <div className="w-3 h-3 rounded-full border border-slate-200" />
-                            )}
-                            <span className="text-[10px] font-medium capitalize">{action}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 mb-2 ml-1">
+                    <Shield className="w-4 h-4 text-slate-400" />
+                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Module Permissions</h4>
                   </div>
-                ))}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {MODULE_CONFIG.map(module => (
+                      <div key={module.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3 transition-colors hover:border-indigo-200">
+                        <p className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                          {module.name}
+                        </p>
+                        <div className="grid grid-cols-2 gap-2 mt-auto">
+                          {module.actions.map(action => {
+                            const perm = `${module.id}.${action}`;
+                            const isAllSelected = formData.permissions.includes("all");
+                            const isSelected = formData.permissions.includes(perm) || isAllSelected;
+                            return (
+                              <button
+                                key={perm}
+                                type="button"
+                                onClick={() => handleTogglePermission(perm)}
+                                disabled={isAllSelected}
+                                className={`flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${isSelected
+                                    ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+                                    : "bg-slate-50 border-slate-200 text-slate-500 hover:border-indigo-200"
+                                  } ${isAllSelected ? "opacity-50 cursor-not-allowed" : ""}`}
+                              >
+                                <div className={`w-3.5 h-3.5 rounded flex items-center justify-center border ${isSelected ? "bg-indigo-600 border-indigo-600" : "bg-white border-slate-300"
+                                  }`}>
+                                  {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider">{action}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

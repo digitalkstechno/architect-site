@@ -11,67 +11,78 @@ export type RoleConfig = {
   name: string;
   color: string;
   pages: string[];
+  permissions: string[];
   canDelete: boolean; // false = system role
 };
 
 export const ALL_PAGES = [
-  { key: "dashboard",    label: "Dashboard" },
-  { key: "projects",     label: "Projects" },
-  { key: "office-work",  label: "Office Work" },
-  { key: "site-work",    label: "Site Work" },
-  { key: "tasks",        label: "Tasks" },
-  { key: "office-team",  label: "Office Team" },
-  { key: "site-team",    label: "Site Team" },
-  { key: "clients",      label: "Clients" },
-  { key: "site-updates", label: "Site Updates" },
-  { key: "site-photos",  label: "Site Photos" },
-  { key: "attendance",   label: "Attendance" },
-  { key: "working-sop",  label: "Working SOP" },
-  { key: "payments",     label: "Payments" },
-  { key: "calendar",     label: "Calendar" },
-  { key: "reports",      label: "Reports" },
-  { key: "messages",     label: "Messages" },
-  { key: "staff",        label: "Staff Management" },
-  { key: "roles",        label: "Role Management" },
-  { key: "settings",     label: "Settings" },
+  { key: "dashboard", label: "Dashboard" },
+  { key: "projects", label: "Projects" },
+  { key: "office-work", label: "Office Work" },
+  { key: "site-work", label: "Site Work" },
+  { key: "tasks", label: "Tasks" },
+  { key: "office-team", label: "Office Team" },
+  { key: "site-team", label: "Site Team" },
+  { key: "clients", label: "Clients" },
+  // { key: "site-updates", label: "Site Updates" },
+  { key: "site-photos", label: "Site Photos" },
+  { key: "attendance", label: "Attendance" },
+  { key: "working-sop", label: "Working SOP" },
+  { key: "payments", label: "Payments" },
+  { key: "invoices", label: "Invoices" },
+  { key: "calendar", label: "Calendar" },
+  { key: "reports", label: "Reports" },
+  { key: "messages", label: "Messages" },
+  { key: "staff", label: "Staff Management" },
+  { key: "roles", label: "Role Management" },
+  { key: "settings", label: "Settings" },
 ];
 
 export const DEFAULT_ROLES: RoleConfig[] = [
   {
     id: "director", name: "DIRECTOR", color: "slate", canDelete: false,
     pages: ALL_PAGES.map(p => p.key),
+    permissions: ["all"],
   },
   {
     id: "architect", name: "ARCHITECT", color: "indigo", canDelete: false,
     pages: ALL_PAGES.map(p => p.key),
+    permissions: ["all"],
   },
   {
     id: "admin", name: "ADMIN", color: "rose", canDelete: false,
     pages: ALL_PAGES.map(p => p.key),
+    permissions: ["all"],
   },
   {
     id: "office-team", name: "OFFICE TEAM", color: "blue", canDelete: false,
     pages: ["dashboard", "projects", "office-work", "messages", "calendar"],
+    permissions: [],
   },
   {
     id: "site-engineer", name: "SITE ENGINEER", color: "orange", canDelete: false,
     pages: ["dashboard", "projects", "site-updates", "site-photos", "tasks", "site-team"],
+    permissions: [],
   },
   {
     id: "supervisor", name: "SUPERVISOR", color: "green", canDelete: false,
     pages: ["dashboard", "projects", "tasks", "site-updates"],
+    permissions: [],
   },
   {
     id: "accountant", name: "ACCOUNTANT", color: "purple", canDelete: false,
     pages: ["dashboard", "payments", "reports", "working-sop"],
+    permissions: [],
   },
   {
     id: "client", name: "CLIENT PORTAL", color: "blue", canDelete: false,
     pages: ["dashboard", "projects", "site-updates", "site-photos", "payments", "messages"],
+    permissions: [],
   },
   {
     id: "guest", name: "GUEST MODE", color: "rose", canDelete: false,
     pages: ["dashboard", "projects", "working-sop"],
+    permissions: [],
   },
 ];
 
@@ -99,14 +110,14 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         // Map backend roles to RoleConfig
         const mappedRoles: RoleConfig[] = backendRoles.map((r: any) => {
           const hasAll = r.permissions.includes("all");
-          
+
           // Derive pages from permissions
-          const derivedPages = hasAll 
-            ? ALL_PAGES.map(p => p.key) 
+          const derivedPages = hasAll
+            ? ALL_PAGES.map(p => p.key)
             : ALL_PAGES.filter(p => {
-                if (p.key === "dashboard") return true; // Everyone sees dashboard
-                return r.permissions.includes(`${p.key}.view`) || r.permissions.includes("all");
-              }).map(p => p.key);
+              const permToCheck = p.key === "dashboard" ? "dashboard.view" : `${p.key}.view`;
+              return r.permissions.includes(permToCheck) || r.permissions.includes("all");
+            }).map(p => p.key);
 
           return {
             id: r.name.toLowerCase().replace(/\s+/g, '-'),
@@ -114,6 +125,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
             name: r.name.toUpperCase(),
             color: r.name.toLowerCase() === "director" ? "slate" : "indigo",
             pages: derivedPages,
+            permissions: r.permissions || [],
             canDelete: !["admin", "director", "architect"].includes(r.name.toLowerCase())
           };
         });
@@ -128,6 +140,8 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     fetchRoles();
   }, []);
 
@@ -137,6 +151,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       name: name.trim(),
       color,
       pages: ["dashboard"],
+      permissions: [],
       canDelete: true,
     };
     setRoles(prev => [...prev, newRole]);

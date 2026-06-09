@@ -25,11 +25,13 @@ import {
   Hammer,
   Trash2,
   FileText,
+  Package,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, use, useEffect, useRef, useMemo } from "react";
 import { cn, formatDateForDisplay } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
+import { useRoles } from "@/lib/role-context";
 import { useProjects } from "@/lib/projects-store";
 import { useOfficeTasks } from "@/lib/office-tasks-store";
 import { useSiteTasks } from "@/lib/site-tasks-store";
@@ -41,6 +43,8 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { DesignModule } from "@/components/projects/DesignModule";
 import { ExecutionModule } from "@/components/projects/ExecutionModule";
+import { DocumentsTab } from "@/components/projects/DocumentsTab";
+import { MaterialsTab } from "@/components/projects/MaterialsTab";
 import { sitePhotoService } from "@/services/sitePhoto.service";
 import {
   Table,
@@ -57,12 +61,13 @@ import toast from "react-hot-toast";
 import Modal from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 
-type Tab = "office-work" | "site-work" | "tasks" | "workers" | "photos" | "finances" | "timeline";
+type Tab = "office-work" | "site-work" | "tasks" | "workers" | "photos" | "finances" | "timeline" | "documents" | "materials";
 
 export default function ProjectDetailsPage({ params }: { params: any }) {
   const resolvedParams = params instanceof Promise ? use(params) : params;
   const id = resolvedParams?.id;
   const { user } = useAuth();
+  const { getRoleById } = useRoles();
   const { getProjectById, updateStageStatus, updateProject } = useProjects();
   const { officeTasks, updateOfficeTaskStatus, createOfficeTask } = useOfficeTasks();
   const { siteTasks, updateSiteTaskStatus, createSiteTask } = useSiteTasks();
@@ -71,7 +76,18 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
   const { getPaymentsByProjectId, createPayment, deletePayment, updatePayment } = usePayments();
 
   const project = getProjectById(id);
-  const isAdmin = user?.role === "architect" || user?.role === "director" || user?.role === "accountant";
+  
+  const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.name || "");
+  const roleId = roleName.toLowerCase().replace(/\s+/g, '-');
+  const roleConfig = getRoleById(roleId);
+  const userPermissions = roleConfig?.permissions || [];
+  const isAdmin = roleId === "architect" || roleId === "director" || roleId === "accountant" || roleId === "admin" || userPermissions.includes("all");
+
+  const canViewTab = (tabPerm: string) => {
+    if (isAdmin) return true;
+    return userPermissions.includes(`projects.view-${tabPerm}`);
+  };
+
   const [activeTab, setActiveTab] = useState<Tab>("office-work");
   const [projectPhotos, setProjectPhotos] = useState<{ id: string; url: string; date: string }[]>([]);
   const [photosLoading, setPhotosLoading] = useState(false);
@@ -564,15 +580,16 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
 
       <div className="flex items-center gap-2 p-1.5 bg-white border border-slate-200 rounded-lg shadow-sm overflow-x-auto scrollbar-hide sticky top-20 z-10">
         {[
-          { id: "office-work", label: "Office", icon: PenTool },
-          { id: "site-work", label: "Site", icon: Hammer },
-          { id: "tasks", label: "Tasks", icon: CheckCircle2 },
-          { id: "workers", label: "Team", icon: Users },
-          // { id: "updates", label: "Logs", icon: ClipboardList },
-          { id: "photos", label: "Photos", icon: Camera },
-          { id: "finances", label: "Finances", icon: CreditCard },
-          { id: "timeline", label: "Timeline", icon: History },
-        ].map((tab) => (
+          { id: "office-work", label: "Office", icon: PenTool, perm: "office" },
+          { id: "site-work", label: "Site", icon: Hammer, perm: "site" },
+          { id: "tasks", label: "Tasks", icon: CheckCircle2, perm: "tasks" },
+          { id: "documents", label: "Documents", icon: FileText, perm: "documents" },
+          { id: "materials", label: "Materials", icon: Package, perm: "materials" },
+          { id: "workers", label: "Team", icon: Users, perm: "team" },
+          { id: "photos", label: "Photos", icon: Camera, perm: "photos" },
+          { id: "finances", label: "Finances", icon: CreditCard, perm: "finances" },
+          { id: "timeline", label: "Timeline", icon: History, perm: "timeline" },
+        ].filter(tab => canViewTab(tab.perm)).map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as Tab)}
@@ -604,6 +621,14 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
             projectId={project.id}
             updateTaskStatus={updateSiteTaskStatus}
           />
+        )}
+
+        {activeTab === "documents" && (
+          <DocumentsTab projectId={project.id} />
+        )}
+
+        {activeTab === "materials" && (
+          <MaterialsTab projectId={project.id} />
         )}
 
         {activeTab === "tasks" && (

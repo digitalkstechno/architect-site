@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit2, Trash2, Shield, Briefcase } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Shield, Briefcase, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
@@ -21,6 +21,7 @@ export default function StaffPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
@@ -143,12 +144,12 @@ export default function StaffPage() {
       header: "Member",
       render: (member) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-slate-600 border border-slate-200">
-            {member.name[0]}
+          <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-sm font-bold text-indigo-600 border border-indigo-100 shadow-sm">
+            {member.name[0].toUpperCase()}
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-900">{member.name}</p>
-            <p className="text-[10px] text-slate-500">{member.email}</p>
+            <p className="text-[13px] font-bold text-slate-900 uppercase tracking-tight">{member.name}</p>
+            <p className="text-[10px] font-medium text-slate-500 lowercase">{member.email}</p>
           </div>
         </div>
       ),
@@ -156,8 +157,8 @@ export default function StaffPage() {
     {
       header: "Role",
       render: (member) => (
-        <Badge variant="outline" className="text-[9px] font-bold uppercase bg-indigo-50 text-indigo-600 border-indigo-100 px-1.5 py-0">
-          <Shield className="w-3 h-3 mr-1" />
+        <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest bg-indigo-50 text-indigo-700 border-indigo-200 px-2 py-0.5 shadow-sm">
+          <Shield className="w-3 h-3 mr-1.5 opacity-70" />
           {member.role?.name || "No Role"}
         </Badge>
       ),
@@ -167,9 +168,9 @@ export default function StaffPage() {
       render: (member) => (
         <Badge
           variant="secondary"
-          className={`text-[9px] font-bold uppercase px-1.5 py-0 ${member.team === "Site"
-              ? "bg-amber-50 text-amber-700 border-amber-100"
-              : "bg-slate-100 text-slate-600"
+          className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 shadow-sm ${member.team === "Site"
+              ? "bg-amber-50 text-amber-700 border border-amber-200"
+              : "bg-slate-100 text-slate-700 border border-slate-200"
             }`}
         >
           {member.team}
@@ -179,9 +180,9 @@ export default function StaffPage() {
     {
       header: "Experience",
       render: (member) => (
-        <div className="flex items-center gap-1">
-          <Briefcase className="w-3 h-3 text-slate-400" />
-          <span className="text-[11px] font-semibold text-slate-700 font-mono">
+        <div className="flex items-center gap-2">
+          <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-[11px] font-bold text-slate-700 font-mono">
             {member.experience != null ? `${member.experience} yrs` : "—"}
           </span>
         </div>
@@ -190,9 +191,9 @@ export default function StaffPage() {
     {
       header: "Status",
       render: (member) => (
-        <div className="flex items-center gap-1.5">
-          <div className={`w-1 h-1 rounded-full ${member.isActive ? "bg-emerald-500" : "bg-slate-300"}`} />
-          <span className="text-[11px] font-medium text-slate-600">{member.isActive ? "Active" : "Inactive"}</span>
+        <div className="flex items-center gap-2 bg-white border border-slate-200 px-2.5 py-1 rounded-md w-fit shadow-sm">
+          <div className={`w-1.5 h-1.5 rounded-full ${member.isActive !== false ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-300"}`} />
+          <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">{member.isActive !== false ? "Active" : "Inactive"}</span>
         </div>
       ),
     },
@@ -253,103 +254,128 @@ export default function StaffPage() {
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingStaff ? "Edit Staff Member" : "Add New Staff Member"}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 ml-1">Full Name *</label>
-              <Input
-                placeholder="e.g., John Doe"
-                value={formData.name}
-                onChange={e => {
-                  setFormData(f => ({ ...f, name: e.target.value }));
-                  if (errors.name) setErrors(prev => {
-                    const { name, ...rest } = prev;
-                    return rest;
-                  });
-                }}
-                error={errors.name}
-                className="h-9 text-xs"
-              />
+        <form onSubmit={handleSubmit} className="space-y-6 pt-2">
+          
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-2">
+              <span className="w-2 h-2 rounded-full bg-indigo-500" /> Basic Information
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 ml-1">Full Name *</label>
+                <Input
+                  placeholder="e.g., John Doe"
+                  value={formData.name}
+                  onChange={e => {
+                    setFormData(f => ({ ...f, name: e.target.value }));
+                    if (errors.name) setErrors(prev => {
+                      const { name, ...rest } = prev;
+                      return rest;
+                    });
+                  }}
+                  error={errors.name}
+                  className="h-10 text-sm bg-white"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 ml-1">Email Address *</label>
+                <Input
+                  type="email"
+                  placeholder="e.g., john@example.com"
+                  value={formData.email}
+                  onChange={e => {
+                    setFormData(f => ({ ...f, email: e.target.value }));
+                    if (errors.email) setErrors(prev => {
+                      const { email, ...rest } = prev;
+                      return rest;
+                    });
+                  }}
+                  error={errors.email}
+                  className="h-10 text-sm bg-white"
+                />
+              </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 ml-1">Email Address *</label>
-              <Input
-                type="email"
-                placeholder="e.g., john@example.com"
-                value={formData.email}
-                onChange={e => {
-                  setFormData(f => ({ ...f, email: e.target.value }));
-                  if (errors.email) setErrors(prev => {
-                    const { email, ...rest } = prev;
-                    return rest;
-                  });
-                }}
-                error={errors.email}
-                className="h-9 text-xs"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 ml-1">Password {editingStaff && "(leave blank to keep current)"}</label>
-              <Input
-                type="password"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={e => {
-                  setFormData(f => ({ ...f, password: e.target.value }));
-                  if (errors.password) setErrors(prev => {
-                    const { password, ...rest } = prev;
-                    return rest;
-                  });
-                }}
-                error={errors.password}
-                className="h-9 text-xs"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 ml-1">Phone Number</label>
-              <Input placeholder="e.g., +1 234 567 890" value={formData.phone}
-                onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} className="h-9 text-xs" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <Select
-                label="Role *"
-                options={roles.map(role => ({ value: role._id, label: role.name }))}
-                value={formData.role}
-                onChange={val => {
-                  setFormData(f => ({ ...f, role: val }));
-                  if (errors.role) setErrors(prev => {
-                    const { role, ...rest } = prev;
-                    return rest;
-                  });
-                }}
-                placeholder="Select Role"
-                error={errors.role}
-              />
-            </div>
-            <div className="space-y-1">
-              <Select
-                label="Team *"
-                options={[
-                  { value: "Office", label: "Office" },
-                  { value: "Site", label: "Site" },
-                ]}
-                value={formData.team}
-                onChange={val => setFormData(f => ({ ...f, team: val }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 ml-1">Experience (Years)</label>
-              <Input type="number" placeholder="e.g., 5" value={formData.experience}
-                onChange={e => setFormData(f => ({ ...f, experience: e.target.value }))} className="h-9 text-xs" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 ml-1">Password {editingStaff && <span className="text-slate-400 font-normal">(leave blank to keep current)</span>}</label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={e => {
+                      setFormData(f => ({ ...f, password: e.target.value }));
+                      if (errors.password) setErrors(prev => {
+                        const { password, ...rest } = prev;
+                        return rest;
+                      });
+                    }}
+                    error={errors.password}
+                    className="h-10 text-sm bg-white pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 ml-1">Phone Number</label>
+                <Input placeholder="e.g., +1 234 567 890" value={formData.phone}
+                  onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} className="h-10 text-sm bg-white" />
+              </div>
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
-            <Button size="sm" variant="secondary" onClick={() => setIsModalOpen(false)} type="button">Cancel</Button>
-            <Button size="sm" type="submit">Save Member</Button>
+
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2 mb-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" /> Work Details
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Select
+                  label="Role *"
+                  options={roles.map(role => ({ value: role._id, label: role.name }))}
+                  value={formData.role}
+                  onChange={val => {
+                    setFormData(f => ({ ...f, role: val }));
+                    if (errors.role) setErrors(prev => {
+                      const { role, ...rest } = prev;
+                      return rest;
+                    });
+                  }}
+                  placeholder="Select Role"
+                  error={errors.role}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Select
+                  label="Team *"
+                  options={[
+                    { value: "Office", label: "Office" },
+                    { value: "Site", label: "Site" },
+                  ]}
+                  value={formData.team}
+                  onChange={val => setFormData(f => ({ ...f, team: val }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 ml-1">Experience (Years)</label>
+                <Input type="number" placeholder="e.g., 5" value={formData.experience}
+                  onChange={e => setFormData(f => ({ ...f, experience: e.target.value }))} className="h-10 text-sm bg-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button size="sm" variant="secondary" onClick={() => setIsModalOpen(false)} type="button" className="px-6 font-bold">Cancel</Button>
+            <Button size="sm" type="submit" className="px-6 font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200">
+              {editingStaff ? "Update Member" : "Save Member"}
+            </Button>
           </div>
         </form>
       </Modal>

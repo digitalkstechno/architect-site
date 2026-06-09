@@ -11,7 +11,7 @@ async function getHeaders() {
 }
 
 export const api = {
-  async get<T>(endpoint: string): Promise<T> {
+  async get<T = any>(endpoint: string): Promise<T> {
     const headers = await getHeaders();
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method: "GET",
@@ -20,7 +20,7 @@ export const api = {
     return handleResponse<T>(response);
   },
 
-  async post<T>(endpoint: string, body: any, options: { headers?: any } = {}): Promise<T> {
+  async post<T = any>(endpoint: string, body: any, options: { headers?: any } = {}): Promise<T> {
     const defaultHeaders = await getHeaders();
     
     // If body is FormData, don't set Content-Type header manually, let the browser do it with the boundary
@@ -37,7 +37,7 @@ export const api = {
     return handleResponse<T>(response);
   },
 
-  async put<T>(endpoint: string, body: any): Promise<T> {
+  async put<T = any>(endpoint: string, body: any): Promise<T> {
     const headers = await getHeaders();
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method: "PUT",
@@ -47,7 +47,17 @@ export const api = {
     return handleResponse<T>(response);
   },
 
-  async delete<T>(endpoint: string, body?: any): Promise<T> {
+  async patch<T = any>(endpoint: string, body?: any): Promise<T> {
+    const headers = await getHeaders();
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: "PATCH",
+      headers,
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    return handleResponse<T>(response);
+  },
+
+  async delete<T = any>(endpoint: string, body?: any): Promise<T> {
     const headers = await getHeaders();
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method: "DELETE",
@@ -57,7 +67,7 @@ export const api = {
     return handleResponse<T>(response);
   },
 
-  async upload<T>(endpoint: string, formData: FormData): Promise<T> {
+  async upload<T = any>(endpoint: string, formData: FormData): Promise<T> {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     const headers: HeadersInit = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;

@@ -3,7 +3,10 @@
 import CompleteDashboardPage from "./dashboard/page";
 
 import { useAuth } from "@/lib/auth-context";
+import { useRoles } from "@/lib/role-context";
 import { useProjects } from "@/lib/projects-store";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useTasks } from "@/lib/tasks-store";
 import { useSiteUpdates } from "@/lib/site-updates-store";
 import { usePayments } from "@/lib/payments-store";
@@ -35,11 +38,36 @@ import DashboardCards from "@/components/DashboardCards";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { getRoleById, isInitialized } = useRoles();
+  const router = useRouter();
   const { projects } = useProjects();
   const { tasks } = useTasks();
   const { updates: siteUpdates } = useSiteUpdates();
 
+  useEffect(() => {
+    if (!user || !isInitialized) return;
+    
+    const roleName = typeof user.role === 'string' ? user.role : "";
+    const roleId = roleName.toLowerCase().replace(/\s+/g, '-');
+    const roleConfig = getRoleById(roleId);
+    const allowedPages = roleConfig?.pages ?? [];
+
+    if (!allowedPages.includes("dashboard")) {
+      if (allowedPages.length > 0) {
+        router.push(`/${allowedPages[0]}`);
+      }
+    }
+  }, [user, isInitialized, getRoleById, router]);
+
   if (!user) return null;
+
+  const roleName = typeof user.role === 'string' ? user.role : "";
+  const roleId = roleName.toLowerCase().replace(/\s+/g, '-');
+  const roleConfig = getRoleById(roleId);
+  const allowedPages = roleConfig?.pages ?? [];
+
+  // If they don't have dashboard access, we render nothing while useEffect redirects
+  if (!allowedPages.includes("dashboard")) return null;
 
   switch (user.role) {
     case "director":

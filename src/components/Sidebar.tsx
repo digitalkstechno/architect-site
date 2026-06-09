@@ -14,41 +14,43 @@ import { useRoles } from "@/lib/role-context";
 import { Button } from "@/components/ui/Button";
 
 const PAGE_ICONS: Record<string, React.ElementType> = {
-  dashboard:    LayoutDashboard,
-  projects:     Briefcase,
+  dashboard: LayoutDashboard,
+  projects: Briefcase,
   "office-work": PenTool,
-  "site-work":   Hammer,
-  tasks:        CheckSquare,
+  "site-work": Hammer,
+  tasks: CheckSquare,
   "office-team": Users,
-  "site-team":   HardHat,
-  clients:      UserCircle2,
-  "site-photos":  Camera,
-  attendance:   BookOpen,
+  "site-team": HardHat,
+  clients: UserCircle2,
+  "site-photos": Camera,
+  attendance: BookOpen,
   "working-sop": ClipboardList,
-  payments:     CreditCard,
-  calendar:     Calendar,
-  reports:      BarChart3,
-  messages:     MessageSquare,
-  settings:     Settings,
+  payments: CreditCard,
+  invoices: ClipboardList,
+  calendar: Calendar,
+  reports: BarChart3,
+  messages: MessageSquare,
+  settings: Settings,
 };
 
 const PAGE_LABELS: Record<string, string> = {
-  dashboard:      "Dashboard",
-  projects:       "Projects",
-  "office-work":  "Office Work",
-  "site-work":    "Site Work",
-  tasks:          "Tasks",
-  "office-team":  "Office Team",
-  "site-team":    "Site Team",
-  clients:        "Clients",
-  "site-photos":  "Site Photos",
-  attendance:     "Attendance",
-  "working-sop":  "Working SOP",
-  payments:       "Payments",
-  calendar:       "Calendar",
-  reports:        "Reports",
-  messages:       "Messages",
-  settings:       "Settings",
+  dashboard: "Dashboard",
+  projects: "Projects",
+  "office-work": "Office Work",
+  "site-work": "Site Work",
+  tasks: "Tasks",
+  "office-team": "Office Team",
+  "site-team": "Site Team",
+  clients: "Clients",
+  "site-photos": "Site Photos",
+  attendance: "Attendance",
+  "working-sop": "Working SOP",
+  payments: "Payments",
+  invoices: "Invoices",
+  calendar: "Calendar",
+  reports: "Reports",
+  messages: "Messages",
+  settings: "Settings",
 };
 
 // Custom labels based on roles
@@ -131,8 +133,8 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
             <Link key={item.key} href={item.href} onClick={onMobileClose}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-200 tracking-tight border-l-4 rounded-r-xl rounded-l-none",
-                isActive 
-                  ? "bg-gradient-to-r from-primary-100/60 to-primary-50/20 text-primary-700 font-semibold border-primary-600 pl-2.5" 
+                isActive
+                  ? "bg-gradient-to-r from-primary-100/60 to-primary-50/20 text-primary-700 font-semibold border-primary-600 pl-2.5"
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-950 border-transparent hover:border-slate-200 pl-2.5"
               )}>
               <item.icon className={cn("w-4 h-4 transition-transform group-hover:scale-105", isActive ? "text-primary-600" : "text-slate-400")} />
@@ -143,7 +145,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
       </nav>
 
       {/* Workspace Status Card */}
-      <div className="mx-4 my-4 p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2">
+      {/* <div className="mx-4 my-4 p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Workspace</span>
           <span className="flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100/50">
@@ -157,7 +159,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
             <div className="h-full bg-gradient-premium rounded-full" style={{ width: '88%' }}></div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* User Profile */}
       <div className="p-4 border-t border-slate-200 bg-slate-50/80">
@@ -173,7 +175,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
           </div>
         </div>
 
-        <button 
+        <button
           onClick={logout}
           className="w-full flex items-center gap-3 px-3 py-2.5 mt-2 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 rounded-lg transition-colors group"
         >

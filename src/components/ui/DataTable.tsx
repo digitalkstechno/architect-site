@@ -67,14 +67,14 @@ export function DataTable<T>({
                 <TableHead
                   key={index}
                   className={cn(
-                    "h-12 px-4 text-left align-middle font-medium text-slate-500 uppercase tracking-wider text-[11px]", 
+                    "h-12 px-6 text-left align-middle font-bold text-slate-400 uppercase tracking-widest text-[10px]", 
                     column.headerClassName, 
                     column.className
                   )}
                 >
                   <div className="flex items-center gap-2">
                     {column.header}
-                    {index < columns.length - 1 && <MoreVertical className="w-3 h-3 text-slate-300" />}
+                    {index < columns.length - 1 && <MoreVertical className="w-3 h-3 text-slate-200" />}
                   </div>
                 </TableHead>
               ))}
@@ -94,7 +94,7 @@ export function DataTable<T>({
                   {columns.map((column, colIndex) => (
                     <TableCell
                       key={colIndex}
-                      className={cn("py-3 px-4", column.cellClassName, column.className)}
+                      className={cn("py-4 px-6", column.cellClassName, column.className)}
                     >
                       {column.render
                         ? column.render(row)

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
+import { useNotification } from "@/lib/notification-context";
 import { Pause, Play } from "lucide-react";
 import { attendanceService } from "@/services/attendance.service";
 import toast from "react-hot-toast";
@@ -95,11 +96,15 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
 
   if (pathname === "/login") return null;
 
-  const notifications = [
-    { id: 1, text: "Foundation complete at Modern Villa", time: "2m ago", icon: CheckCircle2, color: "text-green-500" },
-    { id: 2, text: "New message from Alice Johnson", time: "15m ago", icon: Clock, color: "text-blue-500" },
-    { id: 3, text: "Payment overdue for Lakeview project", time: "1h ago", icon: AlertCircle, color: "text-red-500" },
-  ];
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotification();
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'task_assigned': return { Icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' };
+      case 'task_completed': return { Icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50' };
+      default: return { Icon: AlertCircle, color: 'text-slate-500', bg: 'bg-slate-50' };
+    }
+  };
 
   return (
     <>
@@ -185,29 +190,50 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                 }}
               >
                 <Bell className="w-4 h-4" />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white" />
+                )}
               </Button>
 
               {showNotifications && (
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg border border-slate-200 py-2 animate-in fade-in zoom-in-95 duration-150 origin-top-right">
                   <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
                     <h3 className="text-xs font-bold text-slate-900">Notifications</h3>
-                    <button className="text-[10px] font-bold text-primary-600 hover:text-primary-700 uppercase tracking-widest">Mark all read</button>
+                    <button 
+                      onClick={() => markAllAsRead()}
+                      className="text-[10px] font-bold text-primary-600 hover:text-primary-700 uppercase tracking-widest"
+                    >
+                      Mark all read
+                    </button>
                   </div>
                   <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                    {notifications.map((n) => (
-                      <div key={n.id} className="px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer flex gap-3 border-b border-slate-50 last:border-0">
-                        <div className={cn("mt-0.5", n.color)}>
-                          <n.icon className="w-3.5 h-3.5" />
+                    {notifications.length === 0 ? (
+                       <p className="p-4 text-xs text-slate-500 text-center">No notifications yet.</p>
+                    ) : notifications.map((n) => {
+                      const { Icon, color, bg } = getIcon(n.type);
+                      return (
+                        <div 
+                          key={n._id} 
+                          onClick={() => markAsRead(n._id)}
+                          className={cn(
+                            "px-4 py-3 transition-colors cursor-pointer flex gap-3 border-b border-slate-50 last:border-0",
+                            n.isRead ? "bg-white hover:bg-slate-50" : "bg-primary-50/50 hover:bg-primary-50"
+                          )}
+                        >
+                          <div className={cn("mt-0.5 p-1 rounded-full", bg, color)}>
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="space-y-0.5 flex-1">
+                            <p className={cn("text-xs leading-tight", n.isRead ? "font-medium text-slate-600" : "font-bold text-slate-900")}>{n.text}</p>
+                            <p className="text-[10px] text-slate-400 font-medium">
+                              {new Date(n.createdAt).toLocaleDateString()} {new Date(n.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </p>
+                          </div>
                         </div>
-                        <div className="space-y-0.5">
-                          <p className="text-xs font-semibold text-slate-800 leading-tight">{n.text}</p>
-                          <p className="text-[10px] text-slate-400 font-medium">{n.time}</p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
-                  <div className="px-4 pt-2 text-center">
+                  <div className="px-4 pt-2 text-center border-t border-slate-100">
                     <Button variant="ghost" className="w-full text-[10px] font-bold uppercase tracking-widest">View All Notifications</Button>
                   </div>
                 </div>
