@@ -78,8 +78,8 @@ export function MaterialsTab({ projectId }: { projectId: string }) {
       quantity: req.quantity,
       unit: req.unit,
       status: req.status,
-      dateNeeded: req.dateNeeded || new Date().toISOString().split('T')[0],
-      notes: req.notes || ""
+      dateNeeded: (req as any).dateNeeded || new Date().toISOString().split('T')[0],
+      notes: (req as any).notes || ""
     });
     setEditingId(req._id);
     setIsModalOpen(true);
@@ -116,7 +116,7 @@ export function MaterialsTab({ projectId }: { projectId: string }) {
                 </td>
                 <td className="px-4 py-3 text-slate-600 font-medium">{req.requestedBy?.name || 'Unknown'}</td>
                 <td className="px-4 py-3 text-slate-600">{req.quantity} {req.unit}</td>
-                <td className="px-4 py-3 text-slate-600">{req.dateNeeded || '-'}</td>
+                <td className="px-4 py-3 text-slate-600">{(req as any).dateNeeded || '-'}</td>
                 <td className="px-4 py-3">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
                     req.status === 'Delivered' ? 'bg-green-100 text-green-700' :

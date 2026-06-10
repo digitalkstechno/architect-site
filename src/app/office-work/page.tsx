@@ -86,7 +86,7 @@ export default function OfficeWorkPage() {
 
     try {
       if (editingTask) {
-        await updateOfficeTask(editingTask.id, {
+        await updateOfficeTask(editingTask._id || editingTask.id, {
           title: newTask.title,
           projectId: selectedProject.id,
           project: selectedProject.name,
@@ -239,7 +239,7 @@ export default function OfficeWorkPage() {
             setEditingTask(task);
             setNewTask({
               title: task.title,
-              project: (task.projectId || (task.project as any)?.id || task.project as any)?._id || (task.project as any)?.id || task.project as string,
+              project: task.project?._id || task.project?.id || task.projectId || (typeof task.project === 'string' ? task.project : ""),
               assignedTo: task.assignedTo?.map((s: any) => s._id || s.id || s) || [],
               priority: task.priority || "Medium",
               startDate: task.startDate || new Date().toISOString().split('T')[0],
@@ -249,19 +249,22 @@ export default function OfficeWorkPage() {
           }}
           onDelete={(e) => {
             e.stopPropagation();
-            setTaskToDelete(task.id);
+            setTaskToDelete(task._id || task.id);
             setIsConfirmOpen(true);
           }}
           onExpand={(e) => {
             e.stopPropagation();
-            setExpandedTaskId(expandedTaskId === task.id ? null : task.id);
+            const id = task._id || task.id;
+            setExpandedTaskId(expandedTaskId === id ? null : id);
           }}
         />
       )
     }
   ];
 
-  const renderExpandedRow = (task: any) => (
+  const renderExpandedRow = (task: any) => {
+    const tId = task._id || task.id;
+    return (
     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-top-2 duration-300">
       <div className="space-y-4">
         {!isViewOnly && (
@@ -274,7 +277,7 @@ export default function OfficeWorkPage() {
                   variant={task.status === status ? "primary" : "outline"}
                   size="sm"
                   className="rounded-xl text-[10px] h-8"
-                  onClick={() => updateOfficeTaskStatus(task.id, status as any)}
+                  onClick={() => updateOfficeTaskStatus(tId, status as any)}
                 >
                   {status}
                 </Button>
@@ -289,17 +292,17 @@ export default function OfficeWorkPage() {
               className="w-full text-sm text-slate-700 bg-white p-3 rounded-xl border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
               rows={3}
               placeholder="Add notes..."
-              value={noteValues[task.id] ?? (task.notes || "")}
-              onChange={(e) => setNoteValues(prev => ({ ...prev, [task.id]: e.target.value }))}
+              value={noteValues[tId] ?? (task.notes || "")}
+              onChange={(e) => setNoteValues(prev => ({ ...prev, [tId]: e.target.value }))}
             />
             <Button
               size="sm"
               className="text-[10px] h-8"
               onClick={async () => {
-                await updateOfficeTask(task.id, { notes: noteValues[task.id] ?? task.notes });
+                await updateOfficeTask(tId, { notes: noteValues[tId] ?? task.notes });
                 setNoteValues(prev => {
                   const next = { ...prev };
-                  delete next[task.id];
+                  delete next[tId];
                   return next;
                 });
                 toast.success("Notes saved successfully");
@@ -313,7 +316,7 @@ export default function OfficeWorkPage() {
       <div className="space-y-4">
         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Design Photos</h4>
         <TaskImageUpload
-          taskId={task.id}
+          taskId={tId}
           type="Office"
           existingImages={task.images}
           canDelete={canDeleteImages(task)}
@@ -325,6 +328,7 @@ export default function OfficeWorkPage() {
       </div>
     </div>
   );
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 w-full p-4 sm:p-6">
@@ -507,7 +511,10 @@ export default function OfficeWorkPage() {
                 onPageSizeChange={setPageSize}
                 renderExpandedRow={renderExpandedRow}
                 expandedRowId={expandedTaskId}
-                onRowClick={(task) => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
+                onRowClick={(task) => {
+                  const id = task._id || task.id;
+                  setExpandedTaskId(expandedTaskId === id ? null : id);
+                }}
               />
             )}
           </CardContent>

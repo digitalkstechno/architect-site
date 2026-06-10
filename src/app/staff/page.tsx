@@ -14,6 +14,7 @@ import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ActionButtons } from "@/components/ui/ActionButtons";
 import toast from "react-hot-toast";
+import { cn } from "@/lib/utils";
 
 export default function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -244,7 +245,7 @@ export default function StaffPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 hidden sm:block">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">{filteredStaff.length} Members</span>
         </div>
       </div>

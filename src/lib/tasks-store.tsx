@@ -76,7 +76,18 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    fetchTasks();
+    const token = localStorage.getItem("token");
+    if (token) fetchTasks();
+    else setIsHydrated(true);
+  }, [fetchTasks]);
+
+  useEffect(() => {
+    const handleStorage = () => {
+      const token = localStorage.getItem("token");
+      if (token) fetchTasks();
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, [fetchTasks]);
 
   const getTasksByProjectId = useCallback(

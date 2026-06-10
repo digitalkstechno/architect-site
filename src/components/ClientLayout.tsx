@@ -26,8 +26,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   const isLoginPage = pathname === "/login";
   const isResetPasswordPage = pathname === "/reset-password";
+  const isAgencyRegisterPage = pathname === "/agency-register";
 
-  if (isLoginPage || isResetPasswordPage) {
+  if (isLoginPage || isResetPasswordPage || isAgencyRegisterPage) {
     return <main className="min-h-screen bg-slate-50">{children}</main>;
   }
 

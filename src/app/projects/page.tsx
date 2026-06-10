@@ -185,7 +185,7 @@ export default function ProjectsPage() {
             setEditingProject(project);
             setForm({
               name: project.name,
-              clientId: project.clientId || "",
+              clientId: (project.client as any)?._id || project.client || project.clientId || "",
               location: project.location,
               startDate: project.startDate || "",
               expectedCompletion: project.expectedCompletion || "",
@@ -196,7 +196,7 @@ export default function ProjectsPage() {
           }}
           onDelete={(e) => {
             e.stopPropagation();
-            setProjectToDelete(project.id);
+            setProjectToDelete((project as any)._id || project.id);
             setIsConfirmOpen(true);
           }}
         />
@@ -232,7 +232,7 @@ export default function ProjectsPage() {
 
     try {
       if (editingProject) {
-        await updateProject(editingProject.id, {
+        await updateProject(editingProject._id || editingProject.id, {
           name: form.name,
           clientId: form.clientId,
           location: form.location,

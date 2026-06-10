@@ -94,7 +94,7 @@ export default function SiteWorkPage() {
 
     try {
       if (editingTask) {
-        await updateSiteTask(editingTask.id, {
+        await updateSiteTask(editingTask._id || editingTask.id, {
           title: newTask.title,
           projectId: selectedProject.id,
           project: selectedProject.name,
@@ -255,7 +255,7 @@ export default function SiteWorkPage() {
                 e.stopPropagation();
                 const current = task.inspections || 0;
                 if (current > 0) {
-                  updateSiteTask(task.id, { inspections: current - 1 });
+                  updateSiteTask(task._id || task.id, { inspections: current - 1 });
                 }
               }}
               className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
@@ -271,7 +271,7 @@ export default function SiteWorkPage() {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                updateSiteTask(task.id, { inspections: (task.inspections || 0) + 1 });
+                updateSiteTask(task._id || task.id, { inspections: (task.inspections || 0) + 1 });
               }}
               className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
               title="Increase Inspection"
@@ -289,7 +289,7 @@ export default function SiteWorkPage() {
               setEditingTask(task);
               setNewTask({
                 title: task.title,
-                project: (task.projectId || (task.project as any)?.id || task.project as any)?._id || (task.project as any)?.id || task.project as string,
+                project: task.project?._id || task.project?.id || task.projectId || (typeof task.project === 'string' ? task.project : ""),
                 assignedTo: task.assignedTo?.map((s: any) => s._id || s.id || s) || [],
                 status: task.status || "Pending",
                 startDate: task.startDate || new Date().toISOString().split('T')[0],
@@ -299,12 +299,13 @@ export default function SiteWorkPage() {
             }}
             onDelete={(e) => {
               e.stopPropagation();
-              setTaskToDelete(task.id);
+              setTaskToDelete(task._id || task.id);
               setIsConfirmOpen(true);
             }}
             onExpand={(e) => {
               e.stopPropagation();
-              setExpandedTaskId(expandedTaskId === task.id ? null : task.id);
+              const id = task._id || task.id;
+              setExpandedTaskId(expandedTaskId === id ? null : id);
             }}
           />
         </div>
@@ -312,7 +313,9 @@ export default function SiteWorkPage() {
     }
   ];
 
-  const renderExpandedRow = (task: any) => (
+  const renderExpandedRow = (task: any) => {
+    const tId = task._id || task.id;
+    return (
     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-top-2 duration-300">
       <div className="space-y-4">
         {!isViewOnly && (
@@ -325,7 +328,7 @@ export default function SiteWorkPage() {
                   variant={task.status === status ? "primary" : "outline"}
                   size="sm"
                   className="rounded-xl text-[10px] h-8"
-                  onClick={(e) => { e.stopPropagation(); updateSiteTaskStatus(task.id, status as any); }}
+                  onClick={(e) => { e.stopPropagation(); updateSiteTaskStatus(tId, status as any); }}
                 >
                   {status}
                 </Button>
@@ -340,17 +343,17 @@ export default function SiteWorkPage() {
               className="w-full text-sm text-slate-700 bg-white p-3 rounded-xl border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
               rows={3}
               placeholder="Add technical notes..."
-              value={noteValues[task.id] ?? (task.notes || "")}
-              onChange={(e) => setNoteValues(prev => ({ ...prev, [task.id]: e.target.value }))}
+              value={noteValues[tId] ?? (task.notes || "")}
+              onChange={(e) => setNoteValues(prev => ({ ...prev, [tId]: e.target.value }))}
             />
             <Button
               size="sm"
               className="text-[10px] h-8"
               onClick={async () => {
-                await updateSiteTask(task.id, { notes: noteValues[task.id] ?? task.notes });
+                await updateSiteTask(tId, { notes: noteValues[tId] ?? task.notes });
                 setNoteValues(prev => {
                   const next = { ...prev };
-                  delete next[task.id];
+                  delete next[tId];
                   return next;
                 });
                 toast.success("Technical notes saved successfully");
@@ -364,7 +367,7 @@ export default function SiteWorkPage() {
       <div className="space-y-4">
         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Site Photos</h4>
         <TaskImageUpload
-          taskId={task.id}
+          taskId={tId}
           type="Site"
           existingImages={task.images}
           canDelete={canDeleteImages(task)}
@@ -376,6 +379,7 @@ export default function SiteWorkPage() {
       </div>
     </div>
   );
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 w-full p-4 sm:p-6">
@@ -554,7 +558,10 @@ export default function SiteWorkPage() {
                 onPageSizeChange={setPageSize}
                 renderExpandedRow={renderExpandedRow}
                 expandedRowId={expandedTaskId}
-                onRowClick={(task) => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
+                onRowClick={(task) => {
+                  const id = task._id || task.id;
+                  setExpandedTaskId(expandedTaskId === id ? null : id);
+                }}
               />
             )}
           </CardContent>

@@ -35,6 +35,8 @@ export const ALL_PAGES = [
   { key: "messages", label: "Messages" },
   { key: "staff", label: "Staff Management" },
   { key: "roles", label: "Role Management" },
+  { key: "agency-register", label: "Agency Register" },
+  { key: "agency-approvals", label: "Agency Approvals" },
   { key: "settings", label: "Settings" },
 ];
 
@@ -140,9 +142,18 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    fetchRoles();
+    const token = localStorage.getItem("token");
+    if (token) fetchRoles();
+    else setIsInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    const handleStorage = () => {
+      const token = localStorage.getItem("token");
+      if (token) fetchRoles();
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const addRole = (name: string, color: string): RoleConfig => {

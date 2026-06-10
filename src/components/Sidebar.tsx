@@ -30,6 +30,8 @@ const PAGE_ICONS: Record<string, React.ElementType> = {
   calendar: Calendar,
   reports: BarChart3,
   messages: MessageSquare,
+  "agency-register": Building2,
+  "agency-approvals": Briefcase,
   settings: Settings,
 };
 
@@ -50,6 +52,8 @@ const PAGE_LABELS: Record<string, string> = {
   calendar: "Calendar",
   reports: "Reports",
   messages: "Messages",
+  "agency-register": "Agency Register",
+  "agency-approvals": "Pending Agencies",
   settings: "Settings",
 };
 

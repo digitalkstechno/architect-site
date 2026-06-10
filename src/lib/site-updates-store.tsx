@@ -55,7 +55,18 @@ export function SiteUpdatesProvider({ children }: { children: React.ReactNode })
   };
 
   useEffect(() => {
-    fetchUpdates();
+    const token = localStorage.getItem("token");
+    if (token) fetchUpdates();
+    else setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    const handleStorage = () => {
+      const token = localStorage.getItem("token");
+      if (token) fetchUpdates();
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const api = useMemo<SiteUpdatesContextType>(() => {

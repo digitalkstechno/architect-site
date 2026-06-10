@@ -61,7 +61,18 @@ export function PaymentsProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    fetchPayments();
+    const token = localStorage.getItem("token");
+    if (token) fetchPayments();
+    else setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    const handleStorage = () => {
+      const token = localStorage.getItem("token");
+      if (token) fetchPayments();
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const api = useMemo<PaymentsContextType>(() => {
