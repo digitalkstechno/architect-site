@@ -48,6 +48,11 @@ export default function ProjectsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [paginatedProjects, setPaginatedProjects] = useState<any[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [isFetchingProjects, setIsFetchingProjects] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -88,28 +93,37 @@ export default function ProjectsPage() {
   const canDelete = isAdmin || userPermissions.includes("projects.delete");
   const canViewDetails = isAdmin || userPermissions.includes("projects.view-details");
 
-  const filteredProjects = projects.filter((p: any) => {
-    const searchQueryMatch =
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.client?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Role based filtering
-    if (isAdmin) {
-      return searchQueryMatch;
-    }
+  const fetchPaginatedData = async () => {
+    setIsFetchingProjects(true);
+    try {
+      const roleStr = isAdmin ? undefined : (user?.role === "client" ? "client" : "staff");
+      const userIdStr = isAdmin ? undefined : user?.id;
 
-    if (user?.role === "client") {
-      return searchQueryMatch && p.id === user.projectId;
+      const res = await projectService.getPaginatedProjects({
+        page: currentPage,
+        limit: pageSize,
+        search: searchQuery,
+        role: roleStr,
+        userId: userIdStr
+      });
+      const data = res as any;
+      setPaginatedProjects(data.data || []);
+      setTotalItems(data.total || 0);
+    } catch (e) {
+      console.error("Failed to fetch paginated projects:", e);
+    } finally {
+      setIsFetchingProjects(false);
     }
+  };
 
-    // Designer or other staff - only show projects where they are assigned to at least one task
-    // or assigned as a designer/worker on the project itself
-    const isAssignedOnProject = 
-      p.designer?._id === user?.id || 
-      p.workers?.some((w: any) => (w._id || w) === user?.id);
-    
-    return searchQueryMatch && isAssignedOnProject;
-  });
+  useEffect(() => {
+    fetchPaginatedData();
+  }, [currentPage, pageSize, searchQuery, user, isAdmin]);
+
+  // Refresh data when context updates
+  useEffect(() => {
+    fetchPaginatedData();
+  }, [projects]);
 
   const columns: Column<Project>[] = [
     {
@@ -117,7 +131,7 @@ export default function ProjectsPage() {
       render: (project) => (
         <div>
           <p className="text-sm font-medium text-slate-900 group-hover:text-indigo-600 transition-colors">{project.name}</p>
-          <p className="text-xs font-medium text-slate-500">{project.client}</p>
+          <p className="text-xs font-medium text-slate-500">{(project.client as any)?.name || project.client || "—"}</p>
         </div>
       ),
     },
@@ -288,16 +302,25 @@ export default function ProjectsPage() {
             />
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">{filteredProjects.length} Projects</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">{totalItems} Projects</span>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <DataTable 
-            columns={columns} 
-            data={filteredProjects} 
-            onRowClick={(p) => router.push(`/projects/${p.id}`)}
-          />
+          {isFetchingProjects ? (
+            <div className="p-8 text-center text-slate-500">Loading projects...</div>
+          ) : (
+            <DataTable 
+              columns={columns} 
+              data={paginatedProjects} 
+              pageSize={pageSize}
+              serverTotalItems={totalItems}
+              serverCurrentPage={currentPage}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              onRowClick={(p: any) => router.push(`/projects/${p._id || p.id}`)}
+            />
+          )}
         </div>
       </div>
 

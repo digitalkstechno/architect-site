@@ -18,8 +18,10 @@ interface ExecutionModuleProps {
 export function ExecutionModule({ tasks, projectId, updateTaskStatus }: ExecutionModuleProps) {
   if (!tasks) return <div className="p-10 text-center text-slate-500">Execution data not available.</div>;
 
-  const civilStages = tasks.filter(t => t.category === "Civil");
-  const interiorStages = tasks.filter(t => t.category === "Interior");
+  const statusOrder: Record<string, number> = { "Pending": 1, "In Progress": 2, "Completed": 3, "Critical": 0, "Delayed": 0, "On Track": 2 };
+
+  const civilStages = tasks.filter(t => t.category === "Civil").sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
+  const interiorStages = tasks.filter(t => t.category === "Interior").sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2">

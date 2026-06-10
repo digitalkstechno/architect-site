@@ -24,6 +24,16 @@ export const projectService = {
     return api.get(endPointApi.projects);
   },
 
+  async getPaginatedProjects(params: { page: number; limit: number; search?: string; role?: string; userId?: string }): Promise<any> {
+    const query = new URLSearchParams();
+    if (params.page) query.append("page", params.page.toString());
+    if (params.limit) query.append("limit", params.limit.toString());
+    if (params.search) query.append("search", params.search);
+    if (params.role) query.append("role", params.role);
+    if (params.userId) query.append("userId", params.userId);
+    return api.get(`${endPointApi.projects}?${query.toString()}`);
+  },
+
   async getProjectById(id: string): Promise<Project> {
     return api.get(endPointApi.projectById(id));
   },

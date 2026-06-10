@@ -18,9 +18,10 @@ interface DesignModuleProps {
 export function DesignModule({ tasks, projectId, updateTaskStatus }: DesignModuleProps) {
   if (!tasks) return <div className="p-10 text-center text-slate-500">Design data not available.</div>;
 
-  const civilTasks = tasks.filter(t => t.category === "Civil");
-  const interiorTasks = tasks.filter(t => t.category === "Interior");
-  console.log("DesignModule tasks:", tasks);
+  const statusOrder: Record<string, number> = { "Pending": 1, "In Progress": 2, "Completed": 3 };
+  
+  const civilTasks = tasks.filter(t => t.category === "Civil").sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
+  const interiorTasks = tasks.filter(t => t.category === "Interior").sort((a, b) => (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99));
   return (
     <div className="grid grid-cols-1 md:grid-cols-2">
       <div className="space-y-4 md:pr-8">

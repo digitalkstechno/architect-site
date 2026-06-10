@@ -8,10 +8,10 @@ import {
   TableHeader,
   TableRow,
 } from "./Table";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  ChevronsLeft, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
   ChevronsRight,
   MoreVertical
 } from "lucide-react";
@@ -31,6 +31,12 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
   className?: string;
   pageSize?: number;
+  serverTotalItems?: number;
+  serverCurrentPage?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
+  renderExpandedRow?: (row: T) => React.ReactNode;
+  expandedRowId?: string | null;
 }
 
 export function DataTable<T>({
@@ -39,23 +45,51 @@ export function DataTable<T>({
   onRowClick,
   className,
   pageSize: initialPageSize = 10,
+  serverTotalItems,
+  serverCurrentPage,
+  onPageChange,
+  onPageSizeChange,
+  renderExpandedRow,
+  expandedRowId,
 }: DataTableProps<T>) {
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(initialPageSize);
+  const [localCurrentPage, setLocalCurrentPage] = React.useState(1);
+  const [localPageSize, setLocalPageSize] = React.useState(initialPageSize);
 
-  const totalItems = data.length;
+  const isServerSide = serverTotalItems !== undefined;
+  const currentPage = isServerSide ? (serverCurrentPage || 1) : localCurrentPage;
+  const pageSize = isServerSide ? initialPageSize : localPageSize;
+
+  const totalItems = isServerSide ? serverTotalItems : data.length;
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalItems);
-  const currentData = data.slice(startIndex, endIndex);
+
+  // If server-side, data is already sliced for the current page
+  const currentData = isServerSide ? data : data.slice(startIndex, endIndex);
 
   const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    const newPage = Math.max(1, Math.min(page, totalPages));
+    if (isServerSide && onPageChange) {
+      onPageChange(newPage);
+    } else {
+      setLocalCurrentPage(newPage);
+    }
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    if (isServerSide && onPageSizeChange) {
+      onPageSizeChange(newSize);
+    } else {
+      setLocalPageSize(newSize);
+      setLocalCurrentPage(1);
+    }
   };
 
   React.useEffect(() => {
-    setCurrentPage(1);
-  }, [data, pageSize]);
+    if (!isServerSide) {
+      setLocalCurrentPage(1);
+    }
+  }, [data, localPageSize, isServerSide]);
 
   return (
     <div className={cn("w-full space-y-4", className)}>
@@ -67,8 +101,8 @@ export function DataTable<T>({
                 <TableHead
                   key={index}
                   className={cn(
-                    "h-12 px-6 text-left align-middle font-bold text-slate-400 uppercase tracking-widest text-[10px]", 
-                    column.headerClassName, 
+                    "h-12 px-6 text-left align-middle font-bold text-slate-400 uppercase tracking-widest text-[10px]",
+                    column.headerClassName,
                     column.className
                   )}
                 >
@@ -83,27 +117,36 @@ export function DataTable<T>({
           <TableBody>
             {currentData.length > 0 ? (
               currentData.map((row, rowIndex) => (
-                <TableRow
-                  key={rowIndex}
-                  className={cn(
-                    "border-b border-slate-100 last:border-0 group transition-colors",
-                    onRowClick && "cursor-pointer hover:bg-slate-50/80"
+                <React.Fragment key={rowIndex}>
+                  <TableRow
+                    className={cn(
+                      "border-b border-slate-100 last:border-0 group transition-colors",
+                      onRowClick && "cursor-pointer hover:bg-slate-50/80",
+                      renderExpandedRow && expandedRowId === (row as any).id && "bg-slate-50"
+                    )}
+                    onClick={() => onRowClick?.(row)}
+                  >
+                    {columns.map((column, colIndex) => (
+                      <TableCell
+                        key={colIndex}
+                        className={cn("py-4 px-6", column.cellClassName, column.className)}
+                      >
+                        {column.render
+                          ? column.render(row)
+                          : column.accessorKey
+                            ? (row[column.accessorKey] as React.ReactNode)
+                            : null}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  {renderExpandedRow && expandedRowId === (row as any).id && (
+                    <TableRow key={`${rowIndex}-expanded`} className="bg-slate-50/30 border-b border-slate-100">
+                      <TableCell colSpan={columns.length} className="p-0">
+                        {renderExpandedRow(row)}
+                      </TableCell>
+                    </TableRow>
                   )}
-                  onClick={() => onRowClick?.(row)}
-                >
-                  {columns.map((column, colIndex) => (
-                    <TableCell
-                      key={colIndex}
-                      className={cn("py-4 px-6", column.cellClassName, column.className)}
-                    >
-                      {column.render
-                        ? column.render(row)
-                        : column.accessorKey
-                        ? (row[column.accessorKey] as React.ReactNode)
-                        : null}
-                    </TableCell>
-                  ))}
-                </TableRow>
+                </React.Fragment>
               ))
             ) : (
               <TableRow>
@@ -123,9 +166,9 @@ export function DataTable<T>({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-1 bg-slate-50/50 rounded-xl border border-slate-200">
         <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
           <span className="whitespace-nowrap">Page Size:</span>
-          <select 
-            value={pageSize} 
-            onChange={(e) => setPageSize(Number(e.target.value))}
+          <select
+            value={pageSize}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
             className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             {[5, 10, 20, 50].map(size => (
@@ -153,7 +196,7 @@ export function DataTable<T>({
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          
+
           <div className="flex items-center px-4 py-1 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg whitespace-nowrap">
             Page {currentPage} of {totalPages || 1}
           </div>

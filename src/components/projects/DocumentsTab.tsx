@@ -17,8 +17,6 @@ export function DocumentsTab({ projectId }: { projectId: string }) {
   const [formData, setFormData] = useState({
     title: "",
     documentType: "CAD",
-    version: "1.0",
-    notes: ""
   });
   const [file, setFile] = useState<File | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -48,14 +46,12 @@ export function DocumentsTab({ projectId }: { projectId: string }) {
       uploadData.append("project", projectId);
       uploadData.append("title", formData.title);
       uploadData.append("documentType", formData.documentType);
-      uploadData.append("version", formData.version);
-      uploadData.append("notes", formData.notes);
       uploadData.append("file", file);
 
       await documentService.createDocument(uploadData);
       toast.success("Document added");
       setIsModalOpen(false);
-      setFormData({ title: "", documentType: "CAD", version: "1.0", notes: "" });
+      setFormData({ title: "", documentType: "CAD" });
       setFile(null);
       fetchDocs();
     } catch (error) {
@@ -94,12 +90,15 @@ export function DocumentsTab({ projectId }: { projectId: string }) {
               </div>
               <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{doc.documentType}</span>
             </div>
-            <p className="text-xs text-slate-500">Version: {doc.version}</p>
-            {doc.notes && <p className="text-xs text-slate-600">{doc.notes}</p>}
             <div className="mt-auto pt-4 flex gap-2">
               <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="flex-1">
                 <Button variant="secondary" size="sm" className="w-full gap-2 text-xs">
-                  <Download className="w-3 h-3" /> View
+                  View
+                </Button>
+              </a>
+              <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/documents/${doc._id}/download`} target="_blank" rel="noreferrer" className="flex-1">
+                <Button variant="secondary" size="sm" className="w-full gap-2 text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-100">
+                  <Download className="w-3 h-3" /> Download
                 </Button>
               </a>
               <Button variant="danger" size="sm" onClick={() => setDeleteId(doc._id)} className="px-2">
@@ -124,8 +123,6 @@ export function DocumentsTab({ projectId }: { projectId: string }) {
           <div><label className="text-xs font-bold">Upload File</label>
             <input type="file" className="w-full text-sm mt-1 p-2 border rounded" onChange={e => setFile(e.target.files?.[0] || null)} required />
           </div>
-          <div><label className="text-xs font-bold">Version</label><Input value={formData.version} onChange={e => setFormData({...formData, version: e.target.value})} /></div>
-          <div><label className="text-xs font-bold">Notes</label><Input value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} /></div>
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={isUploading}>{isUploading ? "Uploading..." : "Save"}</Button>

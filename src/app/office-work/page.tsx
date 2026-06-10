@@ -8,7 +8,8 @@ import { PenTool, FileText, Clock, CheckCircle2, Plus, Search, Filter, ArrowRigh
 import { Badge } from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/Table";
+import { DataTable } from "@/components/ui/DataTable";
+import { officeTaskService } from "@/services/officeTask.service";
 import { useAuth } from "@/lib/auth-context";
 import { useOfficeTasks, OfficeTaskCategory } from "@/lib/office-tasks-store";
 import { useProjects } from "@/lib/projects-store";
@@ -38,6 +39,11 @@ export default function OfficeWorkPage() {
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [noteValues, setNoteValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [paginatedTasks, setPaginatedTasks] = useState<any[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -129,14 +135,196 @@ export default function OfficeWorkPage() {
     }
   };
 
-  const filteredTasks = officeTasks.filter(t => {
-    const isCategory = t.category === activeTab;
-    if (!canCreate) {
-      const isAssigned = t.assignedTo?.some((s: any) => (s._id || s.id || s) === user?.id);
-      return isCategory && isAssigned;
+  const fetchPaginatedData = async () => {
+    setIsLoading(true);
+    try {
+      const res = await officeTaskService.getPaginatedTasks({
+        page: currentPage,
+        limit: pageSize,
+        category: activeTab,
+        assignedTo: !canCreate ? user?.id : undefined
+      });
+      const data = res as any;
+      setPaginatedTasks(data.data || []);
+      setTotalItems(data.total || 0);
+    } catch (e) {
+      console.error("Failed to fetch paginated tasks:", e);
+    } finally {
+      setIsLoading(false);
     }
-    return isCategory;
-  });
+  };
+
+  useEffect(() => {
+    fetchPaginatedData();
+  }, [activeTab, currentPage, pageSize]);
+
+  // Refresh data when context refreshes (e.g., after creates/updates)
+  useEffect(() => {
+    fetchPaginatedData();
+  }, [officeTasks]);
+
+  const columns = [
+    {
+      header: "Task Detail",
+      render: (task: any) => (
+        <div className="space-y-1">
+          <p className="text-sm font-bold text-slate-900">{task.title}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={task.priority === "High" || task.priority === "Critical" ? "destructive" : "warning"} className="text-[9px] px-1.5 py-0">
+              {task.priority || "Medium"}
+            </Badge>
+            {task.startDate && <span className="text-[11px] text-slate-600 font-bold bg-slate-100 px-2 py-0.5 rounded-md">Start: {formatDateForDisplay(task.startDate)}</span>}
+            {task.endDate && <span className="text-[11px] text-slate-600 font-bold bg-slate-100 px-2 py-0.5 rounded-md">End: {formatDateForDisplay(task.endDate)}</span>}
+          </div>
+        </div>
+      )
+    },
+    {
+      header: "Project",
+      render: (task: any) => (
+        <p className="text-xs font-bold text-slate-700">{toTitleCase((task.project as any)?.name || task.project)}</p>
+      )
+    },
+    {
+      header: "Status & Progress",
+      render: (task: any) => (
+        <div className="space-y-2 max-w-[150px]">
+          <div className="flex justify-between items-center text-[10px] font-bold">
+            <span className={cn(
+              "uppercase tracking-widest",
+              task.status === "Completed" ? "text-green-600" :
+                task.status === "In Progress" ? "text-blue-600" : "text-slate-500"
+            )}>{task.status}</span>
+            <span className="text-slate-500 font-mono">{task.progress}%</span>
+          </div>
+          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-indigo-600 transition-all duration-500"
+              style={{ width: `${task.progress}%` }}
+            />
+          </div>
+        </div>
+      )
+    },
+    {
+      header: "Assigned To",
+      render: (task: any) => (
+        <div className="flex flex-col gap-1">
+          {task.assignedTo && task.assignedTo.length > 0 ? (
+            task.assignedTo.map((user: any, i: number) => {
+              const nameStr = typeof user === "object" ? (user.name || "") : (user || "");
+              return (
+                <span key={i} className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md w-fit">
+                  {nameStr}
+                </span>
+              );
+            })
+          ) : (
+            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Unassigned</span>
+          )}
+        </div>
+      )
+    },
+    {
+      header: "Action",
+      className: "text-right",
+      render: (task: any) => (
+        <ActionButtons
+          hasEdit={canCreate}
+          hasDelete={canCreate}
+          hasExpand={true}
+          isExpanded={expandedTaskId === task.id}
+          onEdit={(e) => {
+            e.stopPropagation();
+            setEditingTask(task);
+            setNewTask({
+              title: task.title,
+              project: (task.projectId || (task.project as any)?.id || task.project as any)?._id || (task.project as any)?.id || task.project as string,
+              assignedTo: task.assignedTo?.map((s: any) => s._id || s.id || s) || [],
+              priority: task.priority || "Medium",
+              startDate: task.startDate || new Date().toISOString().split('T')[0],
+              endDate: task.endDate || new Date().toISOString().split('T')[0],
+            });
+            setIsModalOpen(true);
+          }}
+          onDelete={(e) => {
+            e.stopPropagation();
+            setTaskToDelete(task.id);
+            setIsConfirmOpen(true);
+          }}
+          onExpand={(e) => {
+            e.stopPropagation();
+            setExpandedTaskId(expandedTaskId === task.id ? null : task.id);
+          }}
+        />
+      )
+    }
+  ];
+
+  const renderExpandedRow = (task: any) => (
+    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-top-2 duration-300">
+      <div className="space-y-4">
+        {!isViewOnly && (
+          <>
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Update Task Status</h4>
+            <div className="flex flex-wrap gap-2">
+              {["Pending", "In Progress", "Completed"].map((status) => (
+                <Button
+                  key={status}
+                  variant={task.status === status ? "primary" : "outline"}
+                  size="sm"
+                  className="rounded-xl text-[10px] h-8"
+                  onClick={() => updateOfficeTaskStatus(task.id, status as any)}
+                >
+                  {status}
+                </Button>
+              ))}
+            </div>
+          </>
+        )}
+        <div className="pt-2">
+          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Notes</h4>
+          <div className="space-y-2">
+            <textarea
+              className="w-full text-sm text-slate-700 bg-white p-3 rounded-xl border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
+              rows={3}
+              placeholder="Add notes..."
+              value={noteValues[task.id] ?? (task.notes || "")}
+              onChange={(e) => setNoteValues(prev => ({ ...prev, [task.id]: e.target.value }))}
+            />
+            <Button
+              size="sm"
+              className="text-[10px] h-8"
+              onClick={async () => {
+                await updateOfficeTask(task.id, { notes: noteValues[task.id] ?? task.notes });
+                setNoteValues(prev => {
+                  const next = { ...prev };
+                  delete next[task.id];
+                  return next;
+                });
+                toast.success("Notes saved successfully");
+              }}
+            >
+              Save Notes
+            </Button>
+          </div>
+        </div>
+      </div>
+      <div className="space-y-4">
+        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Design Photos</h4>
+        <TaskImageUpload
+          taskId={task.id}
+          type="Office"
+          existingImages={task.images}
+          canDelete={canDeleteImages(task)}
+          onUploadComplete={() => {
+            refreshTasks();
+            toast.success("Photos updated successfully");
+          }}
+        />
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 w-full p-4 sm:p-6">
@@ -306,190 +494,22 @@ export default function OfficeWorkPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="px-6 py-4">Task Detail</TableHead>
-                  <TableHead className="px-6 py-4">Project</TableHead>
-                  <TableHead className="px-6 py-4">Status & Progress</TableHead>
-                  <TableHead className="px-6 py-4">Assigned To</TableHead>
-                  <TableHead className="px-6 py-4 text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTasks.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-slate-500">No active tasks found in this category.</TableCell>
-                  </TableRow>
-                )}
-                {filteredTasks.map((task) => (
-                  <Fragment key={task.id}>
-                    <TableRow
-                      key={task.id}
-                      className={cn(
-                        "hover:bg-slate-50/50 transition-colors group cursor-pointer",
-                        expandedTaskId === task.id && "bg-slate-50"
-                      )}
-                      onClick={() => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
-                    >
-                      <TableCell className="px-6 py-4">
-                        <div className="space-y-1">
-                          <p className="text-sm font-bold text-slate-900">{task.title}</p>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant={task.priority === "High" || task.priority === "Critical" ? "destructive" : "warning"} className="text-[9px] px-1.5 py-0">
-                              {task.priority || "Medium"}
-                            </Badge>
-                            {task.startDate && <span className="text-[11px] text-slate-600 font-bold bg-slate-100 px-2 py-0.5 rounded-md">Start: {formatDateForDisplay(task.startDate)}</span>}
-                            {task.endDate && <span className="text-[11px] text-slate-600 font-bold bg-slate-100 px-2 py-0.5 rounded-md">End: {formatDateForDisplay(task.endDate)}</span>}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-6 py-4">
-                        <p className="text-xs font-bold text-slate-700">{toTitleCase((task.project as any)?.name || task.project)}</p>
-                      </TableCell>
-                      <TableCell className="px-6 py-4">
-                        <div className="space-y-2 max-w-[150px]">
-                          <div className="flex justify-between items-center text-[10px] font-bold">
-                            <span className={cn(
-                              "uppercase tracking-widest",
-                              task.status === "Completed" ? "text-green-600" :
-                                task.status === "In Progress" ? "text-blue-600" : "text-slate-500"
-                            )}>{task.status}</span>
-                            <span className="text-slate-500 font-mono">{task.progress}%</span>
-                          </div>
-                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-indigo-600 transition-all duration-500"
-                              style={{ width: `${task.progress}%` }}
-                            />
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-6 py-4">
-                        <div className="flex flex-col gap-1">
-                          {task.assignedTo && task.assignedTo.length > 0 ? (
-                            task.assignedTo.map((user: any, i: number) => {
-                              const nameStr = typeof user === "object" ? (user.name || "") : (user || "");
-                              return (
-                                <span key={i} className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md w-fit">
-                                  {nameStr}
-                                </span>
-                              );
-                            })
-                          ) : (
-                            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Unassigned</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-6 py-4 text-right">
-                        <ActionButtons
-                          hasEdit={canCreate}
-                          hasDelete={canCreate}
-                          hasExpand={true}
-                          isExpanded={expandedTaskId === task.id}
-                          onEdit={(e) => {
-                            e.stopPropagation();
-                            setEditingTask(task);
-                            setNewTask({
-                              title: task.title,
-                              project: (task.projectId || (task.project as any)?.id || task.project as any)?._id || (task.project as any)?.id || task.project as string,
-                              assignedTo: task.assignedTo?.map((s: any) => s._id || s.id || s) || [],
-                              priority: task.priority || "Medium",
-                              startDate: task.startDate || new Date().toISOString().split('T')[0],
-                              endDate: task.endDate || new Date().toISOString().split('T')[0],
-                            });
-                            setIsModalOpen(true);
-                          }}
-                          onDelete={(e) => {
-                            e.stopPropagation();
-                            setTaskToDelete(task.id);
-                            setIsConfirmOpen(true);
-                          }}
-                          onExpand={(e) => {
-                            e.stopPropagation();
-                            setExpandedTaskId(expandedTaskId === task.id ? null : task.id);
-                          }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                    {expandedTaskId === task.id && (
-                      <TableRow className="bg-slate-50/30 border-b border-slate-100">
-                        <TableCell colSpan={5} className="p-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-top-2 duration-300">
-                            <div className="space-y-4">
-                              {!isViewOnly && (
-                                <>
-                                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Update Task Status</h4>
-                                  <div className="flex flex-wrap gap-2">
-                                    {["Pending", "In Progress", "Completed"].map((status) => (
-                                      <Button
-                                        key={status}
-                                        variant={task.status === status ? "primary" : "outline"}
-                                        size="sm"
-                                        className="rounded-xl text-[10px] h-8"
-                                        onClick={() => updateOfficeTaskStatus(task.id, status as any)}
-                                      >
-                                        {status}
-                                      </Button>
-                                    ))}
-                                  </div>
-                                </>
-                              )}
-                              <div className="pt-2">
-                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Notes</h4>
-                                {false ? (
-                                  <p className="text-sm text-slate-600 bg-white p-3 rounded-xl border border-slate-100 shadow-sm italic">
-                                    {task.notes || "No notes available for this task."}
-                                  </p>
-                                ) : (
-                                  <div className="space-y-2">
-                                    <textarea
-                                      className="w-full text-sm text-slate-700 bg-white p-3 rounded-xl border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
-                                      rows={3}
-                                      placeholder="Add notes..."
-                                      value={noteValues[task.id] ?? (task.notes || "")}
-                                      onChange={(e) => setNoteValues(prev => ({ ...prev, [task.id]: e.target.value }))}
-                                    />
-                                    <Button
-                                      size="sm"
-                                      className="text-[10px] h-8"
-                                      onClick={async () => {
-                                        await updateOfficeTask(task.id, { notes: noteValues[task.id] ?? task.notes });
-                                        setNoteValues(prev => {
-                                          const next = { ...prev };
-                                          delete next[task.id];
-                                          return next;
-                                        });
-                                        toast.success("Notes saved successfully");
-                                      }}
-                                    >
-                                      Save Notes
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="space-y-4">
-                              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Design Photos</h4>
-                              <TaskImageUpload
-                                taskId={task.id}
-                                type="Office"
-                                existingImages={task.images}
-                                canDelete={canDeleteImages(task)}
-                                onUploadComplete={() => {
-                                  refreshTasks();
-                                  toast.success("Photos updated successfully");
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </Fragment>
-                ))}
-              </TableBody>
-            </Table>
+            {isLoading ? (
+              <div className="p-8 text-center text-slate-500">Loading tasks...</div>
+            ) : (
+              <DataTable
+                columns={columns}
+                data={paginatedTasks}
+                pageSize={pageSize}
+                serverTotalItems={totalItems}
+                serverCurrentPage={currentPage}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                renderExpandedRow={renderExpandedRow}
+                expandedRowId={expandedTaskId}
+                onRowClick={(task) => setExpandedTaskId(expandedTaskId === task.id ? null : task.id)}
+              />
+            )}
           </CardContent>
         </Card>
       </div>
