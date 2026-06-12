@@ -126,7 +126,6 @@ export default function AgencyRegisterPage() {
     if (!formData.experience) return toast.error("Please enter Experience.");
     if (!formData.workingCities) return toast.error("Please enter Working Cities.");
     if (!formData.servicesOffered) return toast.error("Please enter Services Offered.");
-    if (projectPhotos.length < 1) return toast.error("Please upload at least 1 project photo.");
 
     setIsLoading(true);
 
@@ -326,8 +325,7 @@ export default function AgencyRegisterPage() {
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-700 flex justify-between">
-                    Project Photos *
-                    <span className="text-slate-400 font-normal">(Min. 1 required)</span>
+                    Project Photos
                   </label>
                   <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 hover:bg-slate-50 hover:border-indigo-300 transition-colors">
                     <input type="file" onChange={handleProjectPhotosChange} accept="image/*" multiple className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
