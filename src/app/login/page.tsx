@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Building2,
   Mail,
@@ -19,6 +20,7 @@ import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import { authService } from "@/services/auth.service";
+import { guestLoginService } from "@/services/guest-login.service";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -74,8 +76,8 @@ export default function LoginPage() {
     if (isGuest) {
       if (!mobile.trim()) {
         newErrors.mobile = "Mobile number is required";
-      } else if (mobile.length < 10) {
-        newErrors.mobile = "Please enter a valid 10-digit mobile number";
+      } else if (mobile.length !== 10) {
+        newErrors.mobile = "Please enter exactly 10 digits for your mobile number";
       }
     } else {
       if (!email.trim()) {
@@ -100,6 +102,7 @@ export default function LoginPage() {
 
     try {
       if (isGuest) {
+        await guestLoginService.recordGuestLogin(mobile);
         await login("", "", true, mobile);
       } else {
         await login(email, password);
@@ -238,7 +241,8 @@ export default function LoginPage() {
                       placeholder="+91 98765 43210"
                       value={mobile}
                       onChange={(e) => {
-                        setMobile(e.target.value);
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setMobile(val);
                         if (errors.mobile) setErrors(prev => {
                           const { mobile, ...rest } = prev;
                           return rest;
@@ -248,6 +252,8 @@ export default function LoginPage() {
                         "w-full pl-10 pr-4 py-3 bg-white border rounded-xl text-sm font-mono focus:outline-none transition-all placeholder:text-slate-300",
                         errors.mobile ? "border-red-500 focus:ring-2 focus:ring-red-500/10" : "border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
                       )}
+                      maxLength={10}
+                      pattern="[0-9]*"
                     />
                   </div>
                   {errors.mobile && <p className="text-[10px] font-bold text-red-500 pl-1">{errors.mobile}</p>}
@@ -271,6 +277,14 @@ export default function LoginPage() {
                   Staff Login →
                 </button>
               </p>
+              <div className="text-center mt-4 pt-4 border-t border-slate-100">
+                <p className="text-xs text-slate-400">
+                  Want to join our network?{" "}
+                  <Link href="/agency-register" className="text-indigo-600 font-semibold hover:underline">
+                    Register your Agency →
+                  </Link>
+                </p>
+              </div>
             </div>
           ) : isForgotPassword ? (
             /* ── FORGOT PASSWORD PANEL ── */
@@ -423,6 +437,14 @@ export default function LoginPage() {
                   Continue as Guest →
                 </button>
               </p>
+              <div className="text-center mt-4 pt-4 border-t border-slate-100">
+                <p className="text-xs text-slate-400">
+                  Want to join our network?{" "}
+                  <Link href="/agency-register" className="text-indigo-600 font-semibold hover:underline">
+                    Register your Agency →
+                  </Link>
+                </p>
+              </div>
             </div>
           )}
         </div>

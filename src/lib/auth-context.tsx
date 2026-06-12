@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 
 import { authService } from "@/services/auth.service";
+import { guestLoginService } from "@/services/guest-login.service";
 import { useRoles } from "./role-context";
 
 // Role is now a string to support dynamic custom roles
@@ -67,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: "guest",
         mobile
       };
+      
       setUser(guestUser);
       localStorage.setItem("auth_user", JSON.stringify(guestUser));
       router.push("/guest/home");

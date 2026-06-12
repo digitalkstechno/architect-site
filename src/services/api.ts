@@ -22,7 +22,7 @@ export const api = {
 
   async post<T = any>(endpoint: string, body: any, options: { headers?: any } = {}): Promise<T> {
     const defaultHeaders = await getHeaders();
-    
+
     // If body is FormData, don't set Content-Type header manually, let the browser do it with the boundary
     const headers = { ...defaultHeaders, ...options.headers };
     if (body instanceof FormData) {

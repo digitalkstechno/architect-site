@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Briefcase, CheckSquare, Users, ClipboardList,
   CreditCard, Building2, UserCircle2, Calendar, BarChart3,
   Settings, LogOut, MessageSquare, Camera, X, HardHat, BookOpen,
-  PenTool, Hammer
+  PenTool, Hammer, UserPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -32,6 +32,7 @@ const PAGE_ICONS: Record<string, React.ElementType> = {
   messages: MessageSquare,
   "agency-register": Building2,
   "agency-approvals": Briefcase,
+  "guest-log": UserPlus,
   settings: Settings,
 };
 
@@ -54,6 +55,7 @@ const PAGE_LABELS: Record<string, string> = {
   messages: "Messages",
   "agency-register": "Agency Register",
   "agency-approvals": "Pending Agencies",
+  "guest-log": "Guest Log",
   settings: "Settings",
 };
 

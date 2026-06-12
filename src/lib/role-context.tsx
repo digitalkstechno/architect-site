@@ -37,6 +37,7 @@ export const ALL_PAGES = [
   { key: "roles", label: "Role Management" },
   { key: "agency-register", label: "Agency Register" },
   { key: "agency-approvals", label: "Agency Approvals" },
+  { key: "guest-log", label: "Guest Log" },
   { key: "settings", label: "Settings" },
 ];
 

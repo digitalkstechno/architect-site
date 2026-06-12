@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
@@ -380,6 +381,14 @@ export default function AgencyRegisterPage() {
               <p className="text-center text-xs text-slate-400 mt-4 font-medium">
                 By submitting this form, you agree to our Terms of Service and Privacy Policy.
               </p>
+              <div className="mt-6 pt-6 border-t border-slate-100 text-center">
+                <p className="text-sm text-slate-500 font-medium">
+                  Already have an agency account?{" "}
+                  <Link href="/login" className="text-indigo-600 font-bold hover:underline">
+                    Login here &rarr;
+                  </Link>
+                </p>
+              </div>
             </div>
           </form>
         </div>

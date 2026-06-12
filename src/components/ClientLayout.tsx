@@ -28,6 +28,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const isResetPasswordPage = pathname === "/reset-password";
   const isAgencyRegisterPage = pathname === "/agency-register";
 
+  // Prevent flash of unauthorized or layout when user logs out and is being redirected to /login
+  // if (!user && !isLoginPage && !isResetPasswordPage && !isAgencyRegisterPage) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center bg-slate-50">
+  //       <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+  //     </div>
+  //   );
+  // }
+
   if (isLoginPage || isResetPasswordPage || isAgencyRegisterPage) {
     return <main className="min-h-screen bg-slate-50">{children}</main>;
   }
@@ -51,13 +60,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   const currentPageKey = getPageKey(pathname);
   const EXEMPT_PAGES = ["login", "reset-password", "profile"];
-  
+
   const isAuthorized = EXEMPT_PAGES.includes(currentPageKey) || allowedPages.includes(currentPageKey);
 
   return (
     <div className="flex relative">
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-300"
           onClick={() => setIsSidebarOpen(false)}
         />
