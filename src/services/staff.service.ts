@@ -11,6 +11,7 @@ export interface StaffMember {
   team: string;
   isActive: boolean;
   experience?: number;
+  password?: string;
 }
 
 export const staffService = {

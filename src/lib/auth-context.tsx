@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const savedUser = localStorage.getItem("auth_user");
       const savedToken = localStorage.getItem("token");
-      
+
       if (savedUser && savedToken) {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
@@ -91,10 +91,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("token", data.token);
       // Dispatch storage event so stores re-fetch with the new token
       window.dispatchEvent(new Event("storage"));
-      
+
       // Refresh roles to ensure correct permissions are loaded for the sidebar
       await refreshRoles();
-      
+
       router.push("/");
     } catch (error: any) {
       throw error;
@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoading) return;
-    const isPublicPage = pathname === "/login" || pathname === "/reset-password";
+    const isPublicPage = pathname === "/login" || pathname === "/reset-password" || pathname === "/agency-register";
     const isGuestPage = pathname.startsWith("/guest");
     if (!user && !isPublicPage) {
       router.push("/login");

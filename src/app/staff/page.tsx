@@ -64,7 +64,7 @@ export default function StaffPage() {
       setFormData({
         name: member.name,
         email: member.email,
-        password: "",
+        password: member.password || "",
         phone: member.phone || "",
         role: member.role?._id || "",
         team: member.team || "Office",
@@ -254,7 +254,7 @@ export default function StaffPage() {
         <DataTable columns={columns} data={filteredStaff} />
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingStaff ? "Edit Staff Member" : "Add New Staff Member"}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingStaff ? "Edit Staff Member" : "Add New Staff Member"} className="max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-6 pt-2">
           
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
