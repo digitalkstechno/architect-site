@@ -13,4 +13,12 @@ export const authService = {
   async getMe() {
     return api.get(endPointApi.getMe);
   },
+
+  async forgotPassword(email: string) {
+    return api.post(endPointApi.forgotPassword, { email });
+  },
+
+  async resetPassword(data: { token: string; password: string }) {
+    return api.post(endPointApi.resetPassword, data);
+  },
 };

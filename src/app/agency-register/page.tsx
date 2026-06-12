@@ -144,14 +144,7 @@ export default function AgencyRegisterPage() {
         data.append("projectPhotos", photo);
       });
 
-      const res = await fetch("http://localhost:5000/api/agencies/register", {
-        method: "POST",
-        body: data,
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) throw new Error(result.message || "Failed to submit registration");
+      await agencyService.submitRegistration(data);
 
       setIsSuccess(true);
       toast.success("Registration submitted successfully!");
@@ -310,14 +303,25 @@ export default function AgencyRegisterPage() {
                 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-700">Profile Photo / Logo *</label>
-                  <div 
-                    onClick={() => profilePhotoRef.current?.click()}
-                    className="border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 hover:bg-slate-50 hover:border-indigo-300 transition-colors cursor-pointer"
-                  >
+                  <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 hover:bg-slate-50 hover:border-indigo-300 transition-colors">
+                    <input type="file" onChange={handleProfilePhotoChange} accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                     <UploadCloud className="w-8 h-8 mb-2 text-indigo-400" />
-                    <span className="text-xs font-medium">{profilePhoto ? profilePhoto.name : "Click to upload logo"}</span>
-                    <input type="file" ref={profilePhotoRef} onChange={handleProfilePhotoChange} accept="image/*" className="hidden" />
+                    <span className="text-xs font-medium text-center">{profilePhoto ? profilePhoto.name : "Click to upload logo"}</span>
                   </div>
+                  {profilePhoto && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 group">
+                        <img src={URL.createObjectURL(profilePhoto)} alt="preview" className="w-full h-full object-cover" />
+                        <button 
+                          type="button" 
+                          onClick={() => setProfilePhoto(null)}
+                          className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white z-20"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -325,32 +329,28 @@ export default function AgencyRegisterPage() {
                     Project Photos *
                     <span className="text-slate-400 font-normal">(Min. 1 required)</span>
                   </label>
-                  <div 
-                    onClick={() => projectPhotosRef.current?.click()}
-                    className="border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 hover:bg-slate-50 hover:border-indigo-300 transition-colors cursor-pointer"
-                  >
+                  <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 hover:bg-slate-50 hover:border-indigo-300 transition-colors">
+                    <input type="file" onChange={handleProjectPhotosChange} accept="image/*" multiple className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                     <UploadCloud className="w-8 h-8 mb-2 text-indigo-400" />
-                    <span className="text-xs font-medium">Click to upload photos ({projectPhotos.length}/10)</span>
-                    <input type="file" ref={projectPhotosRef} onChange={handleProjectPhotosChange} accept="image/*" multiple className="hidden" />
+                    <span className="text-xs font-medium text-center">Click to upload photos ({projectPhotos.length}/10)</span>
                   </div>
+                  {projectPhotos.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {projectPhotos.map((photo, idx) => (
+                        <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 group">
+                          <img src={URL.createObjectURL(photo)} alt="preview" className="w-full h-full object-cover" />
+                          <button 
+                            type="button" 
+                            onClick={() => removeProjectPhoto(idx)}
+                            className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white z-20"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-
-                {projectPhotos.length > 0 && (
-                  <div className="md:col-span-2 flex flex-wrap gap-2 mt-2">
-                    {projectPhotos.map((photo, idx) => (
-                      <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 group">
-                        <img src={URL.createObjectURL(photo)} alt="preview" className="w-full h-full object-cover" />
-                        <button 
-                          type="button" 
-                          onClick={() => removeProjectPhoto(idx)}
-                          className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-700">Completed Projects Count</label>

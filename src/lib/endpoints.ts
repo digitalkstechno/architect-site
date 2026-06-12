@@ -6,6 +6,8 @@ export interface EndPointApi {
   login: string;
   register: string;
   getMe: string;
+  forgotPassword: string;
+  resetPassword: string;
 
   // Projects
   projects: string;
@@ -59,6 +61,8 @@ const endPointApi: EndPointApi = {
   login: "/auth/login",
   register: "/auth/register",
   getMe: "/auth/me",
+  forgotPassword: "/auth/forgot-password",
+  resetPassword: "/auth/reset-password",
 
   // Projects
   projects: "/projects",

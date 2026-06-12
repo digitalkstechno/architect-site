@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { authService } from "@/services/auth.service";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -53,13 +54,7 @@ export default function LoginPage() {
     
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to send reset email");
+      await authService.forgotPassword(email);
       
       setRecoveredPassword("SENT"); // using this as a flag that it was sent successfully
       toast.success("Password reset email sent!");

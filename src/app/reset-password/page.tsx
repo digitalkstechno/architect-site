@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, Eye, EyeOff, ChevronRight, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { authService } from "@/services/auth.service";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -44,15 +45,7 @@ function ResetPasswordForm() {
 
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) throw new Error(data.message || "Failed to reset password");
+      await authService.resetPassword({ token, password });
       
       setIsSuccess(true);
       toast.success("Password reset successfully!");
