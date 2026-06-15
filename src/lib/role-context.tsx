@@ -31,7 +31,6 @@ export const ALL_PAGES = [
   { key: "payments", label: "Payments" },
   { key: "invoices", label: "Invoices" },
   { key: "calendar", label: "Calendar" },
-  { key: "reports", label: "Reports" },
   { key: "messages", label: "Messages" },
   { key: "staff", label: "Staff Management" },
   { key: "roles", label: "Role Management" },
@@ -74,7 +73,7 @@ export const DEFAULT_ROLES: RoleConfig[] = [
   },
   {
     id: "accountant", name: "ACCOUNTANT", color: "purple", canDelete: false,
-    pages: ["dashboard", "payments", "reports", "working-sop"],
+    pages: ["dashboard", "payments", "working-sop"],
     permissions: [],
   },
   {

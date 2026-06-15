@@ -29,13 +29,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const isAgencyRegisterPage = pathname === "/agency-register";
 
   // Prevent flash of unauthorized or layout when user logs out and is being redirected to /login
-  // if (!user && !isLoginPage && !isResetPasswordPage && !isAgencyRegisterPage) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center bg-slate-50">
-  //       <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-  //     </div>
-  //   );
-  // }
+  if (!user && !isLoginPage && !isResetPasswordPage && !isAgencyRegisterPage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="w-12 h-12 border-4 border-primary-600 dark:border-primary-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (isLoginPage || isResetPasswordPage || isAgencyRegisterPage) {
     return <main className="min-h-screen bg-slate-50">{children}</main>;

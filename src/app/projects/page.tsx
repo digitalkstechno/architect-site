@@ -334,7 +334,7 @@ export default function ProjectsPage() {
 
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)}
         title={editingProject ? "Edit Project" : "Create New Project"} className="max-w-2xl">
-        <form onSubmit={handleSubmit} className="space-y-6 max-h-[75vh] overflow-y-auto pr-1">
+        <form onSubmit={handleSubmit} className="space-y-6 pr-1">
 
           {/* Project Name & Client Selection - Side by Side */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

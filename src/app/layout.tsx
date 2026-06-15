@@ -11,6 +11,7 @@ import { SiteTasksProvider } from "@/lib/site-tasks-store";
 import { SiteUpdatesProvider } from "@/lib/site-updates-store";
 import { PaymentsProvider } from "@/lib/payments-store";
 import { NotificationProvider } from "@/lib/notification-context";
+import { ThemeProvider } from "@/lib/theme-context";
 import { Toaster } from "react-hot-toast";
 
 const nunito = Nunito_Sans({
@@ -62,8 +63,10 @@ export default function RootLayout({
                     <SiteUpdatesProvider>
                       <PaymentsProvider>
                         <NotificationProvider>
-                          <ClientLayout>{children}</ClientLayout>
-                          <Toaster position="top-right" />
+                          <ThemeProvider>
+                            <ClientLayout>{children}</ClientLayout>
+                            <Toaster position="top-right" />
+                          </ThemeProvider>
                         </NotificationProvider>
                       </PaymentsProvider>
                     </SiteUpdatesProvider>

@@ -93,6 +93,7 @@ export default function StaffPage() {
     if (!formData.email.trim()) newErrors.email = "Email is required";
     if (!editingStaff && !formData.password) newErrors.password = "Password is required";
     if (!formData.role) newErrors.role = "Role is required";
+    if (formData.phone && !/^\d{10}$/.test(formData.phone)) newErrors.phone = "Phone number must be exactly 10 digits";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -326,8 +327,20 @@ export default function StaffPage() {
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 ml-1">Phone Number</label>
-                <Input placeholder="e.g., +1 234 567 890" value={formData.phone}
-                  onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} className="h-10 text-sm bg-white" />
+                <Input 
+                  placeholder="e.g., 9876543210" 
+                  value={formData.phone}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    setFormData(f => ({ ...f, phone: val }));
+                    if (errors.phone) setErrors(prev => {
+                      const { phone, ...rest } = prev;
+                      return rest;
+                    });
+                  }} 
+                  error={errors.phone}
+                  className="h-10 text-sm bg-white" 
+                />
               </div>
             </div>
           </div>

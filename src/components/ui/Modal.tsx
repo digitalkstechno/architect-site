@@ -23,17 +23,17 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
       />
       <div className={cn(
         "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50",
-        "w-[95vw] max-w-lg bg-white rounded-lg shadow-xl border border-slate-200",
-        "animate-in zoom-in-95 duration-200",
+        "w-[95vw] max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200",
+        "animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]",
         className
       )}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50 rounded-t-lg">
-          <h3 className="text-base font-medium text-slate-900 tracking-tight">{title}</h3>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 -mr-2 text-slate-400 hover:text-slate-600">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white rounded-t-2xl shrink-0">
+          <h3 className="text-base font-black text-slate-900 tracking-tight uppercase">{title}</h3>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 -mr-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
             <X className="w-4 h-4" />
           </Button>
         </div>
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
           {children}
         </div>
       </div>

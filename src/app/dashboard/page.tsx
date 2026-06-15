@@ -55,7 +55,7 @@ export default function CompleteDashboardPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-12 w-full p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-indigo-900 to-indigo-800 p-8 rounded-3xl text-white shadow-xl shadow-indigo-900/20 relative overflow-hidden">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-indigo-900 to-indigo-800 p-6 md:p-8 rounded-3xl text-white shadow-xl shadow-indigo-900/20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
         <div className="space-y-2 relative z-10">
           <h1 className="text-3xl font-bold tracking-tight">Complete Overview</h1>

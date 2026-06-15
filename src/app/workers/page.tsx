@@ -226,7 +226,7 @@ export default function WorkersPage() {
 
       {/* Add Worker Modal */}
       <Modal isOpen={isAddModalOpen} onClose={() => { setIsAddModalOpen(false); setForm(emptyForm); setShowSpecDropdown(false); }} title="Register New Worker">
-        <form onSubmit={handleAdd} className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+        <form onSubmit={handleAdd} className="space-y-5 pr-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 ml-1">Full Name *</label>

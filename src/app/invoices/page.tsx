@@ -179,7 +179,7 @@ export default function InvoicesPage() {
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Edit Invoice" : "New Invoice"}>
-        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto px-1 pb-4">
+        <form onSubmit={handleSubmit} className="space-y-4 px-1 pb-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold">Client</label>

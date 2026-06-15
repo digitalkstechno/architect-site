@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, Search, UserCircle, Settings, Menu, X, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Bell, Search, UserCircle, Settings, Menu, X, CheckCircle2, Clock, AlertCircle, MessageSquare } from "lucide-react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +11,7 @@ import { useNotification } from "@/lib/notification-context";
 import { Pause, Play } from "lucide-react";
 import { attendanceService } from "@/services/attendance.service";
 import toast from "react-hot-toast";
+import { useTheme } from "@/lib/theme-context";
 
 const getPageTitle = (pathname: string) => {
   if (pathname === "/") return "Dashboard Overview";
@@ -21,7 +23,6 @@ const getPageTitle = (pathname: string) => {
   // if (pathname === "/site-updates") return "Recent Site Updates";
   if (pathname === "/payments") return "Financial Overview";
   if (pathname === "/calendar") return "Project Schedule";
-  if (pathname === "/reports") return "Analytics & Reports";
   if (pathname === "/settings") return "System Settings";
   if (pathname === "/site-photos") return "Site Documentation";
   if (pathname === "/messages") return "Communication Hub";
@@ -31,6 +32,7 @@ const getPageTitle = (pathname: string) => {
 export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -96,7 +98,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
 
   if (pathname === "/login") return null;
 
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotification();
+  const { notifications, unreadCount, unreadMessageCount, markAsRead, markAllAsRead } = useNotification();
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -119,33 +121,33 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
         />
       )}
 
-      <header className="h-14 bg-gradient-to-r from-white via-primary-50/50 to-primary-100 border-b border-slate-200 fixed top-0 right-0 left-0 lg:left-60 z-40 flex items-center justify-between px-4 lg:px-6 shadow-sm">
-        <div className="flex items-center gap-4">
+      <header className="h-14 bg-gradient-to-r from-white via-primary-50/50 to-primary-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 border-b border-slate-200 dark:border-slate-800 fixed top-0 right-0 left-0 lg:left-60 z-40 flex items-center justify-between px-4 lg:px-6 shadow-sm">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden h-8 w-8"
+            className="lg:hidden h-8 w-8 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
             onClick={onMenuToggle}
           >
             <Menu className="w-4 h-4" />
           </Button>
           <div className="flex flex-col">
-            <h1 className="text-sm font-medium text-slate-900 tracking-tight">
+            <h1 className="text-sm font-medium text-slate-900 dark:text-white tracking-tight">
               {getPageTitle(pathname)}
             </h1>
-            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider hidden sm:block">
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider hidden sm:block">
               {user?.role} / {pathname === "/" ? "Overview" : pathname.split("/")[1]}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <div className="hidden md:flex relative group">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-primary-600 transition-colors" />
+            <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-primary-600 dark:group-focus-within:text-primary-400 transition-colors" />
             <input
               type="text"
               placeholder="Quick search..."
-              className="bg-slate-50 border border-slate-200 rounded-md pl-9 pr-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/10 focus:border-primary-500 w-64 transition-all"
+              className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-md pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-500/10 dark:focus:ring-primary-500/30 focus:border-primary-500 dark:focus:border-primary-500 w-64 transition-all"
             />
           </div>
 
@@ -178,6 +180,24 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
               </div>
             )}
 
+            {/* Messages */}
+            <div className="relative">
+              <Link href="/messages">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 relative"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  {unreadMessageCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 bg-red-500 rounded-full border border-white flex items-center justify-center px-1 text-[9px] font-bold text-white shadow-sm animate-in zoom-in">
+                      {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+            </div>
+
             {/* Notifications */}
             <div className="relative">
               <Button
@@ -196,12 +216,12 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
               </Button>
 
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg border border-slate-200 py-2 animate-in fade-in zoom-in-95 duration-150 origin-top-right">
-                  <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-slate-900">Notifications</h3>
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-md shadow-lg border border-slate-200 dark:border-slate-800 py-2 animate-in fade-in zoom-in-95 duration-150 origin-top-right">
+                  <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white">Notifications</h3>
                     <button 
                       onClick={() => markAllAsRead()}
-                      className="text-[10px] font-bold text-primary-600 hover:text-primary-700 uppercase tracking-widest"
+                      className="text-[10px] font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 uppercase tracking-widest"
                     >
                       Mark all read
                     </button>
@@ -216,16 +236,18 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                           key={n._id} 
                           onClick={() => markAsRead(n._id)}
                           className={cn(
-                            "px-4 py-3 transition-colors cursor-pointer flex gap-3 border-b border-slate-50 last:border-0",
-                            n.isRead ? "bg-white hover:bg-slate-50" : "bg-primary-50/50 hover:bg-primary-50"
+                            "px-4 py-3 transition-colors cursor-pointer flex gap-3 border-b border-slate-50 dark:border-slate-800/50 last:border-0",
+                            n.isRead 
+                              ? "bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800" 
+                              : "bg-primary-50/50 dark:bg-primary-900/20 hover:bg-primary-50 dark:hover:bg-primary-900/40"
                           )}
                         >
-                          <div className={cn("mt-0.5 p-1 rounded-full", bg, color)}>
+                          <div className={cn("mt-0.5 p-1 rounded-full", bg, color, "dark:bg-slate-800 dark:text-slate-300")}>
                             <Icon className="w-3.5 h-3.5" />
                           </div>
                           <div className="space-y-0.5 flex-1">
-                            <p className={cn("text-xs leading-tight", n.isRead ? "font-medium text-slate-600" : "font-bold text-slate-900")}>{n.text}</p>
-                            <p className="text-[10px] text-slate-400 font-medium">
+                            <p className={cn("text-xs leading-tight", n.isRead ? "font-medium text-slate-600 dark:text-slate-400" : "font-bold text-slate-900 dark:text-slate-200")}>{n.text}</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
                               {new Date(n.createdAt).toLocaleDateString()} {new Date(n.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                             </p>
                           </div>
@@ -233,8 +255,8 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                       );
                     })}
                   </div>
-                  <div className="px-4 pt-2 text-center border-t border-slate-100">
-                    <Button variant="ghost" className="w-full text-[10px] font-bold uppercase tracking-widest">View All Notifications</Button>
+                  <div className="px-4 pt-2 text-center border-t border-slate-100 dark:border-slate-800">
+                    <Button variant="ghost" className="w-full text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">View All Notifications</Button>
                   </div>
                 </div>
               )}
@@ -255,40 +277,46 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
               </Button>
 
               {showSettings && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-slate-200 py-2 animate-in fade-in zoom-in-95 duration-150 origin-top-right">
-                  <div className="px-4 py-2 border-b border-slate-100">
-                    <h3 className="text-xs font-bold text-slate-900">Quick Settings</h3>
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-md shadow-lg border border-slate-200 dark:border-slate-800 py-2 animate-in fade-in zoom-in-95 duration-150 origin-top-right">
+                  <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white">Quick Settings</h3>
                   </div>
                   <div className="py-1">
-                    <button className="w-full px-4 py-2 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-3">
+                    <button className="w-full px-4 py-2 text-left text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3">
                       <UserCircle className="w-4 h-4" />
                       Edit Profile
                     </button>
-                    <button className="w-full px-4 py-2 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-3">
+                    <button className="w-full px-4 py-2 text-left text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3">
                       <Settings className="w-4 h-4" />
                       Preferences
                     </button>
-                    <div className="mx-4 my-1 border-t border-slate-100" />
+                    <div className="mx-4 my-1 border-t border-slate-100 dark:border-slate-800" />
                     <div className="px-4 py-2 flex items-center justify-between">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dark Mode</span>
-                      <div className="w-8 h-4 bg-slate-200 rounded-full relative cursor-pointer">
-                        <div className="absolute left-1 top-1 w-2 h-2 bg-white rounded-full shadow-sm" />
-                      </div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTheme();
+                        }}
+                        className={cn("w-8 h-4 rounded-full relative cursor-pointer transition-colors duration-300", theme === "dark" ? "bg-primary-500" : "bg-slate-200")}
+                      >
+                        <div className={cn("absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-300", theme === "dark" ? "translate-x-4" : "translate-x-0.5")} />
+                      </button>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="h-8 w-[1px] bg-slate-200 mx-1 lg:mx-2 hidden sm:block" />
+            <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1 lg:mx-2 hidden sm:block" />
 
-            <button className="flex items-center gap-3 p-1.5 hover:bg-slate-50 rounded-xl transition-all duration-200 group">
-              <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center group-hover:bg-primary-200 transition-colors flex-shrink-0">
-                <UserCircle className="w-6 h-6 text-primary-600" />
+            <button className="flex items-center gap-3 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all duration-200 group">
+              <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/50 rounded-lg flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-800/80 transition-colors flex-shrink-0">
+                <UserCircle className="w-6 h-6 text-primary-600 dark:text-primary-400" />
               </div>
               <div className="text-left hidden lg:block">
-                <p className="text-xs font-bold text-slate-900 leading-none truncate max-w-[100px]">{user?.name}</p>
-                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest mt-1">{user?.role}</p>
+                <p className="text-xs font-bold text-slate-900 dark:text-slate-200 leading-none truncate max-w-[100px]">{user?.name}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest mt-1">{user?.role}</p>
               </div>
             </button>
           </div>

@@ -54,6 +54,17 @@ export interface EndPointApi {
   // Site Photos
   sitePhotos: string;
   sitePhotoById: (id: string) => string;
+
+  // Messages
+  messages: string;
+  messageConversations: string;
+  messagesByContact: (contactId: string) => string;
+  markMessagesRead: (contactId: string) => string;
+  deleteMessage: (id: string) => string;
+
+  // Working SOPs
+  workingSOPs: string;
+  workingSOPById: (id: string) => string;
 }
 
 const endPointApi: EndPointApi = {
@@ -109,6 +120,17 @@ const endPointApi: EndPointApi = {
   // Site Photos
   sitePhotos: "/site-photos",
   sitePhotoById: (id: string) => `/site-photos/${id}`,
+
+  // Messages
+  messages: "/messages",
+  messageConversations: "/messages/conversations",
+  messagesByContact: (contactId: string) => `/messages/${contactId}`,
+  markMessagesRead: (contactId: string) => `/messages/${contactId}/read`,
+  deleteMessage: (id: string) => `/messages/${id}`,
+
+  // Working SOPs
+  workingSOPs: "/working-sops",
+  workingSOPById: (id: string) => `/working-sops/${id}`,
 };
 
 export default endPointApi;

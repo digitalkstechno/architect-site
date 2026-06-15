@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { useRoles } from "@/lib/role-context";
+import { useNotification } from "@/lib/notification-context";
 import { Button } from "@/components/ui/Button";
 
 const PAGE_ICONS: Record<string, React.ElementType> = {
@@ -28,7 +29,6 @@ const PAGE_ICONS: Record<string, React.ElementType> = {
   payments: CreditCard,
   invoices: ClipboardList,
   calendar: Calendar,
-  reports: BarChart3,
   messages: MessageSquare,
   "agency-register": Building2,
   "agency-approvals": Briefcase,
@@ -51,7 +51,6 @@ const PAGE_LABELS: Record<string, string> = {
   payments: "Payments",
   invoices: "Invoices",
   calendar: "Calendar",
-  reports: "Reports",
   messages: "Messages",
   "agency-register": "Agency Register",
   "agency-approvals": "Pending Agencies",
@@ -91,13 +90,14 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { getRoleById, isInitialized } = useRoles();
+  const { unreadMessageCount } = useNotification();
 
   if (pathname === "/login") return null;
 
   if (!isInitialized && user) {
     return (
-      <div className="w-60 h-screen bg-white text-slate-800 flex flex-col items-center justify-center border-r border-slate-200">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="w-60 h-screen bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col items-center justify-center border-r border-slate-200 dark:border-slate-800">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 dark:border-primary-400"></div>
       </div>
     );
   }
@@ -118,15 +118,15 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
   });
 
   return (
-    <div className="w-60 h-screen bg-gradient-to-b from-primary-100 via-primary-50/50 to-white text-slate-800 flex flex-col relative border-r border-slate-200">
+    <div className="w-60 h-screen bg-gradient-to-b from-primary-100 via-primary-50/50 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 text-slate-800 dark:text-slate-200 flex flex-col relative border-r border-slate-200 dark:border-slate-800">
       <div className="px-6 py-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-premium p-1.5 rounded-lg text-white">
             <Building2 className="w-5 h-5" />
           </div>
-          <span className="text-lg font-bold text-slate-900 tracking-tight">ArchiSite</span>
+          <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">ArchiSite</span>
         </div>
-        <Button variant="ghost" size="icon" className="lg:hidden text-slate-400 hover:text-slate-800 hover:bg-slate-100" onClick={onMobileClose}>
+        <Button variant="ghost" size="icon" className="lg:hidden text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800" onClick={onMobileClose}>
           <X className="w-4 h-4" />
         </Button>
       </div>
@@ -138,13 +138,20 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
           return (
             <Link key={item.key} href={item.href} onClick={onMobileClose}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-200 tracking-tight border-l-4 rounded-r-xl rounded-l-none",
+                "flex items-center justify-between px-3 py-2.5 text-sm font-medium transition-all duration-200 tracking-tight border-l-4 rounded-r-xl rounded-l-none",
                 isActive
-                  ? "bg-gradient-to-r from-primary-100/60 to-primary-50/20 text-primary-700 font-semibold border-primary-600 pl-2.5"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-950 border-transparent hover:border-slate-200 pl-2.5"
+                  ? "bg-gradient-to-r from-primary-100/60 to-primary-50/20 dark:from-primary-900/40 dark:to-primary-900/10 text-primary-700 dark:text-primary-400 font-semibold border-primary-600 dark:border-primary-500 pl-2.5"
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-slate-200 border-transparent hover:border-slate-200 dark:hover:border-slate-700 pl-2.5"
               )}>
-              <item.icon className={cn("w-4 h-4 transition-transform group-hover:scale-105", isActive ? "text-primary-600" : "text-slate-400")} />
-              {item.name}
+              <div className="flex items-center gap-3">
+                <item.icon className={cn("w-4 h-4 transition-transform group-hover:scale-105", isActive ? "text-primary-600 dark:text-primary-400" : "text-slate-400 dark:text-slate-500")} />
+                {item.name}
+              </div>
+              {item.key === "messages" && unreadMessageCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto">
+                  {unreadMessageCount}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -168,14 +175,14 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
       </div> */}
 
       {/* User Profile */}
-      <div className="p-4 border-t border-slate-200 bg-slate-50/80">
+      <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/50">
         <div className="flex items-center gap-3 px-2 py-2">
-          <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 border border-primary-200/50 font-bold">
+          <div className="w-9 h-9 rounded-xl bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center text-primary-700 dark:text-primary-400 border border-primary-200/50 dark:border-primary-800 font-bold">
             {user?.name?.[0] || "U"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-900 truncate">{user?.name}</p>
-            <p className="text-[10px] text-slate-500 truncate font-medium tracking-wider">
+            <p className="text-xs font-semibold text-slate-900 dark:text-slate-200 truncate">{user?.name}</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate font-medium tracking-wider">
               {roleConfig?.name.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || (typeof user?.role === 'string' ? user.role : 'User')}
             </p>
           </div>
@@ -183,7 +190,7 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
 
         <button
           onClick={logout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 mt-2 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 rounded-lg transition-colors group"
+          className="w-full flex items-center gap-3 px-3 py-2.5 mt-2 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 rounded-lg transition-colors group"
         >
           <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           Sign Out

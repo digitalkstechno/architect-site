@@ -18,8 +18,14 @@ export interface Notification {
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
+  unreadMessageCount: number;
+  setUnreadMessageCount: React.Dispatch<React.SetStateAction<number>>;
+  refreshUnreadMessageCount: () => Promise<void>;
+  onlineUsers: Set<string>;
+  setActiveChatId: (id: string | null) => void;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
+  socket: Socket | null;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -28,6 +34,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const { user } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const activeChatIdRef = React.useRef<string | null>(null);
+
+  const setActiveChatId = React.useCallback((id: string | null) => {
+    activeChatIdRef.current = id;
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -58,20 +71,68 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       });
     });
 
+    newSocket.on("online_users", (users: string[]) => {
+      setOnlineUsers(new Set(users));
+    });
+
+    newSocket.on("user_status", ({ userId, isOnline }: { userId: string, isOnline: boolean }) => {
+      setOnlineUsers(prev => {
+        const next = new Set(prev);
+        if (isOnline) {
+          next.add(userId);
+        } else {
+          next.delete(userId);
+        }
+        return next;
+      });
+    });
+
+    newSocket.on("receive_message", (message: any) => {
+      // Check if message is for us and we are not the sender
+      if (message.receiverId === user.id) {
+        // Only increment if we are not actively viewing this chat
+        if (activeChatIdRef.current !== message.senderId) {
+          setUnreadMessageCount(prev => prev + 1);
+          // Toast for message
+          toast.success("New message received", {
+            icon: '💬',
+            style: {
+              borderRadius: '10px',
+              background: '#4f46e5',
+              color: '#fff',
+            },
+          });
+        }
+      }
+    });
+
     setSocket(newSocket);
 
     // Fetch history
     fetchNotifications();
+    fetchUnreadMessageCount();
 
     return () => {
       newSocket.disconnect();
     };
   }, [user]);
 
+  const fetchUnreadMessageCount = async () => {
+    try {
+      const response = await api.get("/messages/conversations");
+      if (Array.isArray(response)) {
+        const total = response.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
+        setUnreadMessageCount(total);
+      }
+    } catch (error) {
+      console.error("Failed to fetch unread messages count", error);
+    }
+  };
+
   const fetchNotifications = async () => {
     try {
-      const { data } = await api.get("/notifications");
-      setNotifications(Array.isArray(data) ? data : []);
+      const response = await api.get("/notifications");
+      setNotifications(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
       setNotifications([]);
@@ -99,7 +160,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const unreadCount = (notifications || []).filter(n => !n.isRead).length;
 
   return (
-    <NotificationContext.Provider value={{ notifications: notifications || [], unreadCount, markAsRead, markAllAsRead }}>
+    <NotificationContext.Provider value={{ 
+      notifications: notifications || [], 
+      unreadCount, 
+      unreadMessageCount, 
+      setUnreadMessageCount, 
+      refreshUnreadMessageCount: fetchUnreadMessageCount,
+      onlineUsers,
+      setActiveChatId,
+      markAsRead, 
+      markAllAsRead, 
+      socket 
+    }}>
       {children}
     </NotificationContext.Provider>
   );

@@ -228,7 +228,7 @@ export default function RolesPage() {
             <div>
               <label className="text-xs font-bold text-slate-700 mb-3 block">Permissions</label>
 
-              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
+              <div className="space-y-6 pr-2 custom-scrollbar pb-4">
                 {/* Special Permissions */}
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                   <div className="flex items-center gap-2 mb-2">

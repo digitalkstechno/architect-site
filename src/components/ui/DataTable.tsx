@@ -163,58 +163,68 @@ export function DataTable<T>({
       </div>
 
       {/* Pagination UI */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-1 bg-slate-50/50 rounded-xl border border-slate-200">
-        <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
-          <span className="whitespace-nowrap">Page Size:</span>
-          <select
-            value={pageSize}
-            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-            className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            {[5, 10, 20, 50].map(size => (
-              <option key={size} value={size}>{size}</option>
-            ))}
-          </select>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-3 py-3 sm:py-1.5 bg-slate-50/50 rounded-xl border border-slate-200">
+        
+        <div className="flex items-center justify-between w-full sm:w-auto text-sm text-slate-600 font-medium">
+          <div className="flex items-center gap-2">
+            <span className="whitespace-nowrap text-xs">Rows:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+              className="bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {[5, 10, 20, 50].map(size => (
+                <option key={size} value={size}>{size}</option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:hidden text-xs text-slate-500 font-medium font-mono">
+            {totalItems > 0 ? `${startIndex + 1}-${endIndex} of ${totalItems}` : '0-0 of 0'}
+          </div>
         </div>
 
-        <div className="text-sm text-slate-500 font-medium font-mono">
+        <div className="hidden sm:block text-xs text-slate-500 font-medium font-mono">
           {totalItems > 0 ? `${startIndex + 1} to ${endIndex} of ${totalItems}` : '0 to 0 of 0'}
         </div>
 
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => goToPage(1)}
-            disabled={currentPage === 1}
-            className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
-          >
-            <ChevronsLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+        <div className="flex items-center justify-between w-full sm:w-auto gap-1">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => goToPage(1)}
+              disabled={currentPage === 1}
+              className="p-1 rounded-md border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+            >
+              <ChevronsLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="p-1 rounded-md border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
-          <div className="flex items-center px-4 py-1 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg whitespace-nowrap">
+          <div className="flex items-center px-2 py-0.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-md whitespace-nowrap uppercase tracking-widest">
             Page {currentPage} of {totalPages || 1}
           </div>
 
-          <button
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === totalPages || totalPages === 0}
-            className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => goToPage(totalPages)}
-            disabled={currentPage === totalPages || totalPages === 0}
-            className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
-          >
-            <ChevronsRight className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="p-1 rounded-md border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => goToPage(totalPages)}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="p-1 rounded-md border border-slate-200 bg-white text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+            >
+              <ChevronsRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
