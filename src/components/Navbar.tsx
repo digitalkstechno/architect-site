@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, UserCircle, Settings, Menu, X, CheckCircle2, Clock, AlertCircle, MessageSquare } from "lucide-react";
+import { Bell, Search, UserCircle, Settings, Menu, X, CheckCircle2, Clock, AlertCircle, MessageSquare, LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -31,10 +31,11 @@ const getPageTitle = (pathname: string) => {
 
 export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   // Time Tracker State
   const [isClockedIn, setIsClockedIn] = useState(false);
@@ -111,12 +112,13 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
   return (
     <>
       {/* Overlay for closing dropdowns when clicking outside */}
-      {(showNotifications || showSettings) && (
+      {(showNotifications || showSettings || showProfileMenu) && (
         <div
           className="fixed inset-0 z-40 bg-transparent"
           onClick={() => {
             setShowNotifications(false);
             setShowSettings(false);
+            setShowProfileMenu(false);
           }}
         />
       )}
@@ -207,6 +209,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                 onClick={() => {
                   setShowNotifications(!showNotifications);
                   setShowSettings(false);
+                  setShowProfileMenu(false);
                 }}
               >
                 <Bell className="w-4 h-4" />
@@ -219,7 +222,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                 <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-md shadow-lg border border-slate-200 dark:border-slate-800 py-2 animate-in fade-in zoom-in-95 duration-150 origin-top-right">
                   <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <h3 className="text-xs font-bold text-slate-900 dark:text-white">Notifications</h3>
-                    <button 
+                    <button
                       onClick={() => markAllAsRead()}
                       className="text-[10px] font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 uppercase tracking-widest"
                     >
@@ -228,17 +231,17 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                   </div>
                   <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                     {notifications.length === 0 ? (
-                       <p className="p-4 text-xs text-slate-500 text-center">No notifications yet.</p>
+                      <p className="p-4 text-xs text-slate-500 text-center">No notifications yet.</p>
                     ) : notifications.map((n) => {
                       const { Icon, color, bg } = getIcon(n.type);
                       return (
-                        <div 
-                          key={n._id} 
+                        <div
+                          key={n._id}
                           onClick={() => markAsRead(n._id)}
                           className={cn(
                             "px-4 py-3 transition-colors cursor-pointer flex gap-3 border-b border-slate-50 dark:border-slate-800/50 last:border-0",
-                            n.isRead 
-                              ? "bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800" 
+                            n.isRead
+                              ? "bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800"
                               : "bg-primary-50/50 dark:bg-primary-900/20 hover:bg-primary-50 dark:hover:bg-primary-900/40"
                           )}
                         >
@@ -248,7 +251,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                           <div className="space-y-0.5 flex-1">
                             <p className={cn("text-xs leading-tight", n.isRead ? "font-medium text-slate-600 dark:text-slate-400" : "font-bold text-slate-900 dark:text-slate-200")}>{n.text}</p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                              {new Date(n.createdAt).toLocaleDateString()} {new Date(n.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              {new Date(n.createdAt).toLocaleDateString()} {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                         </div>
@@ -271,6 +274,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                 onClick={() => {
                   setShowSettings(!showSettings);
                   setShowNotifications(false);
+                  setShowProfileMenu(false);
                 }}
               >
                 <Settings className="w-4 h-4" />
@@ -293,7 +297,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                     <div className="mx-4 my-1 border-t border-slate-100 dark:border-slate-800" />
                     <div className="px-4 py-2 flex items-center justify-between">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dark Mode</span>
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleTheme();
@@ -310,15 +314,57 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
 
             <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1 lg:mx-2 hidden sm:block" />
 
-            <button className="flex items-center gap-3 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all duration-200 group">
-              <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/50 rounded-lg flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-800/80 transition-colors flex-shrink-0">
-                <UserCircle className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-              </div>
-              <div className="text-left hidden lg:block">
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-200 leading-none truncate max-w-[100px]">{user?.name}</p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest mt-1">{user?.role}</p>
-              </div>
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowProfileMenu(!showProfileMenu);
+                  setShowSettings(false);
+                  setShowNotifications(false);
+                }}
+                className={cn(
+                  "flex items-center gap-3 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-all duration-200 group",
+                  showProfileMenu && "bg-slate-50 dark:bg-slate-800"
+                )}
+              >
+                <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/50 rounded-lg flex items-center justify-center group-hover:bg-primary-200 dark:group-hover:bg-primary-800/80 transition-colors flex-shrink-0">
+                  <UserCircle className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                </div>
+                <div className="text-left hidden lg:block">
+                  <p className="text-xs font-bold text-slate-900 dark:text-slate-200 leading-none truncate max-w-[100px]">{user?.name}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest mt-1">{user?.role}</p>
+                </div>
+              </button>
+
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-md shadow-lg border border-slate-200 dark:border-slate-800 py-2 animate-in fade-in zoom-in-95 duration-150 origin-top-right">
+                  <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name}</h3>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">{user?.email}</p>
+                  </div>
+                  <div className="py-1">
+                    <Link href="/settings?tab=profile" onClick={() => setShowProfileMenu(false)} className="w-full px-4 py-2 text-left text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3">
+                      <UserCircle className="w-4 h-4" />
+                      My Profile
+                    </Link>
+                    <Link href="/settings?tab=security" onClick={() => setShowProfileMenu(false)} className="w-full px-4 py-2 text-left text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3">
+                      <Settings className="w-4 h-4" />
+                      Security
+                    </Link>
+                    <div className="mx-4 my-1 border-t border-slate-100 dark:border-slate-800" />
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        logout();
+                      }}
+                      className="w-full px-4 py-2 text-left text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>

@@ -167,7 +167,7 @@ export default function MessagesPage() {
       const mappedStaff = staff.map((s: StaffMember) => ({ 
         id: s._id, 
         name: s.name, 
-        role: s.role?.name || s.role || "Staff" 
+        role: String((s.role as any)?.name || (typeof s.role === 'string' ? s.role : "Staff"))
       }));
       const mappedClients = clients.map((c: Client) => ({ 
         id: c._id, 
