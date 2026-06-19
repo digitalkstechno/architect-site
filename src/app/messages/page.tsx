@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquare, Send, Search, MoreVertical, CheckCheck, ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
+import { MessageSquare, Send, Search, MoreVertical, CheckCheck, ArrowLeft, Loader2, Plus, Trash2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
