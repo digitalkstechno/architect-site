@@ -60,6 +60,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import toast from "react-hot-toast";
 import Modal from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { usePermissions } from "@/hooks/use-permissions";
 
 type Tab = "office-work" | "site-work" | "tasks" | "workers" | "photos" | "finances" | "timeline" | "documents" | "materials";
 
@@ -76,16 +77,15 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
   const { getPaymentsByProjectId, createPayment, deletePayment, updatePayment } = usePayments();
 
   const project = getProjectById(id);
-  
-  const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.name || "");
-  const roleId = roleName.toLowerCase().replace(/\s+/g, '-');
-  const roleConfig = getRoleById(roleId);
-  const userPermissions = roleConfig?.permissions || [];
-  const isAdmin = roleId === "architect" || roleId === "director" || roleId === "accountant" || roleId === "admin" || userPermissions.includes("all");
+  const { canCreate, canEdit, canDelete, can, hasAll } = usePermissions("projects");
+  const { canCreate: canCreateTask } = usePermissions("tasks");
+  const { canCreate: canCreatePayment, canEdit: canEditPayment, canDelete: canDeletePayment } = usePermissions("payments");
+  const { canEdit: canEditTeam } = usePermissions("workers");
+  const isAdmin = hasAll;
 
   const canViewTab = (tabPerm: string) => {
     if (isAdmin) return true;
-    return userPermissions.includes(`projects.view-${tabPerm}`);
+    return can(`view-${tabPerm}`);
   };
 
   const [activeTab, setActiveTab] = useState<Tab>("office-work");
@@ -563,7 +563,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
         </div>
 
         <div className="flex items-center gap-2">
-          {isAdmin && (
+          {canEdit && (
             <button
               onClick={() => setIsEditModalOpen(true)}
               className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-md text-xs font-medium shadow-sm hover:bg-slate-50 transition-all active:scale-95"
@@ -634,7 +634,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
         {activeTab === "tasks" && (
           <div className="space-y-4">
             <div className="flex justify-end">
-              {isAdmin && (
+              {canCreateTask && (
                 <Button
                   size="sm"
                   className="gap-2 text-[10px] font-bold uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500"
@@ -787,7 +787,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
         {activeTab === "workers" && (
           <div className="space-y-4">
             {/* <div className="flex justify-end">
-              {isAdmin && (
+              {canEditTeam && (
                 <Button 
                   size="sm" 
                   className="gap-2 text-[10px] font-bold uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500"
@@ -871,109 +871,118 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1 hover:shadow-md transition-shadow">
-                <div className="bg-green-50 p-2 rounded-lg w-fit mb-1 border border-green-100">
-                  <DollarSign className="w-4 h-4 text-green-600" />
-                </div>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Total Received</p>
-                <p className="text-xl font-bold text-slate-900 tracking-tight">${totalReceived.toLocaleString()}</p>
-              </div>
-              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1 hover:shadow-md transition-shadow">
-                <div className="bg-orange-50 p-2 rounded-lg w-fit mb-1 border border-orange-100">
-                  <AlertCircle className="w-4 h-4 text-orange-600" />
-                </div>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Pending Amount</p>
-                <p className="text-xl font-bold text-slate-900 tracking-tight">${totalPending.toLocaleString()}</p>
-              </div>
-              <div className="bg-indigo-600 p-4 rounded-xl shadow-lg flex items-center justify-between group cursor-pointer overflow-hidden relative border border-indigo-500">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-500" />
-                <div className="relative z-10 space-y-0.5">
-                  <p className="text-indigo-100 text-[9px] font-bold uppercase tracking-widest">Budget Utilization</p>
-                  <p className="text-sm font-bold text-white tracking-tight">${budgetValue.toLocaleString()}</p>
-                  <div className="w-24 h-1 bg-indigo-400 rounded-full mt-2 overflow-hidden">
-                    <div className="bg-white h-full" style={{ width: `${utilization}%` }} />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 group hover:border-indigo-200 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-colors">
+                    <DollarSign className="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />
                   </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Budget</p>
                 </div>
-                <ArrowUpRight className="w-5 h-5 text-white relative z-10 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">${budgetValue.toLocaleString()}</p>
+              </div>
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 group hover:border-green-200 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center border border-green-100 group-hover:bg-green-100 transition-colors">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount Received</p>
+                </div>
+                <p className="text-2xl font-black text-slate-900 tracking-tight font-mono text-green-700">${totalReceived.toLocaleString()}</p>
+              </div>
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 group hover:border-orange-200 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center border border-orange-100 group-hover:bg-orange-100 transition-colors">
+                    <AlertCircle className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Balance</p>
+                </div>
+                <p className="text-2xl font-black text-slate-900 tracking-tight font-mono text-orange-700">${totalPending.toLocaleString()}</p>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment History</h3>
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">{projectPayments.length} Records</span>
+              </div>
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/50">
-                    <TableHead className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest">Milestone</TableHead>
-                    <TableHead className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest">Amount</TableHead>
-                    <TableHead className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest">Date</TableHead>
-                    <TableHead className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest">Status</TableHead>
-                    <TableHead className="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-widest">Action</TableHead>
+                  <TableRow className="bg-white hover:bg-white">
+                    <TableHead className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Milestone</TableHead>
+                    <TableHead className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Amount</TableHead>
+                    <TableHead className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-center">Status</TableHead>
+                    <TableHead className="px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Date</TableHead>
+                    <TableHead className="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-slate-50">
                   {projectPayments.map((payment) => (
-                    <TableRow key={payment.id} className="group hover:bg-slate-50/30 transition-all">
+                    <TableRow key={payment.id} className="group hover:bg-slate-50/50 transition-all">
                       <TableCell className="px-6 py-4">
-                        <p className="text-xs font-bold text-slate-900">{payment.milestone}</p>
-                        {payment.notes && <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1 italic">{payment.notes}</p>}
+                        <p className="text-sm font-bold text-slate-900">{payment.milestone}</p>
+                        {payment.notes && <p className="text-xs text-slate-500 mt-1 line-clamp-1">{payment.notes}</p>}
                       </TableCell>
                       <TableCell className="px-6 py-4">
-                        <p className="text-xs font-bold text-slate-900">${payment.amount.toLocaleString()}</p>
+                        <span className="text-sm font-black text-slate-900 font-mono">${payment.amount.toLocaleString()}</span>
                       </TableCell>
-                      <TableCell className="px-6 py-4">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">{payment.date}</span>
-                      </TableCell>
-                      <TableCell className="px-6 py-4">
+                      <TableCell className="px-6 py-4 text-center">
                         <span className={cn(
-                          "px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border",
-                          payment.status === "Paid" ? "bg-green-50 text-green-700 border-green-100" :
-                            payment.status === "Pending" ? "bg-indigo-50 text-indigo-700 border-indigo-100" :
-                              "bg-red-50 text-red-700 border-red-100"
+                          "px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border shadow-sm",
+                          payment.status === "Paid" ? "bg-green-50 text-green-700 border-green-200" :
+                            payment.status === "Pending" ? "bg-indigo-50 text-indigo-700 border-indigo-200" :
+                              "bg-red-50 text-red-700 border-red-200"
                         )}>
                           {payment.status}
                         </span>
                       </TableCell>
+                      <TableCell className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">
+                        {payment.date}
+                      </TableCell>
                       <TableCell className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {isAdmin && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setEditingPayment(payment);
-                                  setPaymentForm({
-                                    milestone: payment.milestone,
-                                    amount: String(payment.amount),
-                                    date: payment.date,
-                                    status: payment.status,
-                                    notes: payment.notes || ""
-                                  });
-                                  setIsPaymentModalOpen(true);
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                              >
-                                <PenTool className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setPaymentToDelete(payment.id);
-                                  setIsDeleteDialogOpen(true);
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </>
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {canEditPayment && (
+                            <button
+                              onClick={() => {
+                                setEditingPayment(payment);
+                                setPaymentForm({
+                                  milestone: payment.milestone,
+                                  amount: String(payment.amount),
+                                  date: payment.date,
+                                  status: payment.status,
+                                  notes: payment.notes || ""
+                                });
+                                setIsPaymentModalOpen(true);
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            >
+                              <PenTool className="w-4 h-4" />
+                            </button>
                           )}
-                          <button className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-                            <FileText className="w-3.5 h-3.5" />
-                          </button>
+                          {canDeletePayment && (
+                            <button
+                              onClick={() => {
+                                setPaymentToDelete(payment.id);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
                   ))}
                   {projectPayments.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-12 text-slate-400 italic text-xs font-medium uppercase tracking-widest">No payment history available</TableCell>
+                      <TableCell colSpan={5} className="text-center py-12">
+                        <div className="flex flex-col items-center gap-2">
+                          <CreditCard className="w-8 h-8 text-slate-200" />
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No payment records yet</p>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   )}
                 </TableBody>

@@ -12,6 +12,7 @@ import { attendanceService } from "@/services/attendance.service";
 import { StaffMember, staffService } from "@/services/staff.service";
 import { roleService, Role } from "@/services/role.service";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   Table,
   TableBody,
@@ -73,7 +74,8 @@ type StaffAttendance = {
 
 export default function AttendancePage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "architect" || user?.role === "director";
+  const { canCreate, canEdit, canDelete, hasAll } = usePermissions("attendance");
+  const isAdmin = hasAll;
   const [currentDate, setCurrentDate] = useState(new Date());
   const [staffList, setStaffList] = useState<StaffAttendance[]>([]);
   const [myAttendance, setMyAttendance] = useState<any[]>([]);
@@ -160,6 +162,9 @@ export default function AttendancePage() {
 
   useEffect(() => {
     if (user) fetchData();
+    const handleUpdate = () => { if (user) fetchData(); };
+    window.addEventListener("attendance_updated", handleUpdate);
+    return () => window.removeEventListener("attendance_updated", handleUpdate);
   }, [currentDate, user]);
 
   const handleStatusChange = async (staffId: string, status: AttendanceStatus) => {
@@ -315,6 +320,7 @@ export default function AttendancePage() {
       await attendanceService.checkIn();
       toast.success("Checked in successfully");
       fetchData();
+      window.dispatchEvent(new Event("attendance_updated"));
     } catch { toast.error("Failed to check in"); }
   };
 
@@ -323,6 +329,7 @@ export default function AttendancePage() {
       await attendanceService.checkOut();
       toast.success("Checked out successfully");
       fetchData();
+      window.dispatchEvent(new Event("attendance_updated"));
     } catch { toast.error("Failed to check out"); }
   };
 
@@ -485,15 +492,15 @@ export default function AttendancePage() {
           </div>
           <div className="flex items-center gap-2">
             {isAdmin && (
-              <>
-                <Button size="sm" variant="outline" className="text-xs h-9" onClick={() => setIsSettingsModalOpen(true)}>
-                  Settings
-                </Button>
-                <Button size="sm" className="text-xs h-9 gap-2" onClick={() => setIsAddStaffModalOpen(true)}>
-                  <Plus className="w-4 h-4" />
-                  Add Office Staff
-                </Button>
-              </>
+              <Button size="sm" variant="outline" className="text-xs h-9" onClick={() => setIsSettingsModalOpen(true)}>
+                Settings
+              </Button>
+            )}
+            {canCreate && (
+              <Button size="sm" className="text-xs h-9 gap-2" onClick={() => setIsAddStaffModalOpen(true)}>
+                <Plus className="w-4 h-4" />
+                Add Office Staff
+              </Button>
             )}
           </div>
         </div>
@@ -623,17 +630,19 @@ export default function AttendancePage() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         {isAdmin && (
+                          <button
+                            onClick={() => {
+                              setSelectedStaffForSlip(staff);
+                              setIsSalarySlipModalOpen(true);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-all"
+                            title="Salary Slip"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {canEdit && (
                           <>
-                            <button
-                              onClick={() => {
-                                setSelectedStaffForSlip(staff);
-                                setIsSalarySlipModalOpen(true);
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-all"
-                              title="Salary Slip"
-                            >
-                              <FileText className="w-3.5 h-3.5" />
-                            </button>
                             <button
                               onClick={() => {
                                 setSelectedStaffForOT(staff);

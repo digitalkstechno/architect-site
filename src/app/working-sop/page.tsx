@@ -21,9 +21,10 @@ import Modal from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { useAuth } from "@/lib/auth-context";
 import { useRoles } from "@/lib/role-context";
-import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { workingSOPService } from "@/services/workingSOP.service";
+import { usePermissions } from "@/hooks/use-permissions";
+import { cn } from "@/lib/utils";
 
 type RoleType = {
   _id: string;
@@ -58,7 +59,8 @@ export default function WorkingSOPPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isAdmin = user?.role === "director" || user?.role === "architect";
+  const { canCreate, canEdit, canDelete, hasAll } = usePermissions("working-sop");
+  const isAdmin = hasAll;
 
   useEffect(() => {
     fetchSOPs();
@@ -171,7 +173,7 @@ export default function WorkingSOPPage() {
               Standard Operating Procedures to maintain excellence across all project phases.
             </p>
           </div>
-          {isAdmin && (
+          {canCreate && (
             <Button
               onClick={handleOpenAddModal}
               className="rounded-xl h-12 px-6 font-black uppercase tracking-widest gap-2 bg-white text-indigo-600 hover:bg-indigo-50 shadow-xl relative z-10 border-0"
@@ -245,28 +247,32 @@ export default function WorkingSOPPage() {
                           <span className="text-xs font-bold text-slate-700 group-hover/video:text-indigo-900 truncate pr-2">{v.title}</span>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0 opacity-0 group-hover/video:opacity-100 transition-opacity">
-                          {isAdmin && (
+                          {(canEdit || canDelete) && (
                             <div className="flex items-center gap-1 bg-white px-2 py-1.5 rounded-xl shadow-sm border border-slate-200" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenEditModal(v);
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <div className="w-px h-4 bg-slate-200" />
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSopToDelete(v._id);
-                                  setIsConfirmOpen(true);
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {canEdit && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenEditModal(v);
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {canEdit && canDelete && <div className="w-px h-4 bg-slate-200" />}
+                              {canDelete && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSopToDelete(v._id);
+                                    setIsConfirmOpen(true);
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>

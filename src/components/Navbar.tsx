@@ -3,7 +3,7 @@
 import { Bell, Search, UserCircle, Settings, Menu, X, CheckCircle2, Clock, AlertCircle, MessageSquare, LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
@@ -40,10 +40,11 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
   // Time Tracker State
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [timer, setTimer] = useState(0);
-  const [timerInterval, setTimerInterval] = useState<any>(null);
+  const timerIntervalRef = useRef<any>(null);
 
-  useEffect(() => {
-    if (user && user.team === "Office" && user.trackAttendance) {
+  const fetchStatus = () => {
+    const isOfficeUser = user && (user.team?.toLowerCase() === "office" || String(user.role).toLowerCase() === "office");
+    if (isOfficeUser) {
       attendanceService.getMyStatus().then((res: any) => {
         if (res && res.logs && res.logs.length > 0) {
           const lastLog = res.logs[res.logs.length - 1];
@@ -54,16 +55,28 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
             const elapsed = Math.floor((now - startTime) / 1000);
             setTimer(elapsed);
 
-            const interval = setInterval(() => {
+            if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = setInterval(() => {
               setTimer(prev => prev + 1);
             }, 1000);
-            setTimerInterval(interval);
+          } else {
+            setIsClockedIn(false);
+            if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
           }
+        } else {
+          setIsClockedIn(false);
+          if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
         }
       }).catch(console.error);
     }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+    window.addEventListener("attendance_updated", fetchStatus);
     return () => {
-      if (timerInterval) clearInterval(timerInterval);
+      window.removeEventListener("attendance_updated", fetchStatus);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     };
   }, [user]);
 
@@ -80,17 +93,18 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
         await attendanceService.checkIn();
         setIsClockedIn(true);
         setTimer(0);
-        const interval = setInterval(() => {
+        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = setInterval(() => {
           setTimer(prev => prev + 1);
         }, 1000);
-        setTimerInterval(interval);
         toast.success("Clocked In Successfully");
+        window.dispatchEvent(new Event("attendance_updated"));
       } else {
         await attendanceService.checkOut();
         setIsClockedIn(false);
-        if (timerInterval) clearInterval(timerInterval);
-        setTimerInterval(null);
+        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
         toast.success(`Clocked Out. Total time: ${formatTimer(timer)}`);
+        window.dispatchEvent(new Event("attendance_updated"));
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Operation failed");
@@ -155,7 +169,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
 
           <div className="flex items-center gap-2 border-l border-slate-200 pl-4">
             {/* Time Tracker for Office Staff */}
-            {user?.team === "Office" && user?.trackAttendance && (
+            {(user?.team?.toLowerCase() === "office" || user?.role?.toLowerCase() === "office") && (
               <div className="hidden sm:flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full shadow-inner mr-2 transition-all duration-500">
                 <div className="flex flex-col items-end">
                   <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter leading-none mb-0.5">Shift Duration</span>

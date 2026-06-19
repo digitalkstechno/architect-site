@@ -38,6 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/Table";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function ClientDetailsPage({ params }: { params: any }) {
   const resolvedParams = params instanceof Promise ? use(params) : params;
@@ -78,7 +79,8 @@ export default function ClientDetailsPage({ params }: { params: any }) {
     if (id) fetchClient();
   }, [id]);
 
-  const isAdmin = user?.role === "architect" || user?.role === "director" || user?.role === "accountant";
+  const { canCreate, canEdit, canDelete } = usePermissions("payments");
+  const isAdmin = canCreate || canEdit || canDelete;
   
   const clientProjects = projects.filter(p => p.clientId === id);
   const clientPayments = payments.filter(p => p.clientId === id);
@@ -204,7 +206,7 @@ export default function ClientDetailsPage({ params }: { params: any }) {
           </div>
         </div>
 
-        {isAdmin && (
+        {canCreate && (
           <Button 
             onClick={() => setIsPaymentModalOpen(true)}
             size="sm"
@@ -322,35 +324,35 @@ export default function ClientDetailsPage({ params }: { params: any }) {
                     <TableCell className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">{payment.date}</TableCell>
                     <TableCell className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {isAdmin && (
-                          <>
-                            <button 
-                              onClick={() => {
-                                setEditingPayment(payment);
-                                setPaymentForm({
-                                  projectId: payment.projectId,
-                                  milestone: payment.milestone,
-                                  amount: String(payment.amount),
-                                  date: payment.date,
-                                  status: payment.status,
-                                  notes: payment.notes || ""
-                                });
-                                setIsPaymentModalOpen(true);
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                            >
-                              <PenTool className="w-3.5 h-3.5" />
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setPaymentToDelete(payment.id);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </>
+                        {canEdit && (
+                          <button 
+                            onClick={() => {
+                              setEditingPayment(payment);
+                              setPaymentForm({
+                                projectId: payment.projectId,
+                                milestone: payment.milestone,
+                                amount: String(payment.amount),
+                                date: payment.date,
+                                status: payment.status,
+                                notes: payment.notes || ""
+                              });
+                              setIsPaymentModalOpen(true);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          >
+                            <PenTool className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button 
+                            onClick={() => {
+                              setPaymentToDelete(payment.id);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         )}
                         <button className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                           <ArrowUpRight className="w-3.5 h-3.5" />

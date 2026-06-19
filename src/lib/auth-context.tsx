@@ -86,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         team: data.team,
         trackAttendance: data.trackAttendance,
         config: data.config,
+        projectId: data.assignedProjects?.[0] || data.projectId,
       };
 
       setUser(finalUser);
@@ -107,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem("auth_user");
     localStorage.removeItem("token");
-    router.push("/login");
+    window.location.href = "/login";
   };
 
   useEffect(() => {

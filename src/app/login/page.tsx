@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import { authService } from "@/services/auth.service";
 import { guestLoginService } from "@/services/guest-login.service";
+import { Badge } from "@/components/ui/Badge";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -98,7 +99,7 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    const loginToast = toast.loading(isGuest ? "Accessing ArchiSite..." : "Signing you in...");
+    const loginToast = toast.loading(isGuest ? "Accessing ARKITON..." : "Signing you in...");
 
     try {
       if (isGuest) {
@@ -107,7 +108,7 @@ export default function LoginPage() {
       } else {
         await login(email, password);
       }
-      toast.success("Welcome to ArchiSite!", { id: loginToast });
+      toast.success("Welcome to ARKITON DESIGN STUDIO!", { id: loginToast });
     } catch (err: any) {
       console.error("Login error:", err);
       toast.error(err.message || "Invalid credentials. Please try again.", { id: loginToast });
@@ -131,13 +132,15 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1503387762-592dea58ef23?q=80&w=2000')] bg-cover bg-center opacity-20" />
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 via-slate-900/60 to-slate-900" />
 
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="bg-indigo-600 p-2 rounded-xl">
-            <Building2 className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between mb-24 relative z-10">
+          <div className="flex items-center gap-2">
+            <img src="/logo.jpeg" alt="ARKITON" className="w-8 h-8 rounded object-cover" />
+            <span className="text-xl font-bold text-white tracking-tight uppercase">ARKITON</span>
           </div>
-          <span className="text-xl font-bold text-white tracking-tight">ArchiSite</span>
-        </div>
-
+          <Badge variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-sm">
+            v1.0.0
+          </Badge>
+        </div>    
         <div className="relative z-10 space-y-8">
           <div className="space-y-4">
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/20">
@@ -167,7 +170,7 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10">
-          <p className="text-xs text-slate-500">© 2025 ArchiSite. All rights reserved.</p>
+          <p className="text-xs text-slate-500">© 2026 ARKITON DESIGN STUDIO. All rights reserved.</p>
         </div>
       </div>
 
@@ -183,7 +186,7 @@ export default function LoginPage() {
             <div className="inline-flex bg-indigo-600 p-3.5 rounded-2xl shadow-xl shadow-indigo-200">
               <Building2 className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-slate-900">ArchiSite</h1>
+            <h1 className="text-3xl font-bold text-slate-900 uppercase">ARKITON</h1>
           </div>
 
           {/* Mode Switcher */}
@@ -266,7 +269,7 @@ export default function LoginPage() {
                   className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-200 group"
                 >
                   <Eye className="w-4 h-4" />
-                  {isLoading ? "Accessing..." : "Explore ArchiSite"}
+                  {isLoading ? "Accessing..." : "Explore ARKITON"}
                   {!isLoading && <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
                 </button>
               </form>
@@ -356,7 +359,7 @@ export default function LoginPage() {
             <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
               <div className="text-center space-y-1">
                 <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
-                <p className="text-sm text-slate-500">Sign in to your ArchiSite workspace</p>
+                <p className="text-sm text-slate-500">Sign in to your ARKITON workspace</p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>

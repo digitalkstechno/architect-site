@@ -20,13 +20,14 @@ import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ActionButtons } from "@/components/ui/ActionButtons";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function OfficeWorkPage() {
   const { user } = useAuth();
-  const canCreate = user?.role === "architect" || user?.role === "director" || user?.role === "office-team";
-  const isViewOnly = false;
-  const isAdminRole = user?.role === "architect" || user?.role === "director";
-  const canDeleteImages = (task: any) => isAdminRole || task.assignedTo?.some((s: any) => (s._id || s.id || s) === user?.id);
+  const { canCreate, canEdit, canDelete, hasAll } = usePermissions("office-work");
+  const isViewOnly = !canEdit;
+  const isAdminRole = hasAll;
+  const canDeleteImages = (task: any) => canDelete || task.assignedTo?.some((s: any) => (s._id || s.id || s) === user?.id);
   const { officeTasks, createOfficeTask, updateOfficeTask, updateOfficeTaskStatus, deleteOfficeTask, refreshTasks } = useOfficeTasks();
   const { projects } = useProjects();
 
@@ -44,6 +45,7 @@ export default function OfficeWorkPage() {
   const [paginatedTasks, setPaginatedTasks] = useState<any[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -142,7 +144,8 @@ export default function OfficeWorkPage() {
         page: currentPage,
         limit: pageSize,
         category: activeTab,
-        assignedTo: !canCreate ? user?.id : undefined
+        assignedTo: !canCreate ? user?.id : undefined,
+        search: searchTerm || undefined
       });
       const data = res as any;
       setPaginatedTasks(data.data || []);
@@ -155,8 +158,12 @@ export default function OfficeWorkPage() {
   };
 
   useEffect(() => {
-    fetchPaginatedData();
-  }, [activeTab, currentPage, pageSize]);
+    const delayDebounceFn = setTimeout(() => {
+      fetchPaginatedData();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [activeTab, currentPage, pageSize, searchTerm]);
 
   // Refresh data when context refreshes (e.g., after creates/updates)
   useEffect(() => {
@@ -230,10 +237,10 @@ export default function OfficeWorkPage() {
       className: "text-right",
       render: (task: any) => (
         <ActionButtons
-          hasEdit={canCreate}
-          hasDelete={canCreate}
+          hasEdit={canEdit}
+          hasDelete={canDelete}
           hasExpand={true}
-          isExpanded={expandedTaskId === task.id}
+          isExpanded={expandedTaskId === (task._id || task.id)}
           onEdit={(e) => {
             e.stopPropagation();
             setEditingTask(task);
@@ -265,69 +272,69 @@ export default function OfficeWorkPage() {
   const renderExpandedRow = (task: any) => {
     const tId = task._id || task.id;
     return (
-    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-top-2 duration-300">
-      <div className="space-y-4">
-        {!isViewOnly && (
-          <>
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Update Task Status</h4>
-            <div className="flex flex-wrap gap-2">
-              {["Pending", "In Progress", "Completed"].map((status) => (
-                <Button
-                  key={status}
-                  variant={task.status === status ? "primary" : "outline"}
-                  size="sm"
-                  className="rounded-xl text-[10px] h-8"
-                  onClick={() => updateOfficeTaskStatus(tId, status as any)}
-                >
-                  {status}
-                </Button>
-              ))}
+      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-top-2 duration-300">
+        <div className="space-y-4">
+          {!isViewOnly && (
+            <>
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Update Task Status</h4>
+              <div className="flex flex-wrap gap-2">
+                {["Pending", "In Progress", "Completed"].map((status) => (
+                  <Button
+                    key={status}
+                    variant={task.status === status ? "primary" : "outline"}
+                    size="sm"
+                    className="rounded-xl text-[10px] h-8"
+                    onClick={() => updateOfficeTaskStatus(tId, status as any)}
+                  >
+                    {status}
+                  </Button>
+                ))}
+              </div>
+            </>
+          )}
+          <div className="pt-2">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Notes</h4>
+            <div className="space-y-2">
+              <textarea
+                className="w-full text-sm text-slate-700 bg-white p-3 rounded-xl border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
+                rows={3}
+                placeholder="Add notes..."
+                value={noteValues[tId] ?? (task.notes || "")}
+                onChange={(e) => setNoteValues(prev => ({ ...prev, [tId]: e.target.value }))}
+              />
+              <Button
+                size="sm"
+                className="text-[10px] h-8"
+                onClick={async () => {
+                  await updateOfficeTask(tId, { notes: noteValues[tId] ?? task.notes });
+                  setNoteValues(prev => {
+                    const next = { ...prev };
+                    delete next[tId];
+                    return next;
+                  });
+                  toast.success("Notes saved successfully");
+                }}
+              >
+                Save Notes
+              </Button>
             </div>
-          </>
-        )}
-        <div className="pt-2">
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Notes</h4>
-          <div className="space-y-2">
-            <textarea
-              className="w-full text-sm text-slate-700 bg-white p-3 rounded-xl border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
-              rows={3}
-              placeholder="Add notes..."
-              value={noteValues[tId] ?? (task.notes || "")}
-              onChange={(e) => setNoteValues(prev => ({ ...prev, [tId]: e.target.value }))}
-            />
-            <Button
-              size="sm"
-              className="text-[10px] h-8"
-              onClick={async () => {
-                await updateOfficeTask(tId, { notes: noteValues[tId] ?? task.notes });
-                setNoteValues(prev => {
-                  const next = { ...prev };
-                  delete next[tId];
-                  return next;
-                });
-                toast.success("Notes saved successfully");
-              }}
-            >
-              Save Notes
-            </Button>
           </div>
         </div>
+        <div className="space-y-4">
+          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Design Photos</h4>
+          <TaskImageUpload
+            taskId={tId}
+            type="Office"
+            existingImages={task.images}
+            canDelete={canDeleteImages(task)}
+            onUploadComplete={() => {
+              refreshTasks();
+              toast.success("Photos updated successfully");
+            }}
+          />
+        </div>
       </div>
-      <div className="space-y-4">
-        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Design Photos</h4>
-        <TaskImageUpload
-          taskId={tId}
-          type="Office"
-          existingImages={task.images}
-          canDelete={canDeleteImages(task)}
-          onUploadComplete={() => {
-            refreshTasks();
-            toast.success("Photos updated successfully");
-          }}
-        />
-      </div>
-    </div>
-  );
+    );
   };
 
   return (
@@ -397,7 +404,7 @@ export default function OfficeWorkPage() {
               value={newTask.assignedTo[0] || ""}
               onChange={(value) => setNewTask({ ...newTask, assignedTo: [value] })}
               options={officeStaff.map(staff => ({
-                label: `${staff.name} - ${staff.role?.name || staff.role || "Staff"}`,
+                label: `${staff.name} - ${staff.role?.name || staff.role}`,
                 value: staff._id
               }))}
               placeholder="Select staff"
@@ -488,10 +495,17 @@ export default function OfficeWorkPage() {
         <Card className=" border-slate-200 shadow-sm overflow-hidden rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 px-6 py-3 bg-slate-50/30">
             <CardTitle className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active {activeTab} Tasks</CardTitle>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400">
-                <Search className="w-3.5 h-3.5" />
-              </Button>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search tasks..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-8 pl-9 pr-4 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 w-48 transition-all"
+                />
+              </div>
               <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400">
                 <Filter className="w-3.5 h-3.5" />
               </Button>

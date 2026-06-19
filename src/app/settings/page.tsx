@@ -10,6 +10,7 @@ import { Toggle } from "@/components/ui/Toggle";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import { useRoles, ALL_PAGES, RoleConfig } from "@/lib/role-context";
+import { usePermissions } from "@/hooks/use-permissions";
 
 type SettingTab = "profile" | "company" | "notifications" | "security" | "roles";
 
@@ -39,7 +40,8 @@ export default function SettingsPage() {
   const [newRoleColor, setNewRoleColor] = useState("teal");
   const [savedMsg, setSavedMsg] = useState(false);
 
-  const isAdmin = user?.role === "architect" || user?.role === "director";
+  const { hasAll } = usePermissions("settings");
+  const isAdmin = hasAll;
 
   const tabs = [
     { id: "profile",       label: "My Profile",      icon: UserCircle2 },

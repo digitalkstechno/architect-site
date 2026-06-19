@@ -46,7 +46,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user || !isInitialized) return;
-    
+
     const roleName = typeof user.role === 'string' ? user.role : "";
     const roleId = roleName.toLowerCase().replace(/\s+/g, '-');
     const roleConfig = getRoleById(roleId);

@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Briefcase, CheckSquare, Users, ClipboardList,
   CreditCard, Building2, UserCircle2, Calendar, BarChart3,
   Settings, LogOut, MessageSquare, Camera, X, HardHat, BookOpen,
-  PenTool, Hammer, UserPlus
+  PenTool, Hammer, UserPlus, Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -34,6 +34,8 @@ const PAGE_ICONS: Record<string, React.ElementType> = {
   "agency-approvals": Briefcase,
   "guest-log": UserPlus,
   settings: Settings,
+  staff: Users,
+  roles: Shield,
 };
 
 const PAGE_LABELS: Record<string, string> = {
@@ -56,6 +58,8 @@ const PAGE_LABELS: Record<string, string> = {
   "agency-approvals": "Pending Agencies",
   "guest-log": "Guest Log",
   settings: "Settings",
+  staff: "Staff",
+  roles: "Agency",
 };
 
 // Custom labels based on roles
@@ -120,11 +124,12 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
   return (
     <div className="w-60 h-screen bg-gradient-to-b from-primary-100 via-primary-50/50 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 text-slate-800 dark:text-slate-200 flex flex-col relative border-r border-slate-200 dark:border-slate-800">
       <div className="px-6 py-8 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-premium p-1.5 rounded-lg text-white">
-            <Building2 className="w-5 h-5" />
+        <div className="flex items-center gap-2">
+          <img src="/logo.jpeg" alt="ARKITON DESIGN STUDIO" className="h-8 w-auto object-contain rounded-sm" />
+          <div className="flex flex-col">
+            <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none uppercase">Arkiton</span>
+            <span className="text-[9px] font-bold text-red-600 uppercase tracking-[0.1em] leading-tight">Design Studio</span>
           </div>
-          <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">ArchiSite</span>
         </div>
         <Button variant="ghost" size="icon" className="lg:hidden text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800" onClick={onMobileClose}>
           <X className="w-4 h-4" />

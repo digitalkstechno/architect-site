@@ -20,6 +20,7 @@ import { DataTable, Column } from "@/components/ui/DataTable";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ActionButtons } from "@/components/ui/ActionButtons";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 
 type Project = ReturnType<typeof useProjects>["projects"][0];
 
@@ -82,16 +83,9 @@ export default function ProjectsPage() {
     return rn === "designer";
   });
 
-  const roleName = typeof user?.role === 'string' ? user.role : (user?.role?.name || "");
-  const roleId = roleName.toLowerCase().replace(/\s+/g, '-');
-  const roleConfig = getRoleById(roleId);
-  const userPermissions = roleConfig?.permissions || [];
-  
-  const isAdmin = roleId === "architect" || roleId === "director" || roleId === "accountant" || roleId === "admin" || userPermissions.includes("all");
-  const canAdd = isAdmin || userPermissions.includes("projects.create");
-  const canEdit = isAdmin || userPermissions.includes("projects.edit");
-  const canDelete = isAdmin || userPermissions.includes("projects.delete");
-  const canViewDetails = isAdmin || userPermissions.includes("projects.view-details");
+  const { canCreate, canEdit, canDelete, can, hasAll } = usePermissions("projects");
+  const canViewDetails = can("view-details");
+  const isAdmin = hasAll;
 
   const fetchPaginatedData = async () => {
     setIsFetchingProjects(true);
@@ -280,7 +274,7 @@ export default function ProjectsPage() {
             </p>
           </div>
           
-          {canAdd && (
+          {canCreate && (
             <Button onClick={() => {
               setEditingProject(null);
               setForm(emptyForm);

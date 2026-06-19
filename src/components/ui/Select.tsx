@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,32 @@ export function Select({
     opt.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
     opt.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+
+  useLayoutEffect(() => {
+    if (isOpen && containerRef.current) {
+      const updatePosition = () => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        setDropdownStyle({
+          position: "fixed",
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width,
+        });
+      };
+      
+      updatePosition();
+      window.addEventListener("scroll", updatePosition, true);
+      window.addEventListener("resize", updatePosition);
+      
+      return () => {
+        window.removeEventListener("scroll", updatePosition, true);
+        window.removeEventListener("resize", updatePosition);
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -97,8 +124,11 @@ export function Select({
         )} />
       </div>
 
-      {isOpen && (
-        <div className="absolute z-[9999] w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
+      {isOpen && typeof document !== "undefined" && createPortal(
+        <div 
+          className="z-[9999] bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top"
+          style={dropdownStyle}
+        >
           {searchable && (
             <div className="p-2 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10">
               <div className="relative">
@@ -110,6 +140,7 @@ export function Select({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
                   autoFocus
                 />
               </div>
@@ -120,6 +151,7 @@ export function Select({
             ref={listRef}
             className="max-h-[220px] overflow-y-auto py-1 overscroll-contain select-none"
             style={{ scrollbarWidth: 'thin' }}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             {filteredOptions.length === 0 ? (
               <div className="px-4 py-6 text-xs text-slate-500 text-center italic">
@@ -159,7 +191,8 @@ export function Select({
               ))
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {error && (

@@ -73,7 +73,7 @@
 body {
   background-color: #f8fafc;
   color: var(--foreground);
-  font-family: var(--font-nunito), sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -85,9 +85,9 @@ body {
   }
 }
 
-/* Force Nunito on all inputs and tables */
+/* Force Inter on all inputs and tables */
 input, select, textarea, button, table {
-  font-family: var(--font-nunito), sans-serif !important;
+  font-family: var(--font-inter), sans-serif !important;
 }
 
 .table-cell-text {

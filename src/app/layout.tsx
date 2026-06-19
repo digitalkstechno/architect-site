@@ -40,7 +40,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "ArchiSite | Director Construction Management",
+  title: "ARKITON DESIGN STUDIO",
   description: "Modern SaaS dashboard for directors and site management.",
 };
 
@@ -50,8 +50,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
+        suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${nunito.variable} ${inter.variable} antialiased bg-slate-50 text-slate-900 min-h-screen`}
       >
         <RoleProvider>

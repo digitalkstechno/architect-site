@@ -109,12 +109,21 @@ export default function PendingAgencies({ onApproved }: { onApproved?: () => voi
           <button onClick={() => router.push(`/agency-approvals/${agency._id}`)} className="px-3 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-colors text-xs font-bold shadow-sm" title="View Details">
             View
           </button>
-          <button onClick={() => handleApprove(agency._id)} className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition-colors shadow-sm" title="Approve & Add to Staff">
-            <ShieldCheck className="w-4 h-4" />
-          </button>
-          <button onClick={() => handleReject(agency._id)} className="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors shadow-sm" title="Reject">
-            <XCircle className="w-4 h-4" />
-          </button>
+          {agency.status === "Pending" && (
+            <>
+              <button onClick={() => handleApprove(agency._id)} className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition-colors shadow-sm" title="Approve & Add to Staff">
+                <ShieldCheck className="w-4 h-4" />
+              </button>
+              <button onClick={() => handleReject(agency._id)} className="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors shadow-sm" title="Reject">
+                <XCircle className="w-4 h-4" />
+              </button>
+            </>
+          )}
+          {agency.status === "Approved" && (
+            <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest bg-emerald-50 text-emerald-700 border-emerald-200 px-2 py-0.5 shadow-sm ml-2">
+              Approved
+            </Badge>
+          )}
         </div>
       ),
     },

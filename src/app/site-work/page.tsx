@@ -21,13 +21,14 @@ import { staffService, StaffMember } from "@/services/staff.service";
 import { TaskImageUpload } from "@/components/projects/TaskImageUpload";
 import { Select } from "@/components/ui/Select";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function SiteWorkPage() {
   const { user } = useAuth();
-  const canCreate = user?.role === "architect" || user?.role === "director" || user?.role === "site-engineer" || user?.role === "supervisor";
-  const isViewOnly = false;
-  const isAdminRole = user?.role === "architect" || user?.role === "director";
-  const canDeleteImages = (task: any) => isAdminRole || task.assignedTo?.some((s: any) => (s._id || s.id || s) === user?.id);
+  const { canCreate, canEdit, canDelete, hasAll } = usePermissions("site-work");
+  const isViewOnly = !canEdit;
+  const isAdminRole = hasAll;
+  const canDeleteImages = (task: any) => canDelete || task.assignedTo?.some((s: any) => (s._id || s.id || s) === user?.id);
   const { siteTasks, createSiteTask, updateSiteTask, updateSiteTaskStatus, deleteSiteTask, refreshTasks } = useSiteTasks();
   const { projects } = useProjects();
 
@@ -45,6 +46,7 @@ export default function SiteWorkPage() {
   const [paginatedTasks, setPaginatedTasks] = useState<any[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -149,7 +151,8 @@ export default function SiteWorkPage() {
         page: currentPage,
         limit: pageSize,
         category: activeTab,
-        assignedTo: !canCreate ? user?.id : undefined
+        assignedTo: !canCreate ? user?.id : undefined,
+        search: searchTerm || undefined
       });
       const data = res as any;
       setPaginatedTasks(data.data || []);
@@ -162,8 +165,12 @@ export default function SiteWorkPage() {
   };
 
   useEffect(() => {
-    fetchPaginatedData();
-  }, [activeTab, currentPage, pageSize]);
+    const delayDebounceFn = setTimeout(() => {
+      fetchPaginatedData();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [activeTab, currentPage, pageSize, searchTerm]);
 
   // Refresh data when context refreshes (e.g., after creates/updates)
   useEffect(() => {
@@ -280,10 +287,10 @@ export default function SiteWorkPage() {
             </button>
           </div>
           <ActionButtons
-            hasEdit={canCreate}
-            hasDelete={canCreate}
+            hasEdit={canEdit}
+            hasDelete={canDelete}
             hasExpand={true}
-            isExpanded={expandedTaskId === task.id}
+            isExpanded={expandedTaskId === (task._id || task.id)}
             onEdit={(e) => {
               e.stopPropagation();
               setEditingTask(task);
@@ -535,10 +542,17 @@ export default function SiteWorkPage() {
         <Card className=" border-slate-200 shadow-sm overflow-hidden rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 px-6 py-3 bg-slate-50/30">
             <CardTitle className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Execution - {activeTab}</CardTitle>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400">
-                <Search className="w-3.5 h-3.5" />
-              </Button>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search tasks..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-8 pl-9 pr-4 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 w-48 transition-all"
+                />
+              </div>
               <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400">
                 <Filter className="w-3.5 h-3.5" />
               </Button>

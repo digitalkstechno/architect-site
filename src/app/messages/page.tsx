@@ -13,6 +13,7 @@ import { messageService, Conversation, Message as ApiMessage } from "@/services/
 import { staffService, StaffMember } from "@/services/staff.service";
 import { clientService, Client } from "@/services/client.service";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function MessagesPage() {
   const { user } = useAuth();
@@ -35,6 +36,8 @@ export default function MessagesPage() {
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [usersList, setUsersList] = useState<{ id: string, name: string, role: string }[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+
+  const { canView, canCreate, canDelete } = usePermissions("messages");
 
   const activeChat = conversations.find(c => c._id === activeChatId);
   const filteredChats = conversations.filter(c => 
@@ -253,6 +256,20 @@ export default function MessagesPage() {
     }
   };
 
+  if (!canView) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] animate-in fade-in zoom-in duration-500">
+        <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
+          <Lock className="w-12 h-12 text-red-500" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Access Restricted</h2>
+        <p className="text-sm font-medium text-slate-500 text-center max-w-md">
+          You don't have permission to view messages. Please contact an administrator.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="h-[calc(100vh-160px)] flex gap-6 animate-in fade-in duration-500 relative">
@@ -264,9 +281,11 @@ export default function MessagesPage() {
           <div className="p-6 border-b border-slate-100 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900">Messages</h2>
-              <Button size="icon" variant="primary" className="rounded-full w-8 h-8 shadow-sm hover:shadow-md transition-shadow" onClick={openNewChatModal}>
-                <Plus className="w-4 h-4" />
-              </Button>
+              {canCreate && (
+                <Button size="icon" variant="primary" className="rounded-full w-8 h-8 shadow-sm hover:shadow-md transition-shadow" onClick={openNewChatModal}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+              )}
             </div>
             <Input 
               placeholder="Search chats..." 
@@ -428,7 +447,7 @@ export default function MessagesPage() {
                                 {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now"}
                               </span>
                               {isMe && <CheckCheck className={cn("w-3 h-3", msg.isRead ? "text-indigo-500" : "text-slate-300")} />}
-                              {isMe && msg._id && (
+                              {isMe && msg._id && canDelete && (
                                 <button 
                                   onClick={() => onDeleteMessage(msg._id)}
                                   className="text-slate-300 hover:text-red-500 transition-colors ml-1"

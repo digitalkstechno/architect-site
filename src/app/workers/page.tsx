@@ -11,6 +11,7 @@ import Modal from "@/components/ui/Modal";
 import { DataTable, Column } from "@/components/ui/DataTable";
 import { useAuth } from "@/lib/auth-context";
 import { useRoles } from "@/lib/role-context";
+import { usePermissions } from "@/hooks/use-permissions";
 
 type Worker = typeof initialWorkers[0] & { assignedRole?: string };
 
@@ -28,9 +29,8 @@ export default function WorkersPage() {
   const [showSpecDropdown, setShowSpecDropdown] = useState(false);
 
   const { roles } = useRoles();
-  const isAdmin = user?.role === "architect" || user?.role === "director";
-  const canEdit = isAdmin || user?.role === "supervisor";
-  const isArchitect = isAdmin;
+  const { canCreate, canEdit, hasAll } = usePermissions("workers");
+  const isArchitect = hasAll;
 
   const columns: Column<Worker>[] = [
     {

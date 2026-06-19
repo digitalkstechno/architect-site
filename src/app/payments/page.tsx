@@ -34,13 +34,15 @@ import { useProjects } from "@/lib/projects-store";
 import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function PaymentsPage() {
   const { user } = useAuth();
   const { payments, createPayment, deletePayment } = usePayments();
   const { projects } = useProjects();
 
-  const isAdmin = user?.role === "architect" || user?.role === "director" || user?.role === "accountant";
+  const { canCreate, canDelete } = usePermissions("payments");
+  const isAdmin = canCreate; // Mapping isAdmin to canCreate for adding payments
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSubmitting, setIsLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -254,7 +256,7 @@ export default function PaymentsPage() {
                   <TableCell className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">{payment.date}</TableCell>
                   <TableCell className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {isAdmin && (
+                      {canDelete && (
                         <button 
                           onClick={() => {
                             setPaymentToDelete(payment.id);

@@ -15,6 +15,7 @@ import { usePayments } from "@/lib/payments-store";
 import { useProjects } from "@/lib/projects-store";
 import { Badge } from "@/components/ui/Badge";
 import { DataTable, Column } from "@/components/ui/DataTable";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function ClientsPage() {
   const { user } = useAuth();
@@ -25,7 +26,7 @@ export default function ClientsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const canAdd = user?.role === "architect" || user?.role === "director";
+  const { canCreate } = usePermissions("clients");
 
   const fetchData = async () => {
     try {
@@ -178,7 +179,7 @@ export default function ClientsPage() {
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Relationship & Payment Management</p>
         </div>
         
-        {canAdd && (
+        {canCreate && (
           <Link href="/staff">
             <Button size="sm" className="font-bold text-xs gap-2">
               <Plus className="w-4 h-4" /> Add Client

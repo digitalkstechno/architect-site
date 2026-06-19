@@ -14,6 +14,7 @@ export interface DashboardStats {
     totalBudget: number;
     totalReceived: number;
     totalPending: number;
+    isHidden?: boolean;
   };
   recentActivity: {
     messages: any[];

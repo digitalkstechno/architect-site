@@ -6,10 +6,13 @@ import { useState, useRef, useEffect, use } from "react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import { useProjects } from "@/lib/projects-store";
+import { useOfficeTasks } from "@/lib/office-tasks-store";
+import { useSiteTasks } from "@/lib/site-tasks-store";
 import { sitePhotoService } from "@/services/sitePhoto.service";
 import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 
 type Photo = {
   id: string;
@@ -25,6 +28,8 @@ export default function SitePhotosPage({ searchParams }: { searchParams: any }) 
 
   const { user } = useAuth();
   const { projects, isHydrated: projectsHydrated } = useProjects();
+  const { getOfficeTasksByProjectId } = useOfficeTasks();
+  const { getSiteTasksByProjectId } = useSiteTasks();
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>(initialProjectId || "");
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -41,7 +46,7 @@ export default function SitePhotosPage({ searchParams }: { searchParams: any }) 
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const canUpload = user?.role !== "client";
+  const { canCreate: canUpload, canDelete } = usePermissions("site-photos");
 
   const filteredProjects = user?.role === "client"
     ? projects.filter(p => p.id === user.projectId)
@@ -182,16 +187,19 @@ export default function SitePhotosPage({ searchParams }: { searchParams: any }) 
       </div>
 
       {/* Project Selector */}
-      <div className="flex gap-2 items-center flex-wrap">
-        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-2">Select Project:</label>
-        <Select
-          options={filteredProjects.map(p => ({ value: p.id, label: p.name }))}
-          value={selectedProjectId}
-          onChange={setSelectedProjectId}
-          className="w-64"
-          searchable={true}
-        />
-      </div>
+      {/* Project Selector (Hidden for clients) */}
+      {user?.role !== "client" && (
+        <div className="flex gap-2 items-center flex-wrap">
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-2">Select Project:</label>
+          <Select
+            options={filteredProjects.map(p => ({ value: p.id, label: p.name }))}
+            value={selectedProjectId}
+            onChange={setSelectedProjectId}
+            className="w-64"
+            searchable={true}
+          />
+        </div>
+      )}
 
       {/* Photos Grid */}
       {isLoading ? (
@@ -214,7 +222,7 @@ export default function SitePhotosPage({ searchParams }: { searchParams: any }) 
           )}
 
           {photos.map(photo => (
-            <div key={photo.id} className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm max-w-[180px]">
+            <a key={photo.id} href={photo.src} target="_blank" rel="noopener noreferrer" className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm block">
               <img
                 src={photo.src}
                 alt="Site progress"
@@ -224,9 +232,11 @@ export default function SitePhotosPage({ searchParams }: { searchParams: any }) 
                 <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-1">
                   <div className="flex justify-between items-center">
                     <span className="text-[8px] font-bold text-white/90 uppercase tracking-wider font-mono">{photo.date}</span>
-                    {canUpload && (
+                    {canDelete && (
                       <button 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           setPhotoToDelete(photo.id);
                           setIsConfirmOpen(true);
                         }}
@@ -242,7 +252,41 @@ export default function SitePhotosPage({ searchParams }: { searchParams: any }) 
                   </div>
                 </div>
               </div>
-            </div>
+            </a>
+          ))}
+
+          {/* Render Office Task Photos */}
+          {getOfficeTasksByProjectId(selectedProjectId).flatMap(t => (t.images || []).map((img: string) => ({ img, task: t }))).map(({img, task}, i) => (
+            <a key={`office-${i}`} href={img} target="_blank" rel="noopener noreferrer" className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm block">
+              <img
+                src={img}
+                alt="Office Task Photo"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-1">
+                  <span className="text-[8px] font-bold text-white/90 uppercase tracking-wider font-mono">Office Task</span>
+                  <span className="text-[7px] font-black text-indigo-300 uppercase tracking-widest truncate">{task.title}</span>
+                </div>
+              </div>
+            </a>
+          ))}
+
+          {/* Render Site Task Photos */}
+          {getSiteTasksByProjectId(selectedProjectId).flatMap(t => (t.images || []).map((img: string) => ({ img, task: t }))).map(({img, task}, i) => (
+            <a key={`site-${i}`} href={img} target="_blank" rel="noopener noreferrer" className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm block">
+              <img
+                src={img}
+                alt="Site Task Photo"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-2 left-2 right-2 flex flex-col gap-1">
+                  <span className="text-[8px] font-bold text-white/90 uppercase tracking-wider font-mono">Site Task</span>
+                  <span className="text-[7px] font-black text-indigo-300 uppercase tracking-widest truncate">{task.title}</span>
+                </div>
+              </div>
+            </a>
           ))}
 
           {photos.length === 0 && !canUpload && [1, 2, 3, 4].map(i => (
@@ -265,7 +309,7 @@ export default function SitePhotosPage({ searchParams }: { searchParams: any }) 
       {/* Upload Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-visible">
             <div className="p-8">
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-xl font-bold text-slate-900">Upload Site Photo</h3>

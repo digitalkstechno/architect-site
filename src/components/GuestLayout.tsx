@@ -31,7 +31,7 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
             <div className="bg-indigo-600 p-1.5 rounded-lg group-hover:bg-indigo-700 transition-colors">
               <Building2 className="w-5 h-5 text-white" />
             </div>
-            <span className="text-base font-bold text-slate-900 tracking-tight">ArchiSite</span>
+            <span className="text-base font-bold text-slate-900 tracking-tight">ARKITON</span>
           </Link>
 
           {/* Desktop Nav */}
@@ -131,7 +131,7 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
                 <div className="bg-indigo-600 p-1.5 rounded-lg shadow-lg shadow-indigo-100">
                   <Building2 className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-black text-slate-900 tracking-tighter uppercase">ArchiSite</span>
+                <span className="text-lg font-black text-slate-900 tracking-tighter uppercase">ARKITON</span>
               </div>
               <p className="text-base font-medium leading-relaxed max-w-md text-slate-400 font-sans">
                 Redefining construction through design excellence and technical precision. We build more than structures — we build legacies.
@@ -183,7 +183,7 @@ export default function GuestLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="mt-16 pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6">
-            <p className="text-[11px] font-bold text-slate-400 font-mono">© 2026 ArchiSite. All rights reserved.</p>
+            <p className="text-[11px] font-bold text-slate-400 font-mono">© 2026 ARKITON DESIGN STUDIO. All rights reserved.</p>
             <div className="flex items-center gap-4 bg-white px-5 py-2.5 rounded-xl border border-slate-200 shadow-sm">
               <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
               <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest font-mono">

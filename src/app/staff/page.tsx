@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Edit2, Trash2, Shield, Briefcase, Eye, EyeOff } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Shield, Briefcase, Eye, EyeOff, Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
@@ -15,7 +15,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ActionButtons } from "@/components/ui/ActionButtons";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
-
+import { usePermissions } from "@/hooks/use-permissions";
 export default function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -36,6 +36,8 @@ export default function StaffPage() {
     team: "Office",
     experience: "" as string | number,
   });
+
+  const { canCreate, canEdit, canDelete } = usePermissions("staff");
 
   const fetchData = async () => {
     try {
@@ -149,9 +151,20 @@ export default function StaffPage() {
           <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-sm font-bold text-indigo-600 border border-indigo-100 shadow-sm">
             {member.name[0].toUpperCase()}
           </div>
-          <div>
+          <div className="flex flex-col gap-1.5 mt-0.5">
             <p className="text-[13px] font-bold text-slate-900 uppercase tracking-tight">{member.name}</p>
-            <p className="text-[10px] font-medium text-slate-500 lowercase">{member.email}</p>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[9px] font-bold lowercase tracking-widest bg-indigo-50 text-indigo-700 border-indigo-200 px-2 py-0.5 shadow-sm">
+                <Mail className="w-3 h-3 mr-1.5 opacity-70" />
+                {member.email}
+              </Badge>
+              {member.phone && (
+                <Badge variant="outline" className="text-[9px] font-bold tracking-widest bg-indigo-50 text-indigo-700 border-indigo-200 px-2 py-0.5 shadow-sm">
+                  <Phone className="w-3 h-3 mr-1.5 opacity-70" />
+                  {member.phone}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
       ),
@@ -202,17 +215,20 @@ export default function StaffPage() {
     {
       header: "Actions",
       className: "text-right",
-      render: (member) => (
-        <ActionButtons
-          hasEdit
-          hasDelete
-          onEdit={() => handleOpenModal(member)}
-          onDelete={() => {
-            setMemberToDelete(member._id);
-            setIsConfirmOpen(true);
-          }}
-        />
-      ),
+      render: (member) => {
+        if (!canEdit && !canDelete) return null;
+        return (
+          <ActionButtons
+            hasEdit={canEdit}
+            hasDelete={canDelete}
+            onEdit={() => handleOpenModal(member)}
+            onDelete={() => {
+              setMemberToDelete(member._id);
+              setIsConfirmOpen(true);
+            }}
+          />
+        );
+      },
     },
   ];
 
@@ -231,9 +247,11 @@ export default function StaffPage() {
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Office & Site Team</p>
         </div>
 
-        <Button onClick={() => handleOpenModal()} size="sm" className="rounded-xl font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
-          <Plus className="w-4 h-4" /> Add Member
-        </Button>
+        {canCreate && (
+          <Button onClick={() => handleOpenModal()} size="sm" className="rounded-xl font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
+            <Plus className="w-4 h-4" /> Add Member
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">

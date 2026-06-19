@@ -11,6 +11,7 @@ import { invoiceService, Invoice } from "@/services/invoice.service";
 import { projectService } from "@/services/project.service";
 import { staffService } from "@/services/staff.service";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -31,6 +32,8 @@ export default function InvoicesPage() {
   });
 
   const [items, setItems] = useState([{ description: "", quantity: 1, rate: 0, amount: 0 }]);
+
+  const { canCreate, canEdit, canDelete } = usePermissions("invoices");
 
   const fetchData = async () => {
     try {
@@ -136,7 +139,7 @@ export default function InvoicesPage() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Invoices</h2>
-        <Button onClick={openNew} size="sm" className="gap-2"><Plus className="w-4 h-4"/> Create Invoice</Button>
+        {canCreate && <Button onClick={openNew} size="sm" className="gap-2"><Plus className="w-4 h-4"/> Create Invoice</Button>}
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -169,8 +172,8 @@ export default function InvoicesPage() {
                   }`}>{inv.status}</span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button onClick={() => openEdit(inv)} className="p-1 text-slate-400 hover:text-indigo-600"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => setDeleteId(inv._id)} className="p-1 text-slate-400 hover:text-red-600 ml-2"><Trash2 className="w-4 h-4" /></button>
+                  {canEdit && <button onClick={() => openEdit(inv)} className="p-1 text-slate-400 hover:text-indigo-600"><Edit2 className="w-4 h-4" /></button>}
+                  {canDelete && <button onClick={() => setDeleteId(inv._id)} className="p-1 text-slate-400 hover:text-red-600 ml-2"><Trash2 className="w-4 h-4" /></button>}
                 </td>
               </tr>
             ))}

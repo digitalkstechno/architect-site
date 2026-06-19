@@ -86,6 +86,7 @@ export default function CompleteDashboardPage() {
         
         {/* Financial Health */}
         <div className="lg:col-span-2 space-y-8">
+          {!stats.finances.isHidden && (
           <Card className="rounded-3xl border-slate-200 shadow-sm overflow-hidden">
             <CardHeader className="border-b border-slate-50 bg-slate-50/50 p-6">
               <div className="flex items-center gap-3">
@@ -125,6 +126,7 @@ export default function CompleteDashboardPage() {
               </div>
             </CardContent>
           </Card>
+          )}
 
           {/* Upcoming Schedules */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

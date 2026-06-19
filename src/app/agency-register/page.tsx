@@ -123,10 +123,17 @@ export default function AgencyRegisterPage() {
     if (!formData.email) return toast.error("Please enter Email Address.");
     if (!emailVerified) return toast.error("Please verify your Email Address.");
     if (!formData.businessType) return toast.error("Please select a Business Type.");
-    if (!formData.officeAddress) return toast.error("Please enter Office Address.");
-    if (!formData.experience) return toast.error("Please enter Experience.");
-    if (!formData.workingCities) return toast.error("Please enter Working Cities.");
-    if (!formData.servicesOffered) return toast.error("Please enter Services Offered.");
+
+    const selectedRole = businessTypes.find(b => b._id === formData.businessType);
+    const selectedRoleName = selectedRole?.name?.toLowerCase().replace(/\s+/g, '-') || "";
+    const shouldHideDetails = selectedRoleName === "client" || selectedRoleName === "office-team";
+
+    if (!shouldHideDetails) {
+      if (!formData.officeAddress) return toast.error("Please enter Office Address.");
+      if (!formData.experience) return toast.error("Please enter Experience.");
+      if (!formData.workingCities) return toast.error("Please enter Working Cities.");
+      if (!formData.servicesOffered) return toast.error("Please enter Services Offered.");
+    }
 
     setIsLoading(true);
 
@@ -173,6 +180,10 @@ export default function AgencyRegisterPage() {
       </div>
     );
   }
+
+  const selectedRole = businessTypes.find(b => b._id === formData.businessType);
+  const selectedRoleName = selectedRole?.name?.toLowerCase().replace(/\s+/g, '-') || "";
+  const shouldHideDetails = selectedRoleName === "client" || selectedRoleName === "office-team";
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
@@ -249,6 +260,8 @@ export default function AgencyRegisterPage() {
               </div>
             </div>
 
+            {!shouldHideDetails && (
+              <>
             {/* Section 2: Business Details */}
             <div className="space-y-6 pt-4">
               <h3 className="text-sm font-bold text-indigo-600 uppercase tracking-widest border-b border-slate-100 pb-2">2. Business Details</h3>
@@ -367,6 +380,8 @@ export default function AgencyRegisterPage() {
                 </div>
               </div>
             </div>
+            </>
+            )}
 
             <div className="pt-8 border-t border-slate-100">
               <Button 

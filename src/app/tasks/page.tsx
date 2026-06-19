@@ -12,6 +12,7 @@ import { DataTable, Column } from "@/components/ui/DataTable";
 import { useAuth } from "@/lib/auth-context";
 import { useTasks } from "@/lib/tasks-store";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { usePermissions } from "@/hooks/use-permissions";
 
 const statusOptions = ["Pending", "In Progress", "Completed"];
 
@@ -36,7 +37,8 @@ export default function TasksPage() {
       deadline: t.deadline,
     }));
   }, [tasks]);
-  const canEdit = user?.role === "architect" || user?.role === "director" || user?.role === "supervisor";
+  
+  const { canEdit } = usePermissions("tasks");
 
   const columns: Column<any>[] = [
     {

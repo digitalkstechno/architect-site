@@ -122,7 +122,7 @@ export function DataTable<T>({
                     className={cn(
                       "border-b border-slate-100 last:border-0 group transition-colors",
                       onRowClick && "cursor-pointer hover:bg-slate-50/80",
-                      renderExpandedRow && expandedRowId === (row as any).id && "bg-slate-50"
+                      renderExpandedRow && expandedRowId === ((row as any)._id || (row as any).id) && "bg-slate-50"
                     )}
                     onClick={() => onRowClick?.(row)}
                   >
@@ -139,7 +139,7 @@ export function DataTable<T>({
                       </TableCell>
                     ))}
                   </TableRow>
-                  {renderExpandedRow && expandedRowId === (row as any).id && (
+                  {renderExpandedRow && expandedRowId === ((row as any)._id || (row as any).id) && (
                     <TableRow key={`${rowIndex}-expanded`} className="bg-slate-50/30 border-b border-slate-100">
                       <TableCell colSpan={columns.length} className="p-0">
                         {renderExpandedRow(row)}

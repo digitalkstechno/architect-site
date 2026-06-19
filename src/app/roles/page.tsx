@@ -11,6 +11,7 @@ import { roleService, Role } from "@/services/role.service";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ActionButtons } from "@/components/ui/ActionButtons";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 
 const MODULE_CONFIG = [
   { id: "projects", name: "Projects", actions: ["view", "view-details", "create", "edit", "delete", "view-office", "view-site", "view-tasks", "view-documents", "view-materials", "view-team", "view-photos", "view-finances", "view-timeline"] },
@@ -30,7 +31,8 @@ const MODULE_CONFIG = [
   { id: "settings", name: "Settings", actions: ["view", "edit"] },
   { id: "working-sop", name: "Working SOP", actions: ["view", "create", "edit", "delete"] },
   { id: "calendar", name: "Calendar", actions: ["view", "create", "edit", "delete"] },
-  { id: "invoices", name: "Invoices", actions: ["view", "create", "edit", "delete"] }
+  { id: "invoices", name: "Invoices", actions: ["view", "create", "edit", "delete"] },
+  { id: "workers", name: "Workers", actions: ["view", "create", "edit", "delete"] }
 ];
 
 const ALL_AVAILABLE_PERMISSIONS = [
@@ -47,6 +49,8 @@ export default function RolesPage() {
   const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const { canCreate, canEdit, canDelete } = usePermissions("roles");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -149,9 +153,11 @@ export default function RolesPage() {
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Access Control Management</p>
         </div>
 
-        <Button onClick={() => handleOpenModal()} size="sm" className="rounded-xl font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
-          <Plus className="w-4 h-4" /> New Role
-        </Button>
+        {canCreate && (
+          <Button onClick={() => handleOpenModal()} size="sm" className="rounded-xl font-bold text-xs gap-2 bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-100">
+            <Plus className="w-4 h-4" /> New Role
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -174,15 +180,17 @@ export default function RolesPage() {
               </div>
 
               <div className="flex gap-1">
-                <ActionButtons
-                  hasEdit
-                  hasDelete
-                  onEdit={() => handleOpenModal(role)}
-                  onDelete={() => {
-                    setRoleToDelete(role._id);
-                    setIsConfirmOpen(true);
-                  }}
-                />
+                {(canEdit || canDelete) && (
+                  <ActionButtons
+                    hasEdit={canEdit}
+                    hasDelete={canDelete}
+                    onEdit={() => handleOpenModal(role)}
+                    onDelete={() => {
+                      setRoleToDelete(role._id);
+                      setIsConfirmOpen(true);
+                    }}
+                  />
+                )}
               </div>
             </div>
           </Card>
