@@ -126,7 +126,7 @@ export function Select({
 
       {isOpen && typeof document !== "undefined" && createPortal(
         <div 
-          className="z-[9999] bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top"
+          className="z-[9999] fixed bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top"
           style={dropdownStyle}
         >
           {searchable && (
