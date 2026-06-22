@@ -188,9 +188,9 @@ export default function AgencyRegisterPage() {
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Agency Partner Registration</h1>
-          <p className="text-slate-500 font-medium">Join our network of elite construction professionals.</p>
+        <div className="text-center space-y-2 px-2">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Agency Partner Registration</h1>
+          <p className="text-sm md:text-base text-slate-500 font-medium">Join our network of elite construction professionals.</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
@@ -227,20 +227,22 @@ export default function AgencyRegisterPage() {
                     {emailVerified && <span className="text-green-600 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Verified</span>}
                   </label>
                   <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
-                      <Input name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="email@example.com" disabled={emailVerified || otpSent} />
-                      {!emailVerified && !otpSent && <Button type="button" onClick={sendOTP} disabled={isVerifying} variant="outline" className="shrink-0">{isVerifying ? "Sending..." : "Send OTP"}</Button>}
+                    <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                      <div className="flex-1">
+                        <Input name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="email@example.com" disabled={emailVerified || otpSent} />
+                      </div>
+                      {!emailVerified && !otpSent && <Button type="button" onClick={sendOTP} disabled={isVerifying} variant="outline" className="w-full sm:w-auto shrink-0">{isVerifying ? "Sending..." : "Send OTP"}</Button>}
                     </div>
                     {otpSent && !emailVerified && (
-                      <div className="flex gap-2 items-center mt-1 animate-in fade-in slide-in-from-top-2">
+                      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mt-1 animate-in fade-in slide-in-from-top-2">
                         <Input 
                           placeholder="Enter 6-digit OTP" 
                           value={otpCode} 
                           onChange={(e) => setOtpCode(e.target.value)} 
-                          className="w-40 text-center tracking-widest font-mono" 
+                          className="w-full sm:w-40 text-center tracking-widest font-mono" 
                           maxLength={6} 
                         />
-                        <Button type="button" onClick={verifyOTP} disabled={isVerifying} className="bg-indigo-600 hover:bg-indigo-700">
+                        <Button type="button" onClick={verifyOTP} disabled={isVerifying} className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">
                           {isVerifying ? "Verifying..." : "Verify"}
                         </Button>
                       </div>

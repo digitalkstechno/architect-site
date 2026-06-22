@@ -137,12 +137,12 @@ export default function InvoicesPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-xl font-bold">Invoices</h2>
-        {canCreate && <Button onClick={openNew} size="sm" className="gap-2"><Plus className="w-4 h-4"/> Create Invoice</Button>}
+        {canCreate && <Button onClick={openNew} size="sm" className="gap-2 w-full sm:w-auto"><Plus className="w-4 h-4"/> Create Invoice</Button>}
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
@@ -183,7 +183,7 @@ export default function InvoicesPage() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Edit Invoice" : "New Invoice"}>
         <form onSubmit={handleSubmit} className="space-y-4 px-1 pb-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold">Client</label>
               <Select value={formData.client} onChange={v => setFormData({...formData, client: v})} options={clients.map(c => ({value: c._id || c.id, label: c.name}))} />
@@ -193,26 +193,30 @@ export default function InvoicesPage() {
               <Select value={formData.project} onChange={v => setFormData({...formData, project: v})} options={projects.map(p => ({value: p._id || p.id, label: p.name}))} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="text-xs font-bold">Invoice Number</label><Input value={formData.invoiceNumber} onChange={e => setFormData({...formData, invoiceNumber: e.target.value})} required /></div>
             <div><label className="text-xs font-bold">Status</label><Select value={formData.status} onChange={v => setFormData({...formData, status: v})} options={[{value:"Draft",label:"Draft"},{value:"Sent",label:"Sent"},{value:"Paid",label:"Paid"},{value:"Overdue",label:"Overdue"}]} /></div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="text-xs font-bold">Date</label><Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} required /></div>
             <div><label className="text-xs font-bold">Due Date</label><Input type="date" value={formData.dueDate} onChange={e => setFormData({...formData, dueDate: e.target.value})} /></div>
           </div>
 
           <div className="border-t border-slate-200 pt-4 mt-4">
             <h4 className="text-sm font-bold mb-2">Line Items</h4>
-            {items.map((item, idx) => (
-              <div key={idx} className="flex gap-2 items-end mb-2">
-                <div className="flex-1"><Input placeholder="Description" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} required /></div>
-                <div className="w-20"><Input type="number" placeholder="Qty" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} required /></div>
-                <div className="w-24"><Input type="number" placeholder="Rate" value={item.rate} onChange={e => handleItemChange(idx, 'rate', Number(e.target.value))} required /></div>
-                <div className="w-24 px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm text-right font-mono">₹{item.amount}</div>
-                <Button type="button" variant="danger" size="sm" onClick={() => removeItem(idx)}><Trash2 className="w-4 h-4" /></Button>
+            <div className="overflow-x-auto w-full">
+              <div className="min-w-[500px]">
+                {items.map((item, idx) => (
+                  <div key={idx} className="flex gap-2 items-end mb-2">
+                    <div className="flex-1"><Input placeholder="Description" value={item.description} onChange={e => handleItemChange(idx, 'description', e.target.value)} required /></div>
+                    <div className="w-20"><Input type="number" placeholder="Qty" value={item.quantity} onChange={e => handleItemChange(idx, 'quantity', Number(e.target.value))} required /></div>
+                    <div className="w-24"><Input type="number" placeholder="Rate" value={item.rate} onChange={e => handleItemChange(idx, 'rate', Number(e.target.value))} required /></div>
+                    <div className="w-24 px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm text-right font-mono">₹{item.amount}</div>
+                    <Button type="button" variant="danger" size="sm" onClick={() => removeItem(idx)}><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
             <Button type="button" variant="secondary" size="sm" onClick={addItem} className="mt-2"><Plus className="w-3 h-3 mr-1"/> Add Item</Button>
           </div>
           

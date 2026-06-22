@@ -83,6 +83,15 @@ export const api = {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
+    if (response.status === 401) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_user");
+        localStorage.removeItem("token");
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+      }
+    }
     const errorData = await response.json().catch(() => ({}));
     const errorMessage = errorData.message || `Request failed with status ${response.status}`;
     throw new Error(errorMessage);

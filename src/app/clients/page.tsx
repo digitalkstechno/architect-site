@@ -173,7 +173,7 @@ export default function ClientsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 w-full p-4 sm:p-6">
-      <div className="flex flex-row items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-0.5">
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">CLIENT PORTFOLIO</h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Relationship & Payment Management</p>

@@ -142,10 +142,10 @@ export default function WorkersPage() {
   return (
     <>
       <div className="space-y-10 animate-in fade-in duration-500">
-        <div className="flex flex-row items-center justify-between gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="space-y-1">
-            <h2 className="text-2xl font-medium text-slate-900 tracking-tight">Worker Directory</h2>
-            <p className="text-sm font-medium text-slate-500 hidden sm:block">Manage your workforce and specialized trades</p>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">WORKERS MANAGEMENT</h2>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Labor Database & Attendance</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden md:block">

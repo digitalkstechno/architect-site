@@ -79,8 +79,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       </div>
       <div className="flex-1 min-h-screen lg:pl-60 overflow-x-hidden">
         <Navbar onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className="pt-28 p-4 md:p-8">
-          <div className="pt-10 mx-auto space-y-12">
+        <main className="pt-16 md:pt-20 p-4 md:p-8">
+          <div className="mx-auto space-y-8 md:space-y-12">
             {!isAuthorized ? (
               <div className="flex items-center justify-center min-h-[50vh]">
                 <div className="text-center p-8 bg-white rounded-2xl border border-slate-200 shadow-sm max-w-md w-full">

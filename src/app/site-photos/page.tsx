@@ -173,10 +173,10 @@ export default function SitePhotosPage({ searchParams }: { searchParams: any }) 
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-row items-center justify-between gap-6">
-        <div className="space-y-0.5">
-          <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Site Documentation</h2>
-          <p className="text-xs font-medium text-slate-500 hidden sm:block">Visual progress tracking and site photos</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">SITE PHOTOS</h2>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Project Gallery & Documentation</p>
         </div>
         {canUpload && (
           <Button size="sm" onClick={() => setShowUploadModal(true)} className="gap-2">

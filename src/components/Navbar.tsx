@@ -197,7 +197,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
             )}
 
             {/* Messages */}
-            <div className="relative">
+            {/* <div className="relative">
               <Link href="/messages">
                 <Button
                   variant="ghost"
@@ -212,7 +212,7 @@ export default function Navbar({ onMenuToggle }: { onMenuToggle?: () => void }) 
                   )}
                 </Button>
               </Link>
-            </div>
+            </div> */}
 
             {/* Notifications */}
             <div className="relative">

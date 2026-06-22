@@ -65,6 +65,9 @@ export interface EndPointApi {
   // Working SOPs
   workingSOPs: string;
   workingSOPById: (id: string) => string;
+
+  // Company
+  company: string;
 }
 
 const endPointApi: EndPointApi = {
@@ -131,6 +134,9 @@ const endPointApi: EndPointApi = {
   // Working SOPs
   workingSOPs: "/working-sops",
   workingSOPById: (id: string) => `/working-sops/${id}`,
+
+  // Company
+  company: "/company",
 };
 
 export default endPointApi;

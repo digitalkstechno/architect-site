@@ -2,19 +2,21 @@
 
 import {
   UserCircle2, Building2, Bell, ShieldCheck, CreditCard,
-  Save, Trash2, Palette, Briefcase, Users, Plus, X, CheckCircle2
+  Save, Trash2, Palette, Briefcase, Users, Plus, X, CheckCircle2,
+  Eye, EyeOff
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Toggle } from "@/components/ui/Toggle";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import { useRoles, ALL_PAGES, RoleConfig } from "@/lib/role-context";
 import { usePermissions } from "@/hooks/use-permissions";
+import { api } from "@/services/api";
+import endPointApi from "@/lib/endpoints";
+import toast from "react-hot-toast";
 
-type SettingTab = "profile" | "company" | "notifications" | "security" | "roles";
-
-const initialNotifs = { siteProgress: true, paymentReminders: true, workerUpdates: false, clientMessaging: true };
+type SettingTab = "profile" | "company" | "security" | "roles";
 
 const COLOR_OPTIONS = ["indigo", "blue", "orange", "green", "purple", "rose", "slate", "teal"];
 
@@ -30,30 +32,96 @@ const colorClass: Record<string, { bg: string; text: string; border: string; dot
 };
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const { roles, addRole, deleteRole, updateRolePages } = useRoles();
-  const [activeTab, setActiveTab] = useState<SettingTab>("notifications");
-  const [notifs, setNotifs] = useState(initialNotifs);
+  const [activeTab, setActiveTab] = useState<SettingTab>("profile");
+  
+  // Profile State
+  const [profileData, setProfileData] = useState({ name: "", email: "", phone: "" });
+  
+  // Security State
+  const [passwordData, setPasswordData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Company State
+  const [companyData, setCompanyData] = useState({ name: "", taxId: "", address: "", website: "" });
+
   const [expandedRole, setExpandedRole] = useState<string | null>(null);
   const [showAddRole, setShowAddRole] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleColor, setNewRoleColor] = useState("teal");
   const [savedMsg, setSavedMsg] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const { hasAll } = usePermissions("settings");
   const isAdmin = hasAll;
 
   const tabs = [
     { id: "profile",       label: "My Profile",      icon: UserCircle2 },
-    { id: "company",       label: "Company Info",     icon: Building2 },
-    { id: "notifications", label: "Notifications",    icon: Bell },
     { id: "security",      label: "Security",         icon: ShieldCheck },
     ...(isAdmin ? [{ id: "roles", label: "Role Management", icon: Users }] : []),
   ];
 
-  const handleSave = () => {
-    setSavedMsg(true);
-    setTimeout(() => setSavedMsg(false), 2000);
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || ""
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const fetchCompany = async () => {
+      try {
+        const { data } = await api.get(endPointApi.company);
+        setCompanyData({
+          name: data.name || "",
+          taxId: data.taxId || "",
+          address: data.address || "",
+          website: data.website || ""
+        });
+      } catch (err) {
+        console.error("Failed to load company info");
+      }
+    };
+    if (activeTab === "company") fetchCompany();
+  }, [activeTab]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      if (activeTab === "profile") {
+        await api.put(endPointApi.userById(user!.id || (user as any)._id), profileData);
+        // We update the auth context user data safely using only the fields we changed
+        updateUser(profileData); 
+        toast.success("Profile updated");
+      } else if (activeTab === "company") {
+        await api.put(endPointApi.company, companyData);
+        toast.success("Company info updated");
+      } else if (activeTab === "security") {
+        if (!passwordData.newPassword) {
+          toast.error("Please enter a new password");
+          return;
+        }
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+          toast.error("Passwords do not match");
+          return;
+        }
+        await api.put(endPointApi.userById(user!.id || (user as any)._id), { password: passwordData.newPassword });
+        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        toast.success("Password updated securely");
+      }
+
+      setSavedMsg(true);
+      setTimeout(() => setSavedMsg(false), 2000);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update settings");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleTogglePage = (role: RoleConfig, pageKey: string) => {
@@ -72,6 +140,22 @@ export default function SettingsPage() {
     setShowAddRole(false);
   };
 
+  const handleDeleteAccount = async () => {
+    const confirmDelete = window.confirm("Are you absolutely sure you want to delete your account? This cannot be undone.");
+    if (!confirmDelete) return;
+    
+    setIsSaving(true);
+    try {
+      await api.delete(endPointApi.userById(user!.id || (user as any)._id));
+      toast.success("Account deleted");
+      logout();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete account");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -79,11 +163,13 @@ export default function SettingsPage() {
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">System Settings</h2>
           <p className="text-sm font-medium text-slate-500">Customize your workspace and account preferences</p>
         </div>
-        <button onClick={handleSave}
-          className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95">
-          {savedMsg ? <CheckCircle2 className="w-5 h-5" /> : <Save className="w-5 h-5" />}
-          {savedMsg ? "Saved!" : "Save Changes"}
-        </button>
+        {activeTab !== "roles" && (
+          <button onClick={handleSave} disabled={isSaving}
+            className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50">
+            {isSaving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : savedMsg ? <CheckCircle2 className="w-5 h-5" /> : <Save className="w-5 h-5" />}
+            {savedMsg ? "Saved!" : isSaving ? "Saving..." : "Save Changes"}
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
@@ -112,95 +198,59 @@ export default function SettingsPage() {
             {activeTab === "profile" && (
               <div className="space-y-8">
                 <div className="flex items-center gap-8">
-                  <div className="w-24 h-24 bg-indigo-50 rounded-3xl flex items-center justify-center text-3xl font-bold text-indigo-600 border-2 border-dashed border-indigo-200 relative group cursor-pointer hover:bg-indigo-100 transition-colors">
+                  <div className="w-24 h-24 bg-indigo-50 rounded-3xl flex items-center justify-center text-3xl font-bold text-indigo-600 border-2 border-dashed border-indigo-200 relative transition-colors">
                     {user?.name?.split(" ").map(n => n[0]).join("") ?? "U"}
-                    <div className="absolute inset-0 bg-black/40 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Palette className="w-6 h-6 text-white" />
-                    </div>
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">{user?.name}</h3>
-                    <p className="text-sm text-slate-500 uppercase tracking-widest mt-1">{user?.role}</p>
+                    <h3 className="text-xl font-bold text-slate-900">{profileData.name || user?.name}</h3>
+                    <p className="text-sm text-slate-500 uppercase tracking-widest mt-1">{user?.role?.name || user?.role}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {[
-                    { label: "Full Name",     value: user?.name ?? "" },
-                    { label: "Email Address", value: user?.email ?? "" },
-                    { label: "Phone Number",  value: "+1 (555) 902-1234" },
-                    { label: "Role",          value: user?.role ?? "" },
-                  ].map(f => (
-                    <div key={f.label} className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700 ml-1">{f.label}</label>
-                      <input defaultValue={f.value} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
-                    </div>
-                  ))}
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Full Name</label>
+                    <input value={profileData.name} onChange={e => setProfileData({...profileData, name: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
+                    <input type="email" value={profileData.email} onChange={e => setProfileData({...profileData, email: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Phone Number</label>
+                    <input value={profileData.phone} onChange={e => setProfileData({...profileData, phone: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Role (Read Only)</label>
+                    <input disabled value={user?.role?.name || user?.role || ""} className="w-full px-6 py-4 bg-slate-100 border border-slate-200 rounded-2xl text-sm font-bold text-slate-500 cursor-not-allowed" />
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Company */}
-            {activeTab === "company" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[
-                  { label: "Company Name",    value: "ArchiSite Pro Designs" },
-                  { label: "Tax ID / VAT",    value: "US-9283-1234" },
-                  { label: "Office Address",  value: "123 Architecture Lane, CA 90210" },
-                  { label: "Company Website", value: "www.archisite.pro" },
-                ].map(f => (
-                  <div key={f.label} className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-1">{f.label}</label>
-                    <input defaultValue={f.value} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
-                  </div>
-                ))}
-              </div>
-            )}
 
-            {/* Notifications */}
-            {activeTab === "notifications" && (
-              <div className="space-y-6">
-                {[
-                  { id: "siteProgress",     title: "Site Progress Alerts",  desc: "Get notified when a construction stage is marked complete.", icon: Briefcase },
-                  { id: "paymentReminders", title: "Payment Reminders",     desc: "Receive alerts for overdue and pending client payments.",    icon: CreditCard },
-                  { id: "workerUpdates",    title: "Worker Updates",        desc: "Stay informed about worker check-ins and task assignments.", icon: UserCircle2 },
-                  { id: "clientMessaging",  title: "Client Messaging",      desc: "Real-time notifications for new client messages.",           icon: Bell },
-                ].map(item => (
-                  <div key={item.id} className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:border-indigo-100 transition-all group">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-white rounded-xl shadow-sm group-hover:bg-indigo-50 transition-colors">
-                        <item.icon className="w-5 h-5 text-indigo-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900">{item.title}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
-                      </div>
-                    </div>
-                    <Toggle
-                      checked={notifs[item.id as keyof typeof notifs]}
-                      onChange={() => setNotifs(p => ({ ...p, [item.id]: !p[item.id as keyof typeof notifs] }))}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
 
             {/* Security */}
             {activeTab === "security" && (
               <div className="space-y-6">
-                {["Current Password", "New Password", "Confirm New Password"].map(label => (
-                  <div key={label} className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-1">{label}</label>
-                    <input type="password" placeholder="••••••••"
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 ml-1">New Password</label>
+                  <div className="relative">
+                    <input type={showPassword ? "text" : "password"} value={passwordData.newPassword} onChange={e => setPasswordData({...passwordData, newPassword: e.target.value})} placeholder="••••••••"
                       className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                   </div>
-                ))}
-                <Button>Update Password</Button>
-                <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">Two-Factor Authentication</p>
-                    <p className="text-xs text-slate-500 mt-1">Add an extra layer of security</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 ml-1">Confirm New Password</label>
+                  <div className="relative">
+                    <input type={showConfirmPassword ? "text" : "password"} value={passwordData.confirmPassword} onChange={e => setPasswordData({...passwordData, confirmPassword: e.target.value})} placeholder="••••••••"
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                   </div>
-                  <Toggle checked={false} onChange={() => {}} />
                 </div>
               </div>
             )}
@@ -208,17 +258,17 @@ export default function SettingsPage() {
             {/* ── ROLE MANAGEMENT ── */}
             {activeTab === "roles" && isAdmin && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h3 className="text-base font-bold text-slate-900">Role Management</h3>
                     <p className="text-xs text-slate-500 mt-1">
                       Create roles, set page access. Changes reflect on Login &amp; Sidebar instantly.
                     </p>
                   </div>
-                  <Button onClick={() => setShowAddRole(v => !v)} className="gap-2">
+                  {/* <Button onClick={() => setShowAddRole(v => !v)} className="gap-2 w-full sm:w-auto">
                     <Plus className="w-4 h-4" />
                     New Role
-                  </Button>
+                  </Button> */}
                 </div>
 
                 {/* Add Role Form */}
@@ -343,8 +393,11 @@ export default function SettingsPage() {
                   <p className="text-sm text-red-700/70 mt-1">Irreversibly delete your account and all associated project data.</p>
                 </div>
               </div>
-              <button className="px-6 py-3 bg-red-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-100 hover:bg-red-700 transition-all active:scale-95">
-                Delete My Account
+              <button 
+                onClick={handleDeleteAccount}
+                disabled={isSaving}
+                className="px-6 py-3 bg-red-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-100 hover:bg-red-700 transition-all active:scale-95 disabled:opacity-50">
+                {isSaving ? "Deleting..." : "Delete My Account"}
               </button>
             </div>
           )}

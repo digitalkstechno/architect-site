@@ -264,7 +264,7 @@ export default function ProjectsPage() {
   return (
     <>
       <div className="space-y-4 animate-in fade-in duration-500 w-full p-4 sm:p-6">
-        <div className="flex flex-row items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-0.5">
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">
               {user?.role === "client" ? "My Project" : "Project Portfolio"}

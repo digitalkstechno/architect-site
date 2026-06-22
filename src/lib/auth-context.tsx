@@ -29,6 +29,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password?: string, isGuest?: boolean, mobile?: string) => Promise<void>;
   logout: () => void;
+  updateUser: (data: Partial<User>) => void;
   isLoading: boolean;
 }
 
@@ -111,20 +112,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = "/login";
   };
 
+  const updateUser = (data: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...data };
+      setUser(updatedUser);
+      localStorage.setItem("auth_user", JSON.stringify(updatedUser));
+    }
+  };
+
   useEffect(() => {
     if (isLoading) return;
     const isPublicPage = pathname === "/login" || pathname === "/reset-password" || pathname === "/agency-register";
     const isGuestPage = pathname.startsWith("/guest");
-    if (!user && !isPublicPage) {
-      router.push("/login");
-    } else if (user?.role === "guest" && !isGuestPage) {
-      // Guest trying to access admin pages → redirect to guest home
-      router.push("/guest/home");
+
+    if (!user) {
+      if (!isPublicPage) {
+        router.push("/login");
+      }
+    } else {
+      // User is logged in
+      if (pathname === "/login") {
+        router.push(user.role === "guest" ? "/guest/home" : "/");
+      } else if (user.role === "guest" && !isGuestPage) {
+        // Guest trying to access admin pages → redirect to guest home
+        router.push("/guest/home");
+      }
     }
   }, [user, isLoading, pathname, router]);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -29,6 +29,7 @@ type TasksContextType = {
   isHydrated: boolean;
   getTasksByProjectId: (projectId: string) => Task[];
   fetchTasks: () => Promise<void>;
+  updateTaskStatus: (id: string, status: TaskStatus) => Promise<void>;
 };
 
 const TasksContext = createContext<TasksContextType | undefined>(undefined);
@@ -75,6 +76,16 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const updateTaskStatus = async (id: string, status: TaskStatus) => {
+    try {
+      await taskService.updateTask(id, { status });
+      await fetchTasks();
+    } catch (error) {
+      console.error("Failed to update task status", error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) fetchTasks();
@@ -96,7 +107,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <TasksContext.Provider value={{ tasks, isHydrated, getTasksByProjectId, fetchTasks }}>
+    <TasksContext.Provider value={{ tasks, isHydrated, getTasksByProjectId, fetchTasks, updateTaskStatus }}>
       {children}
     </TasksContext.Provider>
   );

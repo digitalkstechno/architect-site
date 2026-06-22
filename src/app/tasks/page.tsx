@@ -18,7 +18,7 @@ const statusOptions = ["Pending", "In Progress", "Completed"];
 
 export default function TasksPage() {
   const { user } = useAuth();
-  const { tasks, isHydrated, fetchTasks } = useTasks();
+  const { tasks, isHydrated, fetchTasks, updateTaskStatus } = useTasks();
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export default function TasksPage() {
         canEdit ? (
           <select
             value={task.status}
-            onChange={() => {}}
+            onChange={(e) => updateTaskStatus(task.id, e.target.value as any)}
             className={cn(
               "px-3 py-1.5 rounded-full text-[10px] font-bold border  tracking-wider cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500",
               task.status === "Completed" ? "bg-green-50 text-green-700 border-green-200" :
@@ -119,17 +119,17 @@ export default function TasksPage() {
   return (
     <>
       <div className="space-y-10 animate-in fade-in duration-500">
-        <div className="flex flex-row items-center justify-between gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Task Tracker</h2>
             <p className="text-sm font-medium text-slate-500 hidden sm:block">Monitor and manage all active construction tasks</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden md:block">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="w-full sm:w-auto">
               <Input
                 placeholder="Filter tasks..."
                 icon={Search}
-                className="w-64"
+                className="w-full sm:w-64"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />

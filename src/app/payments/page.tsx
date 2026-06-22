@@ -157,7 +157,7 @@ export default function PaymentsPage() {
   return (
     <>
       <div className="space-y-6 animate-in fade-in duration-500 w-full p-4 sm:p-6">
-        <div className="flex flex-row items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-0.5">
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">Financial Overview</h2>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Budget & Payment Tracking</p>
@@ -170,7 +170,7 @@ export default function PaymentsPage() {
               className="gap-2 shadow-md shadow-indigo-100 font-bold text-xs"
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Payment</span>
+              <span className="inline">Add Payment</span>
             </Button>
           )}
         </div>
