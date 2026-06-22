@@ -29,7 +29,7 @@ const PAGE_ICONS: Record<string, React.ElementType> = {
   payments: CreditCard,
   invoices: ClipboardList,
   calendar: Calendar,
-  messages: MessageSquare,
+  // messages: MessageSquare, 
   "agency-register": Building2,
   "agency-approvals": Briefcase,
   "guest-log": UserPlus,
@@ -53,7 +53,7 @@ const PAGE_LABELS: Record<string, string> = {
   payments: "Payments",
   invoices: "Invoices",
   calendar: "Calendar",
-  messages: "Messages",
+  // messages: "Messages",
   "agency-register": "Agency Register",
   "agency-approvals": "Pending Agencies",
   "guest-log": "Guest Log",
@@ -111,7 +111,9 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
   const roleConfig = getRoleById(roleId);
   const allowedPages = roleConfig?.pages ?? [];
 
-  const menuItems = allowedPages.map(pageKey => {
+  const menuItems = allowedPages
+    .filter(pageKey => pageKey !== "messages")
+    .map(pageKey => {
     const roleLabels = ROLE_PAGE_LABELS[roleId] ?? {};
     return {
       key: pageKey,
@@ -152,11 +154,11 @@ export default function Sidebar({ onMobileClose }: { onMobileClose?: () => void 
                 <item.icon className={cn("w-4 h-4 transition-transform group-hover:scale-105", isActive ? "text-primary-600 dark:text-primary-400" : "text-slate-400 dark:text-slate-500")} />
                 {item.name}
               </div>
-              {item.key === "messages" && unreadMessageCount > 0 && (
+              {/* {item.key === "messages" && unreadMessageCount > 0 && (
                 <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto">
                   {unreadMessageCount}
                 </span>
-              )}
+              )} */}
             </Link>
           );
         })}
