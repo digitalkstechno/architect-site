@@ -43,7 +43,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || user.role === "guest") {
       if (socket) {
         socket.disconnect();
         setSocket(null);

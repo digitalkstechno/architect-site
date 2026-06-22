@@ -72,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setUser(guestUser);
       localStorage.setItem("auth_user", JSON.stringify(guestUser));
+      localStorage.removeItem("token");
       router.push("/guest/home");
       return;
     }
