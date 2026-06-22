@@ -37,7 +37,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingTab>("profile");
   
   // Profile State
-  const [profileData, setProfileData] = useState({ name: "", email: "", phone: "" });
+  const [profileData, setProfileData] = useState({ name: "", email: "", mobile: "" });
   
   // Security State
   const [passwordData, setPasswordData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -68,7 +68,7 @@ export default function SettingsPage() {
       setProfileData({
         name: user.name || "",
         email: user.email || "",
-        phone: user.phone || ""
+        mobile: user.mobile || ""
       });
     }
   }, [user]);
@@ -217,7 +217,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-1">Phone Number</label>
-                    <input value={profileData.phone} onChange={e => setProfileData({...profileData, phone: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
+                    <input value={profileData.mobile} onChange={e => setProfileData({...profileData, mobile: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-1">Role (Read Only)</label>
