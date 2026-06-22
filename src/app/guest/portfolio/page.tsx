@@ -46,7 +46,7 @@ export default function GuestPortfolioPage() {
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-16 text-left space-y-6">
           <div className="inline-flex items-center gap-2.5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 px-4.5 py-1.5 rounded-full shadow-sm">
             <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-            <span className="text-indigo-650 dark:text-indigo-400 text-[10px] font-black uppercase tracking-[0.25em] font-mono">Our Architectural Legacy</span>
+            <span className="text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-[0.25em] font-mono">Our Architectural Legacy</span>
           </div>
 
           <div className="space-y-4">
@@ -54,7 +54,7 @@ export default function GuestPortfolioPage() {
               Projects That Define <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500 italic font-serif">Excellence</span>
             </h1>
-            <p className="text-sm md:text-base text-slate-505 dark:text-slate-400 max-w-2xl font-medium leading-relaxed">
+            <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 max-w-2xl font-medium leading-relaxed">
               Explore our landmark residential villas, high-rise apartments, and commercial corporate complexes delivered across India with extreme structural precision.
             </p>
           </div>
@@ -102,7 +102,7 @@ export default function GuestPortfolioPage() {
                     "px-4.5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all duration-300 font-mono whitespace-nowrap",
                     activeFilter === f
                       ? "bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none scale-105"
-                      : "bg-slate-50 dark:bg-slate-805/60 text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-white hover:bg-slate-105 dark:hover:bg-slate-850"
+                      : "bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                   )}
                 >
                   {f}
@@ -145,7 +145,7 @@ export default function GuestPortfolioPage() {
                 {/* Status Badge */}
                 <div className="absolute top-6 left-6 z-20">
                   <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm px-3.5 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800/80 shadow-sm">
-                    <span className="text-indigo-650 dark:text-indigo-455 text-[9px] font-black uppercase tracking-[0.2em] font-mono">{p.status}</span>
+                    <span className="text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase tracking-[0.2em] font-mono">{p.status}</span>
                   </div>
                 </div>
 
@@ -153,7 +153,7 @@ export default function GuestPortfolioPage() {
                 <div className="absolute inset-0 z-20 flex flex-col justify-end p-8 space-y-6">
                   <div className="space-y-2.5 translate-y-10 group-hover:translate-y-0 transition-transform duration-500">
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-indigo-455 group-hover:text-indigo-300" />
+                      <MapPin className="w-3.5 h-3.5 text-indigo-500 group-hover:text-indigo-300" />
                       <p className="text-indigo-300 text-[9px] font-black uppercase tracking-[0.25em] font-mono">{p.location}</p>
                     </div>
                     <h4 className="text-xl font-black text-white tracking-tight font-sans">{p.name}</h4>
@@ -170,7 +170,7 @@ export default function GuestPortfolioPage() {
                           <span>{p.progress}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-indigo-400 to-blue-450 rounded-full transition-all duration-1000 delay-300 shadow-[0_0_8px_rgba(129,140,248,0.5)]" style={{ width: hoveredId === p.id ? `${p.progress}%` : '0%' }} />
+                          <div className="h-full bg-gradient-to-r from-indigo-400 to-blue-500 rounded-full transition-all duration-1000 delay-300 shadow-[0_0_8px_rgba(129,140,248,0.5)]" style={{ width: hoveredId === p.id ? `${p.progress}%` : '0%' }} />
                         </div>
                       </div>
                     )}
@@ -178,7 +178,7 @@ export default function GuestPortfolioPage() {
                       <span>AREA: ~2,800 SQFT</span>
                       <span>TYPE: PREMIUM RCC</span>
                     </div>
-                    <button className="w-full bg-white hover:bg-slate-55 text-slate-950 font-black py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-[9px] uppercase tracking-widest font-mono shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                    <button className="w-full bg-white hover:bg-slate-100 text-slate-955 font-black py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-[9px] uppercase tracking-widest font-mono shadow-lg hover:shadow-xl hover:-translate-y-0.5">
                       View Work Showcase <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -210,7 +210,7 @@ export default function GuestPortfolioPage() {
             <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
               <Link href="tel:+919876543210" 
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-white text-slate-950 font-black py-4.5 px-8 rounded-2xl transition-all hover:bg-slate-50 hover:shadow-xl hover:-translate-y-0.5 text-xs uppercase tracking-widest font-mono">
-                <Phone className="w-4 h-4 text-indigo-650" />
+                <Phone className="w-4 h-4 text-indigo-600" />
                 Contact Us Now
               </Link>
               <Link href="/guest/about" 

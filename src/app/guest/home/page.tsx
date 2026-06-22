@@ -67,14 +67,14 @@ function AnimatedStats() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           {stats.map((s) => (
             <div key={s.label} className="group space-y-4 text-center md:text-left transition-all duration-300 hover:translate-y-[-2px]">
-              <div className="w-12 h-12 mx-auto md:mx-0 bg-indigo-50 dark:bg-indigo-950/60 rounded-2xl flex items-center justify-center text-indigo-650 dark:text-indigo-400 group-hover:bg-gradient-to-tr group-hover:from-indigo-600 group-hover:to-blue-600 group-hover:text-white transition-all duration-500 shadow-sm">
+              <div className="w-12 h-12 mx-auto md:mx-0 bg-indigo-50 dark:bg-indigo-950/60 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:bg-gradient-to-tr group-hover:from-indigo-600 group-hover:to-blue-600 group-hover:text-white transition-all duration-500 shadow-sm">
                 <s.icon className="w-5 h-5" />
               </div>
               <div className="space-y-1">
                 <p className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
                   {s.value}{s.suffix}
                 </p>
-                <p className="text-slate-850 dark:text-slate-205 text-xs font-extrabold uppercase tracking-wider">{s.label}</p>
+                <p className="text-slate-800 dark:text-slate-200 text-xs font-extrabold uppercase tracking-wider">{s.label}</p>
                 <p className="text-slate-400 dark:text-slate-500 text-[10px] font-medium leading-none">{s.desc}</p>
               </div>
             </div>
@@ -113,7 +113,7 @@ function InteractiveBlueprintSandbox() {
     { id: "finishing", label: "04. Interior Finishing Layer", color: "bg-amber-500 dark:bg-amber-600", desc: "Wall putty, primer painting, premium flooring, structural ceiling", icon: PenTool },
     { id: "electrical", label: "03. Electrical Conduit Grid", color: "bg-yellow-500 dark:bg-yellow-600", desc: "Heavy conduits layout, point wiring, MCB boards distribution", icon: Zap },
     { id: "plumbing", label: "02. Plumbing & Concealed Pipes", color: "bg-blue-500 dark:bg-blue-600", desc: "Inflow lines mapping, pressure testing logs, drainage slope", icon: Wrench },
-    { id: "structure", label: "01. Concrete Pillar Skeleton", color: "bg-indigo-650 dark:bg-indigo-500", desc: "Reinforced steel framing, foundation pour, column cubes testing", icon: Hammer },
+    { id: "structure", label: "01. Concrete Pillar Skeleton", color: "bg-indigo-600 dark:bg-indigo-500", desc: "Reinforced steel framing, foundation pour, column cubes testing", icon: Hammer },
   ];
 
   return (
@@ -126,7 +126,7 @@ function InteractiveBlueprintSandbox() {
         {/* Title */}
         <div className="text-center space-y-4 mb-16">
           <div className="inline-flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/60 px-3.5 py-1.5 rounded-full border border-indigo-100/50 dark:border-indigo-900/50">
-            <Layers className="w-4 h-4 text-indigo-650 dark:text-indigo-400" />
+            <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <span className="text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest font-mono">Interactive Live Sandbox</span>
           </div>
           <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
@@ -137,10 +137,10 @@ function InteractiveBlueprintSandbox() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
           {/* Left Column: Interactive 3D Perspective Stack */}
-          <div className="lg:col-span-6 flex flex-col items-center justify-center py-10 relative lg:sticky lg:top-28">
+          <div className="lg:col-span-6 flex flex-col items-center justify-center relative lg:sticky lg:top-28">
             <div className="w-full max-w-[380px] h-[220px] relative transition-all duration-700" style={{ perspective: "1000px" }}>
               
               <div 
@@ -164,8 +164,8 @@ function InteractiveBlueprintSandbox() {
                       className={cn(
                         "absolute inset-0 rounded-2xl border-2 transition-all duration-500 cursor-pointer p-5 flex flex-col justify-between shadow-2xl backdrop-blur-sm select-none",
                         isActive 
-                          ? "bg-white/95 dark:bg-slate-905/95 border-indigo-500 scale-[1.03] ring-4 ring-indigo-500/20 z-30" 
-                          : "bg-white/40 dark:bg-slate-900/40 border-slate-205 dark:border-slate-800 hover:border-slate-350 opacity-60 hover:opacity-85 hover:scale-[1.01]"
+                          ? "bg-white/95 dark:bg-slate-900/95 border-indigo-500 scale-[1.03] ring-4 ring-indigo-500/20 z-30" 
+                          : "bg-white/40 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 hover:border-slate-350 opacity-60 hover:opacity-85 hover:scale-[1.01]"
                       )}
                       style={{ 
                         transform: `translateZ(${translationZ})`,
@@ -173,7 +173,7 @@ function InteractiveBlueprintSandbox() {
                       }}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black text-slate-800 dark:text-slate-205 tracking-wider font-mono">
+                        <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 tracking-wider font-mono">
                           {layer.label}
                         </span>
                         <div className={cn("w-2 h-2 rounded-full", isActive ? "bg-indigo-500 animate-ping" : "bg-slate-300 dark:bg-slate-700")} />
@@ -185,7 +185,7 @@ function InteractiveBlueprintSandbox() {
                         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(99,102,241,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(99,102,241,0.06)_1px,transparent_1px)] bg-[size:12px_12px] opacity-70" />
                         
                         {layer.id === "structure" && (
-                          <svg className="w-full h-full p-2 absolute inset-0 text-indigo-650 dark:text-indigo-400 stroke-current opacity-80" viewBox="0 0 200 100" fill="none" strokeWidth="1">
+                          <svg className="w-full h-full p-2 absolute inset-0 text-indigo-600 dark:text-indigo-400 stroke-current opacity-80" viewBox="0 0 200 100" fill="none" strokeWidth="1">
                             <path d="M 10,90 L 190,90 M 20,90 L 20,20 L 180,20 L 180,90" strokeDasharray="2,2" />
                             <rect x="25" y="20" width="10" height="70" fill="currentColor" fillOpacity="0.1" />
                             <rect x="75" y="20" width="10" height="70" fill="currentColor" fillOpacity="0.1" />
@@ -211,8 +211,8 @@ function InteractiveBlueprintSandbox() {
 
                         {layer.id === "electrical" && (
                           <svg className="w-full h-full p-2 absolute inset-0 text-yellow-500 dark:text-yellow-400 stroke-current opacity-80" viewBox="0 0 200 100" fill="none" strokeWidth="1">
-                            <rect x="20" y="20" width="75" height="60" strokeDasharray="2,2" strokeWidth="0.5" className="text-slate-355 dark:text-slate-700" />
-                            <rect x="105" y="20" width="75" height="60" strokeDasharray="2,2" strokeWidth="0.5" className="text-slate-355 dark:text-slate-700" />
+                            <rect x="20" y="20" width="75" height="60" strokeDasharray="2,2" strokeWidth="0.5" className="text-slate-300 dark:text-slate-700" />
+                            <rect x="105" y="20" width="75" height="60" strokeDasharray="2,2" strokeWidth="0.5" className="text-slate-300 dark:text-slate-700" />
                             <rect x="15" y="45" width="8" height="14" fill="currentColor" />
                             <path d="M 23,52 C 50,52 50,30 60,30 C 70,30 80,40 120,40 C 140,40 140,65 155,65" strokeWidth="1.2" strokeDasharray="1,1" />
                             <circle cx="60" cy="30" r="2.5" fill="currentColor" />
@@ -240,7 +240,7 @@ function InteractiveBlueprintSandbox() {
                         <layer.icon className={cn("w-7 h-7 opacity-30 absolute bottom-3 right-3 transition-transform", isActive ? "text-indigo-600 scale-110" : "text-slate-400")} />
                       </div>
 
-                      <p className="text-[9px] text-slate-500 dark:text-slate-405 font-medium leading-none line-clamp-1">
+                      <p className="text-[9px] text-slate-500 dark:text-slate-400 font-medium leading-none line-clamp-1">
                         {layer.desc}
                       </p>
                     </div>
@@ -251,7 +251,7 @@ function InteractiveBlueprintSandbox() {
             </div>
 
             {/* Instruction Badge */}
-            <div className="mt-8 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-150 px-4 py-2 rounded-xl text-indigo-650 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest font-mono flex items-center gap-2">
+            <div className="mt-8 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 px-4 py-2 rounded-xl text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest font-mono flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5" />
               Click stack layers to inspect blueprint detail
             </div>
@@ -263,7 +263,7 @@ function InteractiveBlueprintSandbox() {
             {/* Live Panel Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-5 gap-4">
               <div>
-                <span className="text-[9px] font-black text-indigo-650 dark:text-indigo-405 uppercase tracking-widest font-mono">Control Dashboard Preview</span>
+                <span className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-mono">Control Dashboard Preview</span>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Arkiton Live Monitor</h3>
               </div>
               <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm">
@@ -293,8 +293,8 @@ function InteractiveBlueprintSandbox() {
             </div>
 
             {/* Selected Layer Info */}
-            <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-100 dark:border-slate-850 space-y-2">
-              <span className="text-indigo-505 text-[9px] font-black uppercase tracking-wider font-mono">Current Selection Inspector</span>
+            <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2">
+              <span className="text-indigo-500 text-[9px] font-black uppercase tracking-wider font-mono">Current Selection Inspector</span>
               <h4 className="text-base font-bold text-slate-900 dark:text-white">
                 {layers.find(l => l.id === activeLayer)?.label}
               </h4>
@@ -308,10 +308,10 @@ function InteractiveBlueprintSandbox() {
               <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-indigo-550 dark:text-indigo-400" />
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-805 dark:text-slate-205">SOP Project Execution Timeline</span>
+                    <Building2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">SOP Project Execution Timeline</span>
                   </div>
-                  <span className="text-[9px] font-black text-indigo-650 dark:text-indigo-400 uppercase tracking-widest font-mono">Stage Milestones</span>
+                  <span className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-mono">Stage Milestones</span>
                 </div>
 
                 {/* Connected Milestone List */}
@@ -363,7 +363,7 @@ function InteractiveBlueprintSandbox() {
                           <div className={cn(
                             "w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black font-mono transition-all duration-300 border-2",
                             isCurrent
-                              ? "bg-indigo-600 border-indigo-600 text-white ring-4 ring-indigo-550/20"
+                              ? "bg-indigo-600 border-indigo-600 text-white ring-4 ring-indigo-500/20"
                               : "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-400"
                           )}>
                             {step.num}
@@ -375,7 +375,7 @@ function InteractiveBlueprintSandbox() {
                           <div className="flex items-center justify-between gap-2">
                             <h5 className={cn(
                               "text-xs font-black tracking-tight",
-                              isCurrent ? "text-indigo-650 dark:text-indigo-400" : "text-slate-800 dark:text-slate-200"
+                              isCurrent ? "text-indigo-600 dark:text-indigo-400" : "text-slate-800 dark:text-slate-200"
                             )}>
                               {step.title}
                             </h5>
@@ -383,7 +383,7 @@ function InteractiveBlueprintSandbox() {
                               {step.badge}
                             </span>
                           </div>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-405 leading-relaxed font-medium">
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
                             {step.sub}
                           </p>
                         </div>
@@ -397,10 +397,10 @@ function InteractiveBlueprintSandbox() {
               <div className="space-y-6 animate-in fade-in duration-300">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Calculator className="w-4 h-4 text-indigo-550 dark:text-indigo-400" />
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-805 dark:text-slate-205">Cost & Material Estimator</span>
+                    <Calculator className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Cost & Material Estimator</span>
                   </div>
-                  <span className="text-[9px] font-black text-indigo-650 dark:text-indigo-400 uppercase tracking-widest font-mono">Live Simulation</span>
+                  <span className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-mono">Live Simulation</span>
                 </div>
 
                 {/* Sliders and Controls */}
@@ -458,15 +458,15 @@ function InteractiveBlueprintSandbox() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-205 dark:border-slate-850 text-center">
+                    <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Cement</span>
                       <p className="text-base font-black text-slate-800 dark:text-slate-100 font-mono mt-1">{cementBags} Bags</p>
                     </div>
-                    <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-205 dark:border-slate-850 text-center">
+                    <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Steel</span>
                       <p className="text-base font-black text-slate-800 dark:text-slate-100 font-mono mt-1">{steelTons} Tons</p>
                     </div>
-                    <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-205 dark:border-slate-850 text-center">
+                    <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Labor Time</span>
                       <p className="text-base font-black text-slate-800 dark:text-slate-100 font-mono mt-1">{laborHours} hrs</p>
                     </div>
@@ -478,7 +478,7 @@ function InteractiveBlueprintSandbox() {
             {/* Interactive Checklist Actions */}
             <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-205">Interactive Checklist Actions</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Interactive Checklist Actions</span>
                 <span className="text-[9px] font-bold text-slate-400 font-mono">Updates Site Score</span>
               </div>
               
@@ -495,11 +495,11 @@ function InteractiveBlueprintSandbox() {
                     className={cn(
                       "flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-300",
                       completedTasks.includes(task.id)
-                        ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-500/40 text-emerald-800 dark:text-emerald-400"
-                        : "bg-slate-50/50 dark:bg-slate-950 border-slate-150 dark:border-slate-855 text-slate-655 dark:text-slate-450 hover:bg-slate-100 dark:hover:bg-slate-900"
+                        ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-500/40 text-emerald-800 dark:text-emerald-405"
+                        : "bg-slate-50/50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-450 hover:bg-slate-100 dark:hover:bg-slate-900"
                     )}
                   >
-                    <CheckSquare className={cn("w-4 h-4 flex-shrink-0", completedTasks.includes(task.id) ? "text-emerald-505" : "text-slate-350")} />
+                    <CheckSquare className={cn("w-4 h-4 flex-shrink-0", completedTasks.includes(task.id) ? "text-emerald-500" : "text-slate-350")} />
                     <span className="text-[10px] font-black uppercase tracking-wider font-mono">{task.label}</span>
                   </button>
                 ))}
@@ -513,7 +513,7 @@ function InteractiveBlueprintSandbox() {
                     style={{ width: `${(completedTasks.length / 4) * 100}%` }}
                   />
                 </div>
-                <span className="text-[9px] font-black text-slate-800 dark:text-slate-205 font-mono">
+                <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 font-mono">
                   SOP Completion: {Math.round((completedTasks.length / 4) * 100)}%
                 </span>
               </div>
@@ -585,7 +585,7 @@ export default function GuestHomePage() {
             {/* Left Column: Headline */}
             <div className="lg:col-span-7 space-y-8 text-left">
               <div className="inline-flex items-center gap-2.5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 px-4.5 py-2 rounded-full shadow-sm">
-                <Sparkles className="w-4 h-4 text-indigo-550 animate-spin duration-3000" />
+                <Sparkles className="w-4 h-4 text-indigo-500 animate-spin duration-3000" />
                 <span className="text-indigo-650 dark:text-indigo-400 text-[10px] font-black uppercase tracking-[0.25em] font-mono">Pioneering Design-Build Excellence</span>
               </div>
 

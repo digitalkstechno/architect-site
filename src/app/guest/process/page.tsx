@@ -55,7 +55,7 @@ const AGENCIES = [
     sops: ["Water line layout & pressure testing", "Drainage mapping & slope calculation", "Fixture installation standards", "Leak detection & waterproofing", "Hot water system installation"],
   },
   {
-    id: "electrical", title: "Electrical Agency", icon: Zap,          color: "text-amber-650",  bg: "bg-amber-50 dark:bg-amber-950/60",  border: "border-amber-200/50 dark:border-amber-900/50",
+    id: "electrical", title: "Electrical Agency", icon: Zap,          color: "text-amber-500",  bg: "bg-amber-50 dark:bg-amber-950/60",  border: "border-amber-200/50 dark:border-amber-900/50",
     desc: "Safe and efficient electrical systems for every project.",
     sops: ["Conduit placement & routing", "Wiring safety protocols (IS standards)", "Point distribution & load calculation", "MCB & earthing installation", "Testing & commissioning"],
   },
@@ -70,7 +70,7 @@ const AGENCIES = [
     sops: ["Furniture framing & dimensions", "False ceiling height standards", "Finishing quality checklist", "Material selection process", "Final snag inspection"],
   },
   {
-    id: "painting",   title: "Painting Agency",   icon: Droplets,     color: "text-teal-650",   bg: "bg-teal-50 dark:bg-teal-950/60",   border: "border-teal-200/50 dark:border-teal-900/50",
+    id: "painting",   title: "Painting Agency",   icon: Droplets,     color: "text-teal-500",   bg: "bg-teal-50 dark:bg-teal-950/60",   border: "border-teal-200/50 dark:border-teal-900/50",
     desc: "Premium finishes that last a lifetime.",
     sops: ["Wall preparation & crack filling", "Putty application (2 coats)", "Primer & base coat standards", "Final coat application", "Touch-up & quality check"],
   },
@@ -93,13 +93,13 @@ export default function GuestProcessPage() {
         {/* Background */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2000')] bg-cover bg-center scale-105 opacity-[0.02] dark:opacity-[0.05]" />
-          <div className="absolute inset-0 bg-gradient-to-tr from-slate-55 via-white/80 to-indigo-50/20 dark:from-slate-950 dark:via-slate-950/90 dark:to-indigo-950/20" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-slate-50 via-white/80 to-indigo-50/20 dark:from-slate-950 dark:via-slate-950/90 dark:to-indigo-950/20" />
         </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-16 text-left space-y-6">
           <div className="inline-flex items-center gap-2.5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 px-4.5 py-1.5 rounded-full shadow-sm">
             <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-            <span className="text-indigo-650 dark:text-indigo-400 text-[10px] font-black uppercase tracking-[0.25em] font-mono">Our Proven Methodology</span>
+            <span className="text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-[0.25em] font-mono">Our Proven Methodology</span>
           </div>
 
           <div className="space-y-4">
@@ -123,7 +123,7 @@ export default function GuestProcessPage() {
           <div className="lg:col-span-5 space-y-10">
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/60 px-3.5 py-1.5 rounded-full border border-indigo-100/50 dark:border-indigo-900/50">
-                <Clock className="w-4 h-4 text-indigo-650 dark:text-indigo-400" />
+                <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 <span className="text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest font-mono">Phase by Phase</span>
               </div>
               <h2 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">Six Stages of <br /><span className="text-indigo-600 dark:text-indigo-400 font-serif italic">Excellence</span></h2>
@@ -139,7 +139,7 @@ export default function GuestProcessPage() {
                       "w-full text-left p-6 rounded-[2rem] transition-all duration-300 flex items-center justify-between border font-sans relative z-10",
                       openStep === idx 
                         ? "bg-white dark:bg-slate-900 border-indigo-500/50 dark:border-indigo-500/35 shadow-xl translate-x-2" 
-                        : "bg-slate-50 dark:bg-slate-900/50 border-transparent text-slate-400 dark:text-slate-550 hover:bg-white dark:hover:bg-slate-900 hover:border-slate-200/50 dark:hover:border-slate-800"
+                        : "bg-slate-50 dark:bg-slate-900/50 border-transparent text-slate-400 dark:text-slate-500 hover:bg-white dark:hover:bg-slate-900 hover:border-slate-200/50 dark:hover:border-slate-800"
                     )}
                   >
                     <div className="flex items-center gap-5">
@@ -147,13 +147,13 @@ export default function GuestProcessPage() {
                         "text-lg font-black tabular-nums transition-colors duration-300 font-mono",
                         openStep === idx ? "text-indigo-600 dark:text-indigo-400" : "text-slate-200 dark:text-slate-800 group-hover:text-indigo-200"
                       )}>{step.step}</span>
-                      <span className={cn("text-sm font-bold tracking-tight font-sans text-slate-805 dark:text-slate-250", openStep === idx ? "text-slate-950 dark:text-white font-extrabold" : "")}>{step.title}</span>
+                      <span className={cn("text-sm font-bold tracking-tight font-sans text-slate-800 dark:text-slate-200", openStep === idx ? "text-slate-950 dark:text-white font-extrabold" : "")}>{step.title}</span>
                     </div>
                     {openStep === idx ? <ChevronUp className="w-5 h-5 text-indigo-400" /> : <ChevronDown className="w-5 h-5 text-slate-350" />}
                   </button>
                   
                   {openStep === idx && (
-                    <div className="mt-4 p-8 bg-white dark:bg-slate-905 rounded-[2rem] border border-slate-200/40 dark:border-slate-800/40 animate-in slide-in-from-top-4 duration-300 space-y-6 ml-4 shadow-lg relative z-20">
+                    <div className="mt-4 p-8 bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200/40 dark:border-slate-800/40 animate-in slide-in-from-top-4 duration-300 space-y-6 ml-4 shadow-lg relative z-20">
                       <p className="text-base text-slate-600 dark:text-slate-350 font-medium leading-relaxed italic font-serif">"{step.desc}"</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {step.details.map(detail => (
@@ -179,11 +179,11 @@ export default function GuestProcessPage() {
             <div className="bg-white/80 dark:bg-slate-900/50 rounded-[3rem] p-10 md:p-12 border border-slate-200/50 dark:border-slate-800/50 space-y-10">
               <div className="space-y-6">
                 <div className="inline-flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/60 px-3.5 py-1.5 rounded-full border border-indigo-100/50 dark:border-indigo-900/50">
-                  <Users className="w-3.5 h-3.5 text-indigo-650 dark:text-indigo-400" />
-                  <span className="text-indigo-650 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest font-mono">Our Specialized Crew</span>
+                  <Users className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span className="text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest font-mono">Our Specialized Crew</span>
                 </div>
-                <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">Expert Agency <br /><span className="text-indigo-605 dark:text-indigo-400 font-serif italic">Network</span></h2>
-                <p className="text-sm md:text-base text-slate-555 dark:text-slate-400 font-medium leading-relaxed">
+                <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">Expert Agency <br /><span className="text-indigo-600 dark:text-indigo-400 font-serif italic">Network</span></h2>
+                <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
                   We collaborate with verified specialized structural, piping, and electrical agencies to monitor compliance checklist points.
                 </p>
               </div>
@@ -227,12 +227,12 @@ export default function GuestProcessPage() {
             </div>
 
             {/* Quality Commitment Banner */}
-            <div className="relative rounded-[2.5rem] overflow-hidden bg-slate-955 p-10 md:p-14 text-center space-y-8 shadow-2xl border border-slate-900">
+            <div className="relative rounded-[2.5rem] overflow-hidden bg-slate-950 p-10 md:p-14 text-center space-y-8 shadow-2xl border border-slate-900">
               <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
               <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-[100px] -mr-32 -mt-32" />
               
               <div className="relative z-10 space-y-6">
-                <div className="w-14 h-14 mx-auto bg-indigo-650 rounded-[1.2rem] flex items-center justify-center shadow-xl shadow-indigo-600/20">
+                <div className="w-14 h-14 mx-auto bg-indigo-600 rounded-[1.2rem] flex items-center justify-center shadow-xl shadow-indigo-600/20">
                   <ShieldCheck className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight">Zero Compromise Quality</h3>

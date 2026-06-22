@@ -44,7 +44,7 @@ export default function GuestAboutPage() {
     <div className="bg-slate-50/50 dark:bg-slate-950 min-h-screen font-sans">
 
       {/* ── Hero ── */}
-      <div className="relative bg-slate-955 overflow-hidden min-h-[60vh] flex items-center">
+      <div className="relative bg-slate-950 overflow-hidden min-h-[60vh] flex items-center">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1503387762-592dea58ef23?q=80&w=2000')] bg-cover bg-center opacity-10" />
         <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-950/90 to-indigo-950/30" />
         
@@ -126,7 +126,7 @@ export default function GuestAboutPage() {
                   {[["52+", "Projects Done"], ["12+", "Years Experience"], ["240+", "Happy Clients"]].map(([val, label]) => (
                     <div key={label} className="text-center p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 hover:border-indigo-500/30 transition-all shadow-sm">
                       <p className="text-2xl md:text-3xl font-black text-indigo-600 dark:text-indigo-400 font-mono tracking-tight">{val}</p>
-                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-555 uppercase tracking-widest mt-1.5 leading-none">{label}</p>
+                      <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1.5 leading-none">{label}</p>
                     </div>
                   ))}
                 </div>
@@ -175,7 +175,7 @@ export default function GuestAboutPage() {
                   <div className="space-y-1.5">
                     <h3 className="text-base font-black text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-300">{member.name}</h3>
                     <p className="text-xs font-bold text-indigo-500 dark:text-indigo-400">{member.role}</p>
-                    <p className="text-[9px] text-slate-400 dark:text-slate-550 uppercase tracking-widest font-mono font-black mt-1 bg-slate-50 dark:bg-slate-950 w-fit mx-auto px-3 py-1 rounded-lg border border-slate-100 dark:border-slate-805/45">{member.exp} experience</p>
+                    <p className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono font-black mt-1 bg-slate-50 dark:bg-slate-950 w-fit mx-auto px-3 py-1 rounded-lg border border-slate-100 dark:border-slate-800/45">{member.exp} experience</p>
                   </div>
                   <div className="flex justify-center gap-0.5 pt-1">
                     {[1,2,3,4,5].map(i => <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />)}
@@ -190,7 +190,7 @@ export default function GuestAboutPage() {
         {activeTab === "values" && (
           <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="text-center space-y-3">
-              <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-405 uppercase tracking-widest font-mono bg-indigo-50 dark:bg-indigo-950/60 px-3.5 py-1.5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/50">Core Pillars</span>
+              <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-mono bg-indigo-50 dark:bg-indigo-950/60 px-3.5 py-1.5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/50">Core Pillars</span>
               <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">What Drives Us</h2>
             </div>
             
@@ -236,13 +236,13 @@ export default function GuestAboutPage() {
                   <div className="space-y-4">
                     <div className="flex gap-0.5">
                       {Array.from({ length: t.rating }).map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-450" />
+                        <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
                       ))}
                     </div>
                     <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed italic font-serif">"{t.text}"</p>
                   </div>
                   
-                  <div className="pt-5 border-t border-slate-100 dark:border-slate-850 flex items-center gap-3.5">
+                  <div className="pt-5 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3.5">
                     <div className="w-9 h-9 bg-gradient-to-tr from-indigo-500 to-blue-500 rounded-xl flex items-center justify-center text-white font-black text-xs font-mono">
                       {t.name.split(" ").map(n => n[0]).join("")}
                     </div>
@@ -259,7 +259,7 @@ export default function GuestAboutPage() {
       </div>
 
       {/* ── Contact CTA ── */}
-      <div className="bg-slate-955 py-20 mt-8 relative overflow-hidden border-t border-slate-900">
+      <div className="bg-slate-950 py-20 mt-8 relative overflow-hidden border-t border-slate-900">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-20" />
         <div className="max-w-4xl mx-auto px-6 text-center space-y-6 relative z-10">
           <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight">Ready to Start Your Project?</h2>
