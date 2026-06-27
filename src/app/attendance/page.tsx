@@ -69,6 +69,16 @@ type StaffAttendance = {
     totalMinutes: number;
     logs: AttendanceLog[];
     overtime?: OvertimeData;
+    isManual?: boolean;
+  };
+  monthlyStats?: {
+    present: number;
+    absent: number;
+    halfDay: number;
+    leave: number;
+    weeklyOff: number;
+    overtimeAmount: number;
+    calculatedSalary: number;
   };
 };
 
@@ -1212,10 +1222,10 @@ export default function AttendancePage() {
                         <TableCell className="text-sm font-medium">
                           Overtime
                           <span className="text-[10px] text-emerald-500 ml-2">
-                            ({selectedStaffForSlip.attendance.overtime.type === 'hourly' ? `${selectedStaffForSlip.attendance.overtime.hours.toFixed(1)} hrs` : 'Fixed'})
+                            ({selectedStaffForSlip.attendance?.overtime?.type === 'hourly' ? `${selectedStaffForSlip.attendance?.overtime?.hours?.toFixed(1) || 0} hrs` : 'Fixed'})
                           </span>
                         </TableCell>
-                        <TableCell className="text-right text-sm font-bold text-emerald-600">+ ₹{selectedStaffForSlip.attendance.overtime.amount.toLocaleString()}</TableCell>
+                        <TableCell className="text-right text-sm font-bold text-emerald-600">+ ₹{(selectedStaffForSlip.attendance?.overtime?.amount || 0).toLocaleString()}</TableCell>
                       </TableRow>
                     )}
                     <TableRow className="bg-indigo-50/50">
