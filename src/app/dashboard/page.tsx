@@ -7,11 +7,12 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import {
   Briefcase, Construction, Clock, CreditCard,
   CheckCircle, HardHat, FileText, Activity,
-  TrendingUp, MessageSquare, AlertCircle, Calendar
+  TrendingUp, MessageSquare, AlertCircle, Calendar, Building2
 } from "lucide-react";
 import { cn, formatDateForDisplay } from "@/lib/utils";
 import toast from "react-hot-toast";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import Link from "next/link";
 
 export default function CompleteDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -84,10 +85,10 @@ export default function CompleteDashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="space-y-8">
 
         {/* Financial Health */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="space-y-8">
           {!stats.finances.isHidden && (
             <Card className="rounded-[2rem] border-slate-200/60 shadow-lg shadow-slate-200/40 overflow-hidden bg-white/90 backdrop-blur-xl hover:shadow-xl transition-shadow duration-500">
               <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6 md:p-8">
@@ -106,17 +107,17 @@ export default function CompleteDashboardPage() {
                   <div className="space-y-2 relative group">
                     <div className="absolute -left-4 top-0 bottom-0 w-1 bg-slate-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Estimated Budget</p>
-                    <p className="text-3xl font-black text-slate-800 tracking-tighter">${stats.finances.totalBudget.toLocaleString()}</p>
+                    <p className="text-3xl font-black text-slate-800 tracking-tighter">{stats.finances.totalBudget.toLocaleString('en-IN')}</p>
                   </div>
                   <div className="space-y-2 relative group">
                     <div className="absolute -left-4 top-0 bottom-0 w-1 bg-emerald-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Received Amount</p>
-                    <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-600 tracking-tighter">${stats.finances.totalReceived.toLocaleString()}</p>
+                    <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-600 tracking-tighter">{stats.finances.totalReceived.toLocaleString('en-IN')}</p>
                   </div>
                   <div className="space-y-2 relative group">
                     <div className="absolute -left-4 top-0 bottom-0 w-1 bg-orange-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                     <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Pending Collection</p>
-                    <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500 tracking-tighter">${stats.finances.totalPending.toLocaleString()}</p>
+                    <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500 tracking-tighter">{stats.finances.totalPending.toLocaleString('en-IN')}</p>
                   </div>
                 </div>
 
@@ -134,6 +135,34 @@ export default function CompleteDashboardPage() {
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Pending Agency Requests */}
+          {stats.recentActivity.pendingAgencies && stats.recentActivity.pendingAgencies.length > 0 && (
+            <Card className="rounded-[2rem] shadow-lg shadow-slate-200/40 border-slate-200/60 bg-white/90 backdrop-blur-xl hover:shadow-xl transition-shadow duration-500">
+              <CardHeader className="pb-4 pt-6 px-6">
+                <CardTitle className="text-xs font-black text-blue-900 uppercase tracking-widest flex items-center gap-2">
+                  <div className="p-1.5 bg-blue-100 rounded-lg"><Building2 className="w-3.5 h-3.5 text-blue-600" /></div>
+                  Pending Agency Requests
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 px-6 pb-6">
+                {stats.recentActivity.pendingAgencies.map((agency: any) => (
+                  <Link href={`/agency-approvals/${agency._id}`} key={agency._id}>
+                    <div className="p-4 rounded-2xl bg-white border border-slate-200 flex flex-col md:flex-row md:justify-between md:items-center gap-4 group hover:border-blue-300 hover:shadow-md transition-all cursor-pointer">
+                      <div>
+                        <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{agency.agencyName}</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">{agency.businessType?.name || "Agency"}</p>
+                      </div>
+                      <div className="flex flex-col md:items-end gap-1">
+                        <p className="text-xs font-medium text-slate-500">{agency.mobile}</p>
+                        <p className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-1 rounded-md">{formatDateForDisplay(agency.createdAt)}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
               </CardContent>
             </Card>
           )}
@@ -193,61 +222,6 @@ export default function CompleteDashboardPage() {
             </Card>
           </div>
         </div>
-
-        {/* Live Activity Feed */}
-        <div className="space-y-8">
-          <Card className="rounded-[2rem] shadow-2xl shadow-indigo-900/5 border-0 overflow-hidden h-full bg-white relative">
-            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-slate-900 to-slate-800 z-0"></div>
-
-            <CardHeader className="p-8 relative z-10 pb-12">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md shadow-inner border border-white/20">
-                  <Activity className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl font-black tracking-tight text-white">Live Activity</CardTitle>
-                  <p className="text-xs font-medium text-slate-400 mt-1">Real-time updates from site</p>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-4 relative z-10 -mt-6">
-              <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 min-h-[500px] max-h-[600px] overflow-y-auto custom-scrollbar p-2 space-y-2">
-                {stats.recentActivity.siteUpdates.length === 0 && (
-                  <div className="p-12 flex flex-col items-center text-center space-y-4">
-                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center">
-                      <HardHat className="w-8 h-8 text-slate-300" />
-                    </div>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No recent activity detected.</p>
-                  </div>
-                )}
-
-                {stats.recentActivity.siteUpdates.map(update => (
-                  <div key={update._id} className="p-5 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
-                        <Construction className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <div className="space-y-2 flex-1 pt-1">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="text-sm font-black text-slate-800">{update.addedBy || "Site Engineer"}</p>
-                            <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest mt-0.5">{update.project?.name}</p>
-                          </div>
-                          <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-md">{formatDateForDisplay(update.createdAt)}</span>
-                        </div>
-                        <p className="text-sm text-slate-600 font-medium leading-relaxed bg-white/50 pt-1">
-                          {update.updateText}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
       </div>
     </div>
   );

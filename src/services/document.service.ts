@@ -1,4 +1,5 @@
 import { api } from "./api";
+import endPointApi from "@/lib/endpoints";
 
 export interface Document {
   _id: string;
@@ -14,12 +15,12 @@ export interface Document {
 
 export const documentService = {
   async getDocumentsByProject(projectId: string): Promise<Document[]> {
-    return api.get(`/documents?project=${projectId}`);
+    return api.get(`${endPointApi.documents}?project=${projectId}`);
   },
   async createDocument(formData: FormData): Promise<Document> {
-    return api.upload("/documents", formData);
+    return api.upload(endPointApi.documents, formData);
   },
   async deleteDocument(id: string): Promise<any> {
-    return api.delete(`/documents/${id}`);
+    return api.delete(endPointApi.documentById(id));
   }
 };

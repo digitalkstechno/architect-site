@@ -83,6 +83,7 @@ export default function AttendancePage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"daily" | "monthly">("daily");
 
   // Global Config (Director defined)
   const [globalConfig, setGlobalConfig] = useState({
@@ -120,15 +121,38 @@ export default function AttendancePage() {
   const [isSalarySlipModalOpen, setIsSalarySlipModalOpen] = useState(false);
   const [selectedStaffForSlip, setSelectedStaffForSlip] = useState<StaffAttendance | null>(null);
 
+  // View Sessions State
+  const [isViewSessionsModalOpen, setIsViewSessionsModalOpen] = useState(false);
+  const [selectedStaffForSessions, setSelectedStaffForSessions] = useState<StaffAttendance | null>(null);
+
+  const calculateTotalDisplayMinutes = (attendance: any) => {
+    if (!attendance) return 0;
+    let total = attendance.totalMinutes || 0;
+    if (attendance.logs && attendance.logs.length > 0) {
+      const lastLog = attendance.logs[attendance.logs.length - 1];
+      // Only calculate ongoing duration for today to prevent weird calculations on past days
+      const isToday = new Date(attendance.date).toDateString() === new Date().toDateString();
+      if (lastLog && !lastLog.checkOut && isToday) {
+        const checkInTime = new Date(lastLog.checkIn).getTime();
+        const now = new Date().getTime();
+        const diffMins = Math.floor((now - checkInTime) / 60000);
+        total += diffMins;
+      }
+    }
+    return total;
+  };
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
       const dateStr = currentDate.toISOString().split('T')[0];
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().split('T')[0];
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0];
 
       if (isAdmin) {
         const [staffData, attendanceData, rolesData, allOfficeStaff]: [any, any, any, any] = await Promise.all([
           staffService.getAllStaff({ team: "Office", trackAttendance: "true" }),
-          attendanceService.getAllAttendance({ date: dateStr }),
+          attendanceService.getAllAttendance(viewMode === "daily" ? { date: dateStr } : { startDate: startOfMonth, endDate: endOfMonth }),
           roleService.getAllRoles(),
           staffService.getAllStaff({ team: "Office" })
         ]);
@@ -136,12 +160,58 @@ export default function AttendancePage() {
         setRoles(rolesData);
         setUntrackedStaff(allOfficeStaff.filter((s: any) => !s.trackAttendance));
 
-        const combined = staffData.map((s: any) => {
-          const att = attendanceData.find((a: any) => (a.user?._id || a.user) === s._id);
-          return { ...s, attendance: att };
-        });
+        if (viewMode === "daily") {
+          const combined = staffData.map((s: any) => {
+            const att = attendanceData.find((a: any) => (a.user?._id || a.user) === s._id);
+            return { ...s, attendance: att };
+          });
+          setStaffList(combined);
+        } else {
+          const combined = staffData.map((s: any) => {
+            const staffRecords = attendanceData.filter((a: any) => (a.user?._id || a.user) === s._id);
+            
+            let present = 0, absent = 0, halfDay = 0, leave = 0, weeklyOff = 0, overtimeAmount = 0;
+            let calculatedSalary = 0;
+            const dailyRate = s.payoutType === "Daily" ? s.salaryAmount : (s.salaryAmount / (s.config?.daysPerMonth || 26));
+            
+            staffRecords.forEach((record: any) => {
+              if (record.isManual) {
+                if (record.status === "Present") { present++; calculatedSalary += dailyRate; }
+                else if (record.status === "Absent") absent++;
+                else if (record.status === "Half Day") { halfDay++; calculatedSalary += (dailyRate / 2); }
+                else if (record.status === "Leave") leave++;
+                else if (record.status === "Weekly Off") weeklyOff++;
+              } else {
+                const totalMins = calculateTotalDisplayMinutes(record);
+                const workedHours = totalMins / 60;
+                const standardHours = s.config?.hoursPerDay || 8;
+                
+                if (workedHours >= standardHours) {
+                  present++;
+                  calculatedSalary += dailyRate;
+                } else if (workedHours >= (standardHours / 2)) {
+                  halfDay++;
+                  calculatedSalary += (dailyRate / 2);
+                } else if (workedHours > 0) {
+                  absent++;
+                  calculatedSalary += (workedHours / standardHours) * dailyRate;
+                } else {
+                  absent++;
+                }
+              }
+              
+              if (record.overtime?.amount) {
+                overtimeAmount += record.overtime.amount;
+              }
+            });
 
-        setStaffList(combined);
+            return { 
+              ...s, 
+              monthlyStats: { present, absent, halfDay, leave, weeklyOff, overtimeAmount, calculatedSalary }
+            };
+          });
+          setStaffList(combined);
+        }
       } else {
         if (!user?.id) return;
         const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().split('T')[0];
@@ -165,7 +235,7 @@ export default function AttendancePage() {
     const handleUpdate = () => { if (user) fetchData(); };
     window.addEventListener("attendance_updated", handleUpdate);
     return () => window.removeEventListener("attendance_updated", handleUpdate);
-  }, [currentDate, user]);
+  }, [currentDate, user, viewMode]);
 
   const handleStatusChange = async (staffId: string, status: AttendanceStatus) => {
     try {
@@ -269,18 +339,39 @@ export default function AttendancePage() {
 
   const calculateBalance = (staff: StaffAttendance) => {
     let balance = 0;
-    const dailyRate = staff.payoutType === "Daily" ? staff.salaryAmount : (staff.salaryAmount / (staff.config?.daysPerMonth || 26));
-
+    
     // Last month due
     balance += (staff.lastMonthDue || 0);
 
-    // Current attendance calculation
-    if (staff.attendance) {
-      if (staff.attendance.status === "Present") balance += dailyRate;
-      else if (staff.attendance.status === "Half Day") balance += (dailyRate / 2);
+    if (viewMode === "monthly") {
+      if (staff.monthlyStats) {
+        balance += staff.monthlyStats.calculatedSalary;
+        balance += staff.monthlyStats.overtimeAmount;
+      }
+    } else {
+      const dailyRate = staff.payoutType === "Daily" ? staff.salaryAmount : (staff.salaryAmount / (staff.config?.daysPerMonth || 26));
+      // Current attendance calculation
+      if (staff.attendance) {
+        if (staff.attendance.isManual) {
+          if (staff.attendance.status === "Present") balance += dailyRate;
+          else if (staff.attendance.status === "Half Day") balance += (dailyRate / 2);
+        } else {
+          const totalMins = calculateTotalDisplayMinutes(staff.attendance);
+          const workedHours = totalMins / 60;
+          const standardHours = staff.config?.hoursPerDay || 8;
+          
+          if (workedHours >= standardHours) {
+            balance += dailyRate;
+          } else if (workedHours >= (standardHours / 2)) {
+            balance += (dailyRate / 2);
+          } else if (workedHours > 0) {
+            balance += (workedHours / standardHours) * dailyRate;
+          }
+        }
 
-      if (staff.attendance.overtime?.amount) {
-        balance += staff.attendance.overtime.amount;
+        if (staff.attendance.overtime?.amount) {
+          balance += staff.attendance.overtime.amount;
+        }
       }
     }
 
@@ -480,17 +571,49 @@ export default function AttendancePage() {
             </div>
           </div>
           <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-            <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 1)))}
+            <button onClick={() => {
+              if (viewMode === "monthly") {
+                setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+              } else {
+                setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 1)));
+              }
+            }}
               className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-600">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-xs font-bold text-slate-700 px-3 min-w-[140px] text-center">{formatDate(currentDate)}</span>
-            <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 1)))}
+            <span className="text-xs font-bold text-slate-700 px-3 min-w-[140px] text-center">
+              {viewMode === "monthly" 
+                ? currentDate.toLocaleDateString("en-GB", { month: "long", year: "numeric" }) 
+                : formatDate(currentDate)}
+            </span>
+            <button onClick={() => {
+              if (viewMode === "monthly") {
+                setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+              } else {
+                setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 1)));
+              }
+            }}
               className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-600">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <div className="flex items-center bg-slate-100 p-1 rounded-md border border-slate-200 mr-2">
+                <button
+                  onClick={() => setViewMode("daily")}
+                  className={cn("px-3 py-1.5 text-xs font-bold rounded transition-all", viewMode === "daily" ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700")}
+                >
+                  Daily
+                </button>
+                <button
+                  onClick={() => setViewMode("monthly")}
+                  className={cn("px-3 py-1.5 text-xs font-bold rounded transition-all", viewMode === "monthly" ? "bg-white shadow-sm text-indigo-600" : "text-slate-500 hover:text-slate-700")}
+                >
+                  Monthly
+                </button>
+              </div>
+            )}
             {isAdmin && (
               <Button size="sm" variant="outline" className="text-xs h-9" onClick={() => setIsSettingsModalOpen(true)}>
                 Settings
@@ -541,8 +664,17 @@ export default function AttendancePage() {
                 <TableRow>
                   <TableHead className="w-[250px]">Staff Member</TableHead>
                   <TableHead>Payout Type</TableHead>
-                  <TableHead>Today's Status</TableHead>
-                  <TableHead>Time Logged</TableHead>
+                  {viewMode === "daily" ? (
+                    <>
+                      <TableHead>Today's Status</TableHead>
+                      <TableHead>Time Logged</TableHead>
+                    </>
+                  ) : (
+                    <>
+                      <TableHead>Attendance Stats</TableHead>
+                      <TableHead>Overtime</TableHead>
+                    </>
+                  )}
                   <TableHead>Last Month Due</TableHead>
                   <TableHead>Balance</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -566,48 +698,79 @@ export default function AttendancePage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={cn(
-                        "text-[9px] font-black uppercase px-2 py-0.5",
-                        staff.payoutType === "Monthly" ? "bg-indigo-50 text-indigo-700 border-indigo-100" :
-                          staff.payoutType === "Daily" ? "bg-amber-50 text-amber-700 border-amber-100" :
-                            "bg-emerald-50 text-emerald-700 border-emerald-100"
-                      )}>
-                        {staff.payoutType || "Monthly"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        {["Present", "Absent", "Half Day", "Leave", "Weekly Off"].map((status) => (
-                          <button
-                            key={status}
-                            disabled={!isAdmin}
-                            onClick={() => handleStatusChange(staff._id, status as AttendanceStatus)}
-                            className={cn(
-                              "px-2 py-1 rounded-md text-[9px] font-black transition-all border shadow-sm",
-                              (staff.attendance?.status || (status === "Absent" && !staff.attendance ? "Absent" : null)) === status
-                                ? (status === "Present" ? "bg-emerald-600 border-emerald-600 text-white" :
-                                  status === "Absent" ? "bg-rose-600 border-rose-600 text-white" :
-                                    status === "Half Day" ? "bg-amber-500 border-amber-500 text-white" :
-                                      status === "Leave" ? "bg-blue-600 border-blue-600 text-white" :
-                                        "bg-slate-600 border-slate-600 text-white")
-                                : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-50"
-                            )}
-                          >
-                            {status[0]}
-                          </button>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-slate-900 font-mono">
-                          {staff.attendance?.totalMinutes ? `${Math.floor(staff.attendance.totalMinutes / 60)}h ${staff.attendance.totalMinutes % 60}m` : "0h 0m"}
-                        </span>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-                          {staff.attendance?.logs?.length || 0} Sessions
+                      <div className="flex flex-col gap-1 items-start">
+                        <Badge className={cn(
+                          "text-[9px] font-black uppercase px-2 py-0.5",
+                          staff.payoutType === "Monthly" ? "bg-indigo-50 text-indigo-700 border-indigo-100" :
+                            staff.payoutType === "Daily" ? "bg-amber-50 text-amber-700 border-amber-100" :
+                              "bg-emerald-50 text-emerald-700 border-emerald-100"
+                        )}>
+                          {staff.payoutType || "Monthly"}
+                        </Badge>
+                        <span className="text-[10px] font-bold text-slate-500">
+                          ₹{(staff.salaryAmount || 0).toLocaleString()} / {staff.payoutType === "Daily" ? "Day" : staff.payoutType === "Hourly" ? "Hr" : "Mo"}
                         </span>
                       </div>
                     </TableCell>
+                    {viewMode === "daily" ? (
+                      <>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            {["Present", "Absent", "Half Day", "Leave", "Weekly Off"].map((status) => (
+                              <button
+                                key={status}
+                                disabled={!isAdmin}
+                                onClick={() => handleStatusChange(staff._id, status as AttendanceStatus)}
+                                className={cn(
+                                  "px-2 py-1 rounded-md text-[9px] font-black transition-all border shadow-sm",
+                                  (staff.attendance?.status || (status === "Absent" && !staff.attendance ? "Absent" : null)) === status
+                                    ? (status === "Present" ? "bg-emerald-600 border-emerald-600 text-white" :
+                                      status === "Absent" ? "bg-rose-600 border-rose-600 text-white" :
+                                        status === "Half Day" ? "bg-amber-500 border-amber-500 text-white" :
+                                          status === "Leave" ? "bg-blue-600 border-blue-600 text-white" :
+                                            "bg-slate-600 border-slate-600 text-white")
+                                    : "bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:bg-slate-50"
+                                )}
+                              >
+                                {status[0]}
+                              </button>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col items-start gap-0.5">
+                            <span className="text-xs font-bold text-slate-900 font-mono">
+                              {(() => {
+                                const totalMins = calculateTotalDisplayMinutes(staff.attendance);
+                                return totalMins > 0 ? `${Math.floor(totalMins / 60)}h ${totalMins % 60}m` : "0h 0m";
+                              })()}
+                            </span>
+                            <button
+                              onClick={() => {
+                                setSelectedStaffForSessions(staff);
+                                setIsViewSessionsModalOpen(true);
+                              }}
+                              className="text-[9px] font-bold text-indigo-500 hover:text-indigo-600 hover:underline uppercase tracking-tighter"
+                            >
+                              {staff.attendance?.logs?.length || 0} Sessions (View)
+                            </button>
+                          </div>
+                        </TableCell>
+                      </>
+                    ) : (
+                      <>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">P: {staff.monthlyStats?.present || 0}</span>
+                            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">A: {staff.monthlyStats?.absent || 0}</span>
+                            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">HD: {staff.monthlyStats?.halfDay || 0}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs font-bold text-slate-900">₹{(staff.monthlyStats?.overtimeAmount || 0).toLocaleString()}</span>
+                        </TableCell>
+                      </>
+                    )}
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <span className="text-xs font-bold text-slate-900">₹{(staff.lastMonthDue || 0).toLocaleString()}</span>
@@ -776,6 +939,50 @@ export default function AttendancePage() {
             }}>
               Save Settings
             </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* View Sessions Modal */}
+      <Modal
+        isOpen={isViewSessionsModalOpen}
+        onClose={() => setIsViewSessionsModalOpen(false)}
+        title={`${selectedStaffForSessions?.name?.split(' ')[0]}'s Sessions`}
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
+            <div className="p-3 border-b border-slate-200 bg-slate-100/50">
+              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-widest">Session Logs for {formatDate(currentDate)}</h3>
+            </div>
+            <div className="p-3 space-y-2">
+              {selectedStaffForSessions?.attendance?.logs?.length ? (
+                selectedStaffForSessions.attendance.logs.map((log: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-2 bg-white border border-slate-100 rounded-md shadow-sm">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Check In</span>
+                      <span className="text-sm font-bold text-emerald-600 font-mono">
+                        {new Date(log.checkIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    <div className="w-8 h-px bg-slate-200" />
+                    <div className="flex flex-col text-right">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Check Out</span>
+                      <span className={cn("text-sm font-bold font-mono", log.checkOut ? "text-rose-500" : "text-amber-500 animate-pulse")}>
+                        {log.checkOut ? new Date(log.checkOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Ongoing"}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  No sessions logged
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => setIsViewSessionsModalOpen(false)}>Close</Button>
           </div>
         </div>
       </Modal>
@@ -1000,7 +1207,7 @@ export default function AttendancePage() {
                         ).toLocaleString()}
                       </TableCell>
                     </TableRow>
-                    {selectedStaffForSlip.attendance?.overtime?.amount && (
+                    {(selectedStaffForSlip.attendance?.overtime?.amount || 0) > 0 && (
                       <TableRow>
                         <TableCell className="text-sm font-medium">
                           Overtime

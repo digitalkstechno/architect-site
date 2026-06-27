@@ -1,4 +1,5 @@
 import { api } from "./api";
+import endPointApi from "@/lib/endpoints";
 
 export interface InvoiceItem {
   _id?: string;
@@ -26,18 +27,18 @@ export interface Invoice {
 
 export const invoiceService = {
   async getAllInvoices(): Promise<Invoice[]> {
-    return api.get("/invoices");
+    return api.get(endPointApi.invoices);
   },
   async getInvoicesByProject(projectId: string): Promise<Invoice[]> {
-    return api.get(`/invoices?project=${projectId}`);
+    return api.get(`${endPointApi.invoices}?project=${projectId}`);
   },
   async createInvoice(data: any): Promise<Invoice> {
-    return api.post("/invoices", data);
+    return api.post(endPointApi.invoices, data);
   },
   async updateInvoice(id: string, data: any): Promise<Invoice> {
-    return api.put(`/invoices/${id}`, data);
+    return api.put(endPointApi.invoiceById(id), data);
   },
   async deleteInvoice(id: string): Promise<any> {
-    return api.delete(`/invoices/${id}`);
+    return api.delete(endPointApi.invoiceById(id));
   }
 };

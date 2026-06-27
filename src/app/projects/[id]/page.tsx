@@ -219,6 +219,12 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
   const handleEditProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!project) return;
+    
+    if (new Date(editForm.expectedCompletion) < new Date(editForm.startDate)) {
+      toast.error("Expected completion date cannot be earlier than start date");
+      return;
+    }
+
     setIsSubmittingEdit(true);
     try {
       await updateProject(project.id, {
@@ -244,6 +250,10 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
     e.preventDefault();
     if (!taskForm.title) {
       toast.error("Please provide a task title");
+      return;
+    }
+    if (new Date(taskForm.endDate) < new Date(taskForm.startDate)) {
+      toast.error("Task end date cannot be earlier than start date");
       return;
     }
     if (!project) return;
@@ -471,6 +481,22 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
     e.preventDefault();
     if (!paymentForm.milestone || !paymentForm.amount) {
       toast.error("Please fill in required fields");
+      return;
+    }
+
+    const currentAmount = Number(paymentForm.amount);
+    
+    // Calculate total received (paid) amount excluding the current payment if editing
+    let receivedSoFar = projectPayments.filter(p => p.status === "Paid").reduce((acc, p) => acc + p.amount, 0);
+    
+    if (editingPayment && editingPayment.status === "Paid") {
+      receivedSoFar -= editingPayment.amount;
+    }
+    
+    const maxAllowed = Math.max(0, budgetValue - receivedSoFar);
+    
+    if (currentAmount > maxAllowed) {
+      toast.error(`Amount exceeds Pending Balance. Maximum allowed: ₹${maxAllowed.toLocaleString('en-IN')}`);
       return;
     }
 
@@ -880,7 +906,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                   </div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Budget</p>
                 </div>
-                <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">${budgetValue.toLocaleString()}</p>
+                <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">{budgetValue.toLocaleString('en-IN')}</p>
               </div>
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 group hover:border-green-200 transition-all">
                 <div className="flex items-center gap-3">
@@ -889,7 +915,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                   </div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount Received</p>
                 </div>
-                <p className="text-2xl font-black text-slate-900 tracking-tight font-mono text-green-700">${totalReceived.toLocaleString()}</p>
+                <p className="text-2xl font-black text-slate-900 tracking-tight font-mono text-green-700">{totalReceived.toLocaleString('en-IN')}</p>
               </div>
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2 group hover:border-orange-200 transition-all">
                 <div className="flex items-center gap-3">
@@ -898,7 +924,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                   </div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Balance</p>
                 </div>
-                <p className="text-2xl font-black text-slate-900 tracking-tight font-mono text-orange-700">${totalPending.toLocaleString()}</p>
+                <p className="text-2xl font-black text-slate-900 tracking-tight font-mono text-orange-700">{totalPending.toLocaleString('en-IN')}</p>
               </div>
             </div>
 
@@ -925,7 +951,7 @@ export default function ProjectDetailsPage({ params }: { params: any }) {
                         {payment.notes && <p className="text-xs text-slate-500 mt-1 line-clamp-1">{payment.notes}</p>}
                       </TableCell>
                       <TableCell className="px-6 py-4">
-                        <span className="text-sm font-black text-slate-900 font-mono">${payment.amount.toLocaleString()}</span>
+                        <span className="text-sm font-black text-slate-900 font-mono">{payment.amount.toLocaleString('en-IN')}</span>
                       </TableCell>
                       <TableCell className="px-6 py-4 text-center">
                         <span className={cn(

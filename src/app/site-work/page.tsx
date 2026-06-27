@@ -70,11 +70,16 @@ export default function SiteWorkPage() {
       !roleName.includes("designer");
   });
 
+  const totalTasks = siteTasks.length;
+  const pendingTasks = siteTasks.filter(t => t.status === "Pending").length;
+  const inProgressTasks = siteTasks.filter(t => t.status === "In Progress").length;
+  const completedTasks = siteTasks.filter(t => t.status === "Completed").length;
+
   const siteStats = [
-    { title: "Active Sites", count: projects.filter(p => p.status === "In Progress" || p.status === "Active").length, icon: MapPin, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { title: "On-site Team", count: siteStaff.length, icon: HardHat, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { title: "Site Logs", count: siteTasks.length, icon: ClipboardList, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { title: "Inspections", count: siteTasks.reduce((sum, task) => sum + (task.inspections || 0), 0), icon: CheckCircle2, color: "text-indigo-600", bg: "bg-indigo-50" },
+    { title: "Total Tasks", count: totalTasks, icon: ClipboardList, color: "text-indigo-600", bg: "bg-indigo-50" },
+    { title: "Pending", count: pendingTasks, icon: HardHat, color: "text-orange-600", bg: "bg-orange-50" },
+    { title: "In Progress", count: inProgressTasks, icon: Hammer, color: "text-blue-600", bg: "bg-blue-50" },
+    { title: "Completed", count: completedTasks, icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50" },
   ];
 
   const handleAddLog = async (e: React.FormEvent) => {
@@ -317,10 +322,13 @@ export default function SiteWorkPage() {
 
   const renderExpandedRow = (task: any) => {
     const tId = task._id || task.id;
+    const isAssigned = task.assignedTo?.some((s: any) => (s._id || s.id || s) === user?.id);
+    const canUpdateStatus = !isViewOnly || isAssigned;
+
     return (
     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-top-2 duration-300">
       <div className="space-y-4">
-        {!isViewOnly && (
+        {canUpdateStatus && (
           <>
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Update Execution Status</h4>
             <div className="flex flex-wrap gap-2">

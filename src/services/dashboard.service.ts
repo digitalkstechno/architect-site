@@ -1,4 +1,5 @@
 import { api } from "./api";
+import endPointApi from "@/lib/endpoints";
 
 export interface DashboardStats {
   projects: {
@@ -21,11 +22,12 @@ export interface DashboardStats {
     siteUpdates: any[];
     upcomingOfficeTasks: any[];
     upcomingSiteTasks: any[];
+    pendingAgencies?: any[];
   };
 }
 
 export const dashboardService = {
   getDashboardStats: async (): Promise<DashboardStats> => {
-    return api.get("/dashboard");
+    return api.get(endPointApi.dashboard);
   },
 };

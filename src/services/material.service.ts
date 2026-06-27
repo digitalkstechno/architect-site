@@ -1,4 +1,5 @@
 import { api } from "./api";
+import endPointApi from "@/lib/endpoints";
 
 export interface MaterialRequest {
   _id: string;
@@ -14,15 +15,15 @@ export interface MaterialRequest {
 
 export const materialService = {
   async getRequestsByProject(projectId: string): Promise<MaterialRequest[]> {
-    return api.get(`/material-requests?project=${projectId}`);
+    return api.get(`${endPointApi.materialRequests}?project=${projectId}`);
   },
   async createRequest(data: any): Promise<MaterialRequest> {
-    return api.post("/material-requests", data);
+    return api.post(endPointApi.materialRequests, data);
   },
   async updateRequest(id: string, data: any): Promise<MaterialRequest> {
-    return api.put(`/material-requests/${id}`, data);
+    return api.put(endPointApi.materialRequestById(id), data);
   },
   async deleteRequest(id: string): Promise<any> {
-    return api.delete(`/material-requests/${id}`);
+    return api.delete(endPointApi.materialRequestById(id));
   }
 };

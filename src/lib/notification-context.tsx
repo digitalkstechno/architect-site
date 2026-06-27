@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "./auth-context";
 import { api } from "@/services/api";
+import endPointApi from "@/lib/endpoints";
 import toast from "react-hot-toast";
 
 export interface Notification {
@@ -119,7 +120,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const fetchUnreadMessageCount = async () => {
     try {
-      const response = await api.get("/messages/conversations");
+      const response = await api.get(endPointApi.messageConversations);
       if (Array.isArray(response)) {
         const total = response.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
         setUnreadMessageCount(total);
@@ -131,7 +132,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const fetchNotifications = async () => {
     try {
-      const response = await api.get("/notifications");
+      const response = await api.get(endPointApi.notifications);
       setNotifications(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
@@ -142,7 +143,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const markAsRead = async (id: string) => {
     try {
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
-      await api.patch(`/notifications/${id}/read`);
+      await api.patch(endPointApi.notificationRead(id));
     } catch (error) {
       console.error("Failed to mark notification as read", error);
     }
@@ -151,7 +152,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const markAllAsRead = async () => {
     try {
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      await api.patch("/notifications/read-all");
+      await api.patch(endPointApi.notificationReadAll);
     } catch (error) {
       console.error("Failed to mark all as read", error);
     }

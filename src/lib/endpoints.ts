@@ -66,6 +66,39 @@ export interface EndPointApi {
   workingSOPs: string;
   workingSOPById: (id: string) => string;
 
+  // Materials
+  materialRequests: string;
+  materialRequestById: (id: string) => string;
+
+  // Invoices
+  invoices: string;
+  invoiceById: (id: string) => string;
+
+  // Guest Logins
+  guestLogins: string;
+
+  // Documents
+  documents: string;
+  documentById: (id: string) => string;
+
+  // Dashboard
+  dashboard: string;
+
+  // Agencies
+  agencyRegister: string;
+  agencyPending: string;
+  agencyRoles: string;
+  agencyById: (id: string) => string;
+  agencyApprove: (id: string) => string;
+  agencyReject: (id: string) => string;
+  agencySendOtp: string;
+  agencyVerifyOtp: string;
+
+  // Notifications
+  notifications: string;
+  notificationRead: (id: string) => string;
+  notificationReadAll: string;
+
   // Company
   company: string;
 }
@@ -134,6 +167,39 @@ const endPointApi: EndPointApi = {
   // Working SOPs
   workingSOPs: "/working-sops",
   workingSOPById: (id: string) => `/working-sops/${id}`,
+
+  // Materials
+  materialRequests: "/material-requests",
+  materialRequestById: (id: string) => `/material-requests/${id}`,
+
+  // Invoices
+  invoices: "/invoices",
+  invoiceById: (id: string) => `/invoices/${id}`,
+
+  // Guest Logins
+  guestLogins: "/guest-logins",
+
+  // Documents
+  documents: "/documents",
+  documentById: (id: string) => `/documents/${id}`,
+
+  // Dashboard
+  dashboard: "/dashboard",
+
+  // Agencies
+  agencyRegister: "/agencies/register",
+  agencyPending: "/agencies/pending",
+  agencyRoles: "/agencies/roles",
+  agencyById: (id: string) => `/agencies/${id}`,
+  agencyApprove: (id: string) => `/agencies/${id}/approve`,
+  agencyReject: (id: string) => `/agencies/${id}/reject`,
+  agencySendOtp: "/agencies/send-otp",
+  agencyVerifyOtp: "/agencies/verify-otp",
+
+  // Notifications
+  notifications: "/notifications",
+  notificationRead: (id: string) => `/notifications/${id}/read`,
+  notificationReadAll: "/notifications/read-all",
 
   // Company
   company: "/company",

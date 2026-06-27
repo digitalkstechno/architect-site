@@ -4,7 +4,7 @@ import { useState, useEffect, Fragment } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { PenTool, FileText, Clock, CheckCircle2, Plus, Search, Filter, ArrowRight, Edit2, Trash2 } from "lucide-react";
+import { PenTool, FileText, Clock, CheckCircle2, Plus, Search, Filter, ArrowRight, Edit2, Trash2, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
@@ -62,11 +62,16 @@ export default function OfficeWorkPage() {
 
   const officeStaff = staffList.filter(s => s.role?.name?.toLowerCase().includes("designer"));
 
-  const categories = [
-    { title: "Design Phase", count: officeTasks.filter(t => t.status === "In Progress").length, icon: PenTool, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { title: "Documentation", count: officeTasks.filter(t => t.status === "Pending").length, icon: FileText, color: "text-blue-600", bg: "bg-blue-50" },
-    { title: "Approvals", count: officeTasks.filter(t => t.status === "Completed").length, icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50" },
-    // { title: "Revisions", count: officeTasks.filter(t => t.priority === "High" || t.priority === "Critical").length, icon: Clock, color: "text-orange-600", bg: "bg-orange-50" },
+  const totalTasks = officeTasks.length;
+  const pendingTasks = officeTasks.filter(t => t.status === "Pending").length;
+  const inProgressTasks = officeTasks.filter(t => t.status === "In Progress").length;
+  const completedTasks = officeTasks.filter(t => t.status === "Completed").length;
+
+  const officeStats = [
+    { title: "Total Tasks", count: totalTasks, icon: ClipboardList, color: "text-indigo-600", bg: "bg-indigo-50" },
+    { title: "Pending", count: pendingTasks, icon: Clock, color: "text-orange-600", bg: "bg-orange-50" },
+    { title: "In Progress", count: inProgressTasks, icon: PenTool, color: "text-blue-600", bg: "bg-blue-50" },
+    { title: "Completed", count: completedTasks, icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50" },
   ];
 
   const handleAddTask = async (e: React.FormEvent) => {
@@ -471,15 +476,15 @@ export default function OfficeWorkPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {categories.map((cat) => (
-          <Card key={cat.title} className="p-4 border-slate-100 hover:shadow-md transition-all">
+        {officeStats.map((stat) => (
+          <Card key={stat.title} className="p-4 border-slate-100 hover:shadow-md transition-all">
             <div className="flex items-center gap-3">
-              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", cat.bg)}>
-                <cat.icon className={cn("w-5 h-5", cat.color)} />
+              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", stat.bg)}>
+                <stat.icon className={cn("w-5 h-5", stat.color)} />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{cat.title}</p>
-                <h3 className="text-xl font-bold text-slate-900 font-mono leading-none mt-1">{cat.count}</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.title}</p>
+                <h3 className="text-xl font-bold text-slate-900 font-mono leading-none mt-1">{stat.count}</h3>
               </div>
             </div>
           </Card>
